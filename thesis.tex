@@ -19,43 +19,30 @@
 % !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 %%% COVER: Settings %%%
-\title{The Title of Your PhD Dissertation}
-\subtitle{From Artes to AI}
+\title{Dynamic reality modeling for AECO applications}
+%\subtitle{From Artes to AI}
 
-\author{Your}{Name}
+\author{Jelle}{Vermandere}
 
-\supervisor{Prof.~dr.~ir.~F.~Leader}{}
-\supervisor{Prof.~dr.~ir.~S.~Leader}{}
-\president{Prof.~dr.~ir.~The~Chairman}{}
-\jurymember{Prof.~dr.~ir.~The~One}{}
-\jurymember{Prof.~dr.~ir.~The~Other}{}
-\externaljurymember{Prof.~dr.~External~Jurymember}{Far Away}
+\president{Prof.~dr.~ir.???}{}
+\supervisor{Prof.~dr.~ir.~M.~Vergauwen}{}
+\supervisor{Prof.~dr.~ing.~M.~Bassier}{}
+\jurymember{Prof.~dr.~ir.~C.~Cannaerts}{}
+\jurymember{Prof.~dr. Adalberto L. Simeone}{}
+\externaljurymember{Kristof Vandenbogaerde}{Besix}
 
 % Your research group within the department
 % e.g. DTAI, MICAS
-\researchgroup{XXXXX}
-\website{http://www.XXXXX.cs.kuleuven.be} % Leave empty to hide
-\email{first.last@cs.kuleuven.be} % Leave empty to hide
+\researchgroup{Geomatics Research Group}
+\website{https://iiw.kuleuven.be/onderzoek/geomatics} % Leave empty to hide
+\email{jelle.vermandere@kuleuven.be} % Leave empty to hide
 
-\address{Celestijnenlaan 200A box 2402}
-% \addresscity{B-3001 Leuven} % This is the default value. Note
-                              % that 'B-3001 Heverlee' is _incorrect_!!
-                              % https://www.kuleuven.be/english/language-guide
+\address{Gebroeders de Smetstraat 1}
+\addresscity{B-9000 Ghent} % This is the default value. Note
 
-%%%%%%%%%%%% For joint PhDs only %%%%%%%%%%%%%%%%%%%%%%
-% Add 'joint' to the options to the adsphd class.
-% Change "PARTNER_LOGO.eps" in image folder!
-\facultypartner{Faculty Partner}
-\departmentpartner{Department Partner}
-\addresspartner{Address Partner}
-\addresscitypartner{City Partner}
-\emailpartner{} % Leave empty to hide
-\websitepartner{} % Leave empty to hide
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\date{January 2024}
-\copyyear{2024}
-\copyaddress{Your place of residence}
+\date{October 2026}
+\copyyear{2026}
+\copyaddress{Gent}
 %\udc{XXX.XX}             % UDC, deposit number and ISBN are no longer necessary.
 %\depot{XXXX/XXXX/XX}     % Leave out the initial D/ (it is added
 %\isbn{XXX-XX-XXXX-XXX-X} % automatically)
@@ -78,15 +65,15 @@
 %%% COVER: End settings %%%
 
 % for the nomenclature (comment out if you do not use the nomencl package
-\usepackage{nomencl}   % For nomenclature
-\renewcommand{\nomname}{List of Symbols}
-\newcommand{\myprintnomenclature}{%
-  \cleardoublepage%
-  \printnomenclature%
-  \chaptermark{\nomname}
-  \addcontentsline{toc}{chapter}{\nomname} %% comment to exclude from TOC
-}
-\makenomenclature%
+%\usepackage{nomencl}   % For nomenclature
+%\renewcommand{\nomname}{List of Symbols}
+%\newcommand{\myprintnomenclature}{%
+%  \cleardoublepage%
+%  \printnomenclature%
+%  \chaptermark{\nomname}
+%  \addcontentsline{toc}{chapter}{\nomname} %% comment to exclude from TOC
+%}
+%\makenomenclature%
 
 % for the list of abbreviations (comment out if you do not use the glossaries package
 \usepackage{glossaries} % For list of abbreviations
@@ -134,11 +121,10 @@
 
 \frontmatter % to get \pagenumbering{roman}
 
-\includepreface{preface}
-\includepopabstract{popabstract}
-\includepopabstractnl{popabstractnl}
-\includeabstract{abstract}
-\includeabstractnl{abstractnl}
+\includepreface{0.0_Preface}
+\includeabstract{0.1_Abstract}
+\includeabstractnl{0.2_Abstract_NL}
+\tableofcontents
 
 % To create a list of abbreviations, there are 2 options
 % 1. manual creation of list of abbreviations and inclusion as a chapter
@@ -154,9 +140,9 @@
 %    \includenomenclature{nomenclaturechapter}
 % 2. automatic generation via the nomencl package
 %    \nomenclature[cB]{$c_B(\vec{x})$}{Characteristic function of $B$}
-\myprintnomenclature
+%\myprintnomenclature
 
-\tableofcontents
+
 \listoffigures
 \listoftables
 
@@ -165,45 +151,39 @@
 \mainmatter % to get \pagenumbering{arabic}
 
 % Show instructions on a separate page
-\instructionschapters\cleardoublepage
+%\instructionschapters\cleardoublepage
 
-\includechapter{introduction}
-\includechapter{manual} % Remove this chapter
-
-% Insert here your own chapters
-% Chapters are expected to be in a tex-file with the given name dot
-% tex and in a directory with the given name in the chapters
-% directory.
-
-\includechapter{conclusion}
+\includechapter{1_Introduction}
+\includechapter{2_Goal_Background}
+\includechapter{3_Data_Aquisition}
+\includechapter{4_Alignment_Updating}
+\includechapter{5_Scene_Segmentation}
+\includechapter{6_Scene_Completion}
+\includechapter{7_Object_Completion}
+\includechapter{8_Object_Dynamification}
+\includechapter{9_Scene_Interaction}
+\includechapter{10_Conclusion}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \appendix
-
-\includeappendix{myappendix}
+\includeappendix{A.0_Appendix}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \backmatter
 
 \includebibliography
-% BibTex
 \bibliographystyle{acm}
-\bibliography{allpapers}
-% BibLatex (comment out lines above and uncomment biblatex lines in preamble)
-%\printbibliography[title=\bibname]
-\instructionsbibliography
-
-
+\bibliography{My Library}
 
 % Uncomment the appropriate sentences in and expand the text where needed to make it more specific and add topics if they are not covered by any of the indicated topics.
 \useOfGenAI{%
   % I did not use generative AI assistance tools during the research/writing process of my thesis, except for mere language assistance. % The use of GenAI tools for language assistance does not need to be further specified. (The part 'except for mere language assistance' can be left out if not applicable)
-  % I did use the generative AI assistance tools ... % specify which e.g. MS Copilot/ ChatGPT/ResearchRabbit/... Please indicate in which way(s) you were using it and replace Generative AI with the specific AI tool(s) that was/were used:
+  I did use the generative AI assistance tools ... % specify which e.g. MS Copilot/ ChatGPT/ResearchRabbit/... Please indicate in which way(s) you were using it and replace Generative AI with the specific AI tool(s) that was/were used:
   % Generative AI was used as a search engine to learn about a particular topic. % If yes, please specify the usage.
   % Generative AI was used for carrying out a literature review. % If yes, please specify the usage.
   % Generative AI was used for short-form input assistance. % If yes, please specify the usage.
-  % Generative AI was used for generating programming code. % If yes, please specify the usage.
+  Generative AI was used for generating programming code. % If yes, please specify the usage.
   % Generative AI was used to generate new research ideas. % If yes, please specify the usage.
   % Generative AI was used to generate visuals. % If yes, please specify the usage.
   % Other (e.g. the development of a custom chatbot/genAI tool). % Please specify.
@@ -211,9 +191,8 @@
 \includegenai{}
 
 
-\includecv{curriculum}
-
-\includepublications{publications}
+\includecv{A.1_Curriculum}
+\includepublications{A.2_Publications}
 
 \makebackcoverXXIV
 
