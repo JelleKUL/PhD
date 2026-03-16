@@ -1,8 +1,76 @@
 % !TeX root = ../../thesis.tex
 
+
+
+%\chapterimage{Mesh Alignment}{Alignment And Updating} \label{ch:4_Alignment_Updating}
 \chapter{Alignment And Updating} \label{ch:4_Alignment_Updating}
 
-\ldots
+\section{Introduction}
+
+The AECO industry needs up-to-date and complete geo-spacial data of their facilities, ranging from construction site monitoring to immersive visualisations. Despite an enormous amount of data being captured, this goal remains a great challenge due to several factors. First, the captured data is often incomplete due to occlusions or limited sensor range. Second, captured data quickly becomes outdated, while making numerous consecutive full recordings is very time-consuming and expensive. Finally, the data coming from lower-end, cheaper capture devices is rarely used due to a lack of a proper framework to incorporate them into larger datasets. A way to combat these shortcomings is to make better use of the lower-end data. While these sensors lack range and precision, the increased recording speed and lighter data load is a big advantage over traditional devices. As shown in figure \ref{fig:teaser}, combining high-end with lower-end datasets, by updating small parts of the full point cloud, could extend their relevance and decrease the total recording investment.
+
+Using XR devices like the Hololens 2 as the lower-end sensor can bring additional advantages because they can capture both 2D localised Images and 3D meshes, and get realtime coverage feedback. Allowing users to seek out occlusions and inconsistencies of the previously captured high-end dataset on-site.
+
+Existing works rely on using multiple sensors to capture data at different scales and levels of detail, ranging from adding highly detailed scans of small selected objects \cite{Lachat2016}, to filling in large occluded areas using drone footage\cite{Bolkas2020}. These methods, however, rely on a (semi-)manual alignment step, making the quick feedback loop from an XR device not feasible. Merging different datasets in the current state of the art is mostly focused on improving the coverage of the initial scan \cite{Partovi2021}. Updating the initial point cloud with supplementary data captured at a different point in time is a field of little research.
+
+The goal of this work is to set up a pipeline to complement and update existing point clouds using automatically aligned XR datasets captured on site. This will keep the dataset relevant over a longer period of time, requiring fewer full-scale recordings and better overall coverage of the site.
+
+\section{Related work}
+
+\section{Methodology}
+
+Before 2 datasets can be combined, as explained in \ref{dataCompletion}, they need to be aligned. Each recording set is stored as a session, containing all the metadata and raw files. To get feedback on the current state of the scan, the alignment process needs to happen while the user is on-site. This is why an automatic method is proposed in \ref{sec:alignment}. This relies on a connection between a python webserver and the XR device to access the reference datasets and increased computational performance.
+
+\subsection{Dataset alignment} \label{sec:alignment}
+XR devices can record both images and meshes, so multiple pose estimations can be made using 2D and 3D matching techniques. These estimations all have matching parameters like the reprojection error, overlap, inliers and sensor type. These normalized values are used as weights to evaluate the confidence of the proposed pose. The final pose is determined as a weighted average of all the estimations.
+
+\subsubsection{Image alignment}
+%2D matching
+The 2D images are matched with the reference dataset, using the OpenCV framework to generate ORB features and state-of-the-art 2D matching algorithms to estimate a pose for each captured image \cite{Luo2019}.
+%The Parameters of the match are stored and used as weights to determine the confidence of the pose as seen in table \ref{tab:pose_estimation_table}
+%, . (Images have been used to match against generated BIM imagery for indoor localisation \cite{Baek2019}. However,) 
+
+\subsubsection{Point cloud alignment}
+%3D matching
+The 3D mesh is matched against the point cloud using Open3d FPFH Feature matching, using the Fast global registration algorithm to determine the transformation \cite{Zhou2016}. The point cloud is subdivided into parts of similar size to the mesh to make multiple estimations.
+
+\subsubsection{Pose Estimation}
+%pose estimation
+The final pose estimation is the weighted average of the different methods and their confidence factor. The accuracy of this method is precise up to the resolution of the sensor as seen in table \ref{tab:pose_estimation_table} where it was tested on multiple datasets.
+
+\begin{table}[h]
+  \centering
+  \caption{The results of the different matching methods, showing the accuracy is up to the resolution of the Hololens sensor}
+  \includegraphics[width=\linewidth]{images/Pose_estimation_table.png}
+  \label{tab:pose_estimation_table}
+\end{table}
+
+
+\subsection{Dataset updating}
+
+The main challenge is determining which points in the point cloud are still up to date. This includes the removal and addition of the newer XR data onto the existing reference dataset. We propose a 3 step process as outlined in figure \ref{fig:completion_schema}.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{images/mergingWorkflow.png}
+  \caption{A three-step process for merging datasets with a subselection of relevant reference data(a), the removal of out-of-date points (b) and the addition of new points(c).}
+  \label{fig:completion_schema}
+\end{figure}
+
+\subsubsection{Relevant point selection}
+After the XR dataset is cleaned up, the reference points are sub-selected using the convex hull of the XR dataset to ensure only points within the newly scanned area can be altered. This method is more precise than a bounding box and leads to fewer false positives.
+
+\subsubsection{Out-of-date point removal} \label{sec:Out-of-date point removal}
+To determine which points are out of date, each one must pass at least one of the following checks: a coverage or occlusion check. The coverage is determined with a threshold distance query against the cleaned-up XR mesh. The visibility check serves to maintain points that were not visible to the XR device due to occlusions and is determined by comparing the normals of the $n$ closest faces from the flagged point. If the RANSAC filtered majority of faces are facing away from the point, it is flagged as occluded and fails the check.
+
+\subsubsection{New point addition}
+The reference point cloud is assumed to have much a higher accuracy than the sampled XR data, so only the not covered XR points are added. To determine these points, an inverse distance query is performed compared to \ref{sec:Out-of-date point removal}. By default, the XR mesh does not contain any colour information, this is retrieved from the localised XR images by determining the corresponding pixel value through a raycast to the new points.
+
+\section{Experiments}
+
+\section{Conclusion}
+This work has shown a method to update large existing point cloud datasets without the need to recapture the whole site. XR devices provide multi-sensory data that can not only be used to locate the user in a reference point cloud to get visual feedback of the site but also to update and complete the existing dataset with new, more focused data.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Keep the following \cleardoublepage at the end of this file, 

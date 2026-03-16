@@ -2021,6 +2021,33 @@ without written permission from the publisher.
   \renewcommand{\sfdefault}{\origsfdefault}
 }
 
+\usepackage{titlesec}  % For custom chapter formatting
+% Custom chapter command
+% Full-page chapter with image and title, numbered and in TOC
+\newcommand{\chapterimage}[2]{%
+  \cleardoublepage % ensure new page
+  \thispagestyle{plain} % page style (numbering at bottom)
+  
+  % Insert chapter to TOC and mark
+  \refstepcounter{chapter} % increase chapter number
+  \addcontentsline{toc}{chapter}{\protect\numberline{\thechapter}#2} % add to TOC
+  \chaptermark{#2} % set header mark
+  
+  % Top image
+  \begin{center}
+    \includegraphics[width=\textwidth]{#1}
+  \end{center}
+
+  % Push number and title to bottom
+  \vfill
+  \begin{center}
+    {\LARGE \bfseries Chapter \thechapter}\\[0.5cm] % number
+    {\Huge \bfseries #2} % title
+  \end{center}
+  \vspace*{1cm} % optional spacing from bottom edge
+  \clearpage
+}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
