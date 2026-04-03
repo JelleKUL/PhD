@@ -11,6 +11,7 @@
 %\documentclass[showinstructions,faculty=firw,department=cws,phddegree=cws,joint]{adsphd}
 %\documentclass[final,faculty=fiiw,department=bwk,phddegree=bwk]{adsphd}
 \documentclass[final,faculty=fiiw,department=bwk,phddegree=bwk]{adsphd}
+\usepackage{todonotes}
 
 % TEXT WIDTH IS 12cm WIDE!!!
 
@@ -124,9 +125,9 @@
 
 \frontmatter % to get \pagenumbering{roman}
 
-\includepreface{0.0_Preface}
-\includeabstract{0.1_Abstract}
-\includeabstractnl{0.2_Abstract_NL}
+%\includepreface{0.0_Preface}
+%\includeabstract{0.1_Abstract}
+%\includeabstractnl{0.2_Abstract_NL}
 \tableofcontents
 
 % To create a list of abbreviations, there are 2 options
@@ -146,8 +147,8 @@
 %\myprintnomenclature
 
 
-\listoffigures
-\listoftables
+%\listoffigures
+%\listoftables
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -163,9 +164,9 @@
 \includechapter{5_Scene_Segmentation}
 \includechapter{6_Scene_Completion}
 \includechapter{7_Object_Completion}
-\includechapter{8_Object_Dynamification}
-\includechapter{9_Scene_Interaction}
-\includechapter{10_Conclusion}
+\includechapter{8_Scene_Dynamification}
+\includechapter{9_Conclusion}
+\includechapter{10_Valorisation}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -177,7 +178,7 @@
 
 \includebibliography
 \bibliographystyle{acm}
-\bibliography{My Library}
+\bibliography{MyLibrary}
 
 % Uncomment the appropriate sentences in and expand the text where needed to make it more specific and add topics if they are not covered by any of the indicated topics.
 \useOfGenAI{%

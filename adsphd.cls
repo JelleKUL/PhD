@@ -642,7 +642,7 @@
 % FONTS
 \RequirePackage{microtype}
 \RequirePackage[T1]{fontenc}
-\RequirePackage{lmodern}  % to make pdf searchable
+ \RequirePackage{lmodern} % to make pdf searchable
 %\RequirePackage{textcomp} % nice greek alphabet
 %\RequirePackage{pifont}   % Dingbats
 

@@ -1,19 +1,165 @@
 % !TeX root = ../../thesis.tex
+\chapter{Scene Dynamification Background and Terminology}
+\label{ch:background}
 
-\chapter{Dynamic Reality Modeling background and terminology} \label{ch:2_Goal_Background}
+\newglossaryentry{UDF}{name={UDF}, description={Unsigned Distance Field — a scalar field encoding the absolute (unsigned) distance from any point in space to the nearest surface, applicable to open or non-watertight geometry}}
+\newglossaryentry{CSDF}{name={CSDF}, description={Coloured Signed Distance Field — an extension of the SDF representation in which each voxel additionally stores per-voxel colour information, enabling joint geometry and appearance manipulation}}
+\newglossaryentry{NeRF}{name={NeRF}, description={Neural Radiance Field — a learned continuous function mapping 3D coordinates and viewing directions to colour and volume density, enabling novel view synthesis}}
+\newglossaryentry{UV}{name={UV}, description={UV coordinates — two-dimensional texture coordinates assigned to mesh vertices that define the mapping between the 3D surface and a 2D texture image}}
 
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
+\label{sec:bg_intro}
 
-\section{3D Scenes}
+The previous chapter introduced the concept of a \gls{DRM} and motivated the need for a unified pipeline that transforms partial scan data into complete, structured and interactive scene representations. Before presenting the individual components of that pipeline, this chapter establishes the conceptual and terminological foundation on which the remainder of this thesis rests.
 
-\section{Scene Capture}
+Central to this foundation is the notion of \textit{scene dynamification}: the process of transforming a static, unstructured 3D reconstruction into a structured collection of individually manipulable objects, embedded within a geometrically and visually complete environment. Rather than treating a scanned scene as a monolithic surface, dynamification introduces an explicit object-level decomposition that enables operations such as repositioning, replacement, scaling and removal, while preserving consistency with the captured geometry and appearance.
 
-\section{Scene Completion}
+This chapter defines the scope and requirements of dynamification and positions it relative to existing representations. Section~\ref{sec:bg_representations} reviews the landscape of 3D representations and discusses their suitability as inputs and outputs of the proposed pipeline. Section~\ref{sec:bg_drm_requirements} formalises the requirements of a \gls{DRM} in terms of its inputs, outputs and structural properties. Section~\ref{sec:bg_pipeline_overview} provides a concise conceptual overview of the pipeline stages that are developed in subsequent chapters. Section~\ref{sec:bg_sota_dynamification} surveys the small body of existing work that most directly addresses scene dynamification as a unified problem. Section~\ref{sec:bg_conclusion} concludes with a summary of the scope and assumptions adopted throughout this thesis.
 
+% ─────────────────────────────────────────────────────────────────────────────
+\section{3D Representations}
+\label{sec:bg_representations}
+
+A prerequisite for understanding scene dynamification is a clear picture of the representational choices available for encoding 3D geometry and appearance. These choices have direct consequences for what operations are possible, what completion methods can be applied, and how the final dynamic scene can be consumed by downstream applications. Representations can be broadly divided into \textit{explicit} and \textit{implicit} categories, each with distinct trade-offs in terms of resolution, editability, storage efficiency and support for texture.
+
+% ── 2.2.1 ────────────────────────────────────────────────────────────────────
+\subsection{Explicit Representations}
+\label{sec:bg_explicit}
+
+Explicit representations directly encode the geometry of a surface or volume as a discrete set of geometric primitives. They are generally well suited for visualization and downstream processing, as the geometry is directly accessible without the need for additional decoding steps.
+
+\paragraph{Point clouds.}
+A point cloud is an unordered set of 3D coordinates, typically accompanied by surface normals and colour values per point. Point clouds are the natural output of laser scanning and depth-sensing devices, and they form the primary raw input modality for the pipeline developed in this thesis. Their main advantages are simplicity, scalability and direct correspondence to physical measurements. However, they lack surface connectivity, which complicates downstream operations such as rendering, meshing and \gls{UV} mapping. Colour is typically stored per point as an RGB triplet, either captured directly by the sensor or assigned through projection from a co-registered image~\cite{bassier_standalone_2016}. The density and noise characteristics of a point cloud depend strongly on the sensing technology used, ranging from sub-millimetre precision in high-end terrestrial laser scanners to centimetre-level accuracy in mobile and \gls{XR}-based devices~\cite{vermandere_two-step_2022}.
+
+\paragraph{Meshes.}
+A polygonal mesh represents a surface as a set of vertices connected by edges and faces, most commonly triangles. Meshes provide explicit surface connectivity and are the standard representation for rendering, simulation and geometric processing. They support a rich set of operations including Boolean combinations, normal computation and UV parameterisation for texture mapping.
+
+Texture in meshes is typically stored as a 2D image, indexed via UV coordinates assigned to each vertex. Each face samples its colour from this texture image using barycentric interpolation of the UV coordinates of its three vertices~\cite{heckbert_survey_1986}. This decoupling between geometry and appearance allows high-resolution textures to be stored efficiently, but introduces a non-trivial mapping between the 3D surface and the 2D texture space, which can complicate texture inpainting and completion~\cite{vermandere_semantic_2024}.
+
+Meshes obtained from indoor scans are typically the result of a reconstruction pipeline applied to point clouds or depth images, and may therefore contain artefacts such as holes, non-manifold geometry or incorrect connectivity. Processing such meshes requires dedicated repair steps before further operations can be applied~\cite{attene_lightweight_2010}.
+
+\paragraph{3D Gaussian splatting.}
+A more recent explicit representation is 3D Gaussian splatting~\cite{kerbl_3d_2023}, in which the scene is represented as a set of anisotropic 3D Gaussians, each parameterised by a position, covariance, opacity and spherical harmonic coefficients encoding view-dependent colour. This representation has gained considerable attention for its ability to achieve real-time novel view synthesis at high visual fidelity. Each Gaussian implicitly encodes both geometry and appearance, analogous to coloured point clouds but with a richer per-element appearance model. While 3D Gaussian splatting offers compelling rendering quality, it does not lend itself naturally to the geometric editing, completion or object isolation operations required in this thesis, and is therefore not adopted as an intermediate or output representation here.
+
+% ── 2.2.2 ────────────────────────────────────────────────────────────────────
+\subsection{Implicit Representations}
+\label{sec:bg_implicit}
+
+Implicit representations encode geometry indirectly, typically as a continuous scalar field over 3D space whose zero level set defines the object surface. They offer smooth, resolution-independent surface descriptions and are particularly well suited as intermediate representations in learning-based completion and generation methods.
+
+\paragraph{Signed Distance Functions.}
+A \gls{SDF} assigns to each point in space a scalar value representing the signed distance to the nearest surface, with negative values inside the object and positive values outside. The surface itself is recovered as the zero level set of this function. When discretised over a regular voxel grid, an SDF provides a fixed-size, differentiable representation that is compatible with convolutional neural network architectures~\cite{mittal_autosdf_2022}. This makes SDFs a popular input and output format for object completion networks. However, conventional SDFs require the underlying geometry to be watertight, a condition rarely satisfied by raw scan data. \gls{UDF}s, which encode only the absolute distance to the surface, provide a more general alternative applicable to open or incomplete meshes~\cite{vermandere_geometry_2025}.
+
+For the dynamification step, SDFs can be extended to \gls{CSDF}s by additionally storing per-voxel colour information, enabling joint geometry and appearance manipulation~\cite{vermandere_adaptive_2025}.
+
+\paragraph{Parametric and semantic models.}
+\gls{BIM} models represent buildings as structured collections of parametric objects with associated semantic properties. Each element, such as a wall, door or piece of furniture, is described by its type, dimensions and relationships to other elements, rather than by explicit surface geometry. This structured representation supports efficient querying, simulation and modification, but typically lacks the geometric and visual detail of captured data~\cite{bassier_processing_2020}. As discussed in Chapter~\ref{ch:introduction}, the gap between BIM and reality capture representations motivates the development of the \gls{DRM}.
+
+\paragraph{Neural implicit representations.}
+\gls{NeRF}s~\cite{mildenhall_nerf_2020} and related approaches represent scenes as learned continuous functions mapping 3D coordinates and viewing directions to colour and volume density. These representations achieve compelling novel view synthesis quality but are generally not editable at the object level, making them unsuitable as output representations for dynamification. Recent methods attempt to decompose NeRF scenes into individual objects~\cite{ardelean_gen3dsr_2025}, but this remains an active research challenge and is not further pursued in this thesis.
+
+% ── 2.2.3 ────────────────────────────────────────────────────────────────────
+\subsection{Representational Choice in This Thesis}
+\label{sec:bg_rep_choice}
+
+Given the above considerations, the pipeline developed in this thesis operates primarily with coloured point clouds and textured meshes as the main data types, with SDFs and UDFs as intermediate representations in completion stages. Point clouds serve as the natural output of the capture devices used and as the input to detection and completion modules. Textured meshes serve as the output of the scene completion stage, providing a compact, renderable and editable surface representation. SDFs are used internally within object completion networks, bridging the gap between the irregular scan data and the fixed-size inputs required by learning-based models.
+
+This choice reflects a deliberate balance between data fidelity, geometric expressiveness and compatibility with standard tools and processing pipelines. BIM and neural representations are explicitly excluded from the pipeline output, as they either lack visual fidelity or do not support the object-level editing operations required for dynamification.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Dynamic Reality Model Requirements}
+\label{sec:bg_drm_requirements}
+
+Having established the representational landscape, we can now formalise what a \gls{DRM} must provide and what inputs it operates on. This section defines the scope and structural requirements of the proposed representation.
+
+% ── 2.3.1 ────────────────────────────────────────────────────────────────────
+\subsection{Inputs}
+\label{sec:bg_inputs}
+
+The pipeline takes as input heterogeneous, multi-source data captured from real indoor environments. This data is inherently incomplete, as no single scan captures a scene in its entirety. Two primary modalities are considered.
+
+\paragraph{Point clouds.}
+Coloured, unstructured point clouds form the geometric backbone of the input data. These may originate from high-end terrestrial laser scanners, which provide millimetre-level accuracy over large ranges, or from lower-end mobile and \gls{XR}-based devices, which sacrifice accuracy for speed and accessibility~\cite{vermandere_two-step_2022}. In both cases, the point cloud covers only the surfaces visible from the scanner positions, leaving occluded regions unobserved. The combination of multiple scans from different positions increases coverage but introduces alignment challenges due to noise and drift~\cite{vermandere_automatic_2022}.
+
+\paragraph{Image data.}
+Panoramic images or localised pinhole camera images provide complementary appearance information. Panoramic images, captured at the same positions as the scan data, enable dense colour assignment to the point cloud through angular projection. Localised images from mobile devices provide additional texture cues and can support 2D-based alignment and inpainting operations. The co-localisation of images within the same coordinate system as the point cloud is a prerequisite for cross-modal processing~\cite{bassier_geomapi_2024}.
+
+% ── 2.3.2 ────────────────────────────────────────────────────────────────────
+\subsection{Output Requirements}
+\label{sec:bg_outputs}
+
+The output of the pipeline is a \gls{DRM}: a structured, complete and interactive representation of the indoor environment. This representation must satisfy the following requirements.
+
+\paragraph{Geometric completeness.}
+Both the structural elements of the scene and the individual objects within it must be geometrically complete. Occluded or unobserved regions must be reconstructed so that the resulting representation does not contain holes or missing surfaces. This applies at two levels: the background scene, consisting of walls, floors and ceilings, and the individual foreground objects, such as furniture or equipment.
+
+\paragraph{Visual completeness.}
+The completed geometry must be accompanied by plausible texture. Missing texture regions that arise from occlusions or incomplete image coverage must be inpainted in a manner that is consistent with the surrounding appearance. The resulting textured representation must be visually coherent across the entire scene.
+
+\paragraph{Object-level decomposition.}
+Individual objects must be represented as separate entities within the scene, rather than as part of a monolithic surface. This decomposition is essential for enabling object-level manipulation. Each object must be isolatable from the scene without introducing inconsistencies in the surrounding environment.
+
+\paragraph{Part awareness and scalability.}
+To support realistic manipulation, completed objects must carry a notion of their internal part structure. This enables part-aware scaling operations, in which individual structural components of an object, such as the legs or seat of a chair or the shelves of a bookcase, can be scaled independently or repeated, rather than applying a uniform deformation to the entire object. Uniform scaling of complex objects frequently produces geometrically implausible results by distorting repeating structural elements; part-aware scaling preserves the proportionality of individual components while adapting the overall dimensions~\cite{vermandere_adaptive_2025}.
+
+\paragraph{Manipulability.}
+Objects within the \gls{DRM} must support a set of basic manipulation operations: repositioning within the scene, removal from the scene, and scaling. These operations must be applicable without re-running the full pipeline and without introducing visual artefacts in the surrounding scene.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Pipeline Overview}
+\label{sec:bg_pipeline_overview}
+
+The requirements defined above are addressed by a modular pipeline, each stage of which is developed in detail in subsequent chapters. This section provides a brief conceptual description of each stage and its role within the overall workflow, situating the terminology used throughout the thesis.
+
+\paragraph{Scene alignment and updating.}
+Before any completion or decomposition can take place, multi-source and multi-temporal data must be brought into a common coordinate system. This stage handles the registration of point clouds and images from heterogeneous devices and integrates incremental updates from lower-end sensors into existing high-quality datasets. The output is a consistently georeferenced, multi-modal dataset representing the current state of the environment. This stage is addressed in Chapter~\ref{ch:4_Alignment_Updating}.
+
+\paragraph{Object detection and occlusion analysis.}
+The aligned point cloud is decomposed into individual objects using 3D detection methods. Each detected object is associated with an oriented bounding box that is refined using symmetry estimation and scene geometry constraints such as walls and floors. In parallel, a voxel-based occlusion analysis estimates the regions of both individual objects and the full scene that were not observed during scanning. This analysis distinguishes between regions that are physically empty and regions that are hidden behind other geometry, providing the basis for targeted completion. This stage is addressed in Chapter~\ref{ch:5_Scene_Segmentation}.
+
+\paragraph{Scene completion.}
+The structural elements of the environment, separated from the detected objects, are completed geometrically and texturally. Planar structures such as walls, floors and ceilings are reconstructed using plane detection and intersection-based geometry generation, guided by the occlusion grid to restrict reconstruction to genuinely missing regions. Texture is inpainted on the reconstructed geometry using the panoramic image data as reference. The output is a complete, textured mesh of the background scene. This stage is addressed in Chapter~\ref{ch:6_Scene_Completion}.
+
+\paragraph{Object completion.}
+Individual objects are completed independently, using both the partial point cloud and the co-registered image data as input. Object completion addresses missing geometry caused by occlusions between objects and between objects and the scene. The completed objects are represented as textured meshes and carry part-index information derived from material segmentation, enabling the subsequent dynamification step. This stage is addressed in Chapter~\ref{ch:7_Object_Completion}.
+
+\paragraph{Scene dynamification.}
+The completed objects are transformed into manipulable entities by applying part-aware scaling and decomposition. Each object's internal structure is analysed and divided into approximately convex components that serve as the basis for scaling zones. The completed scene and its objects are then assembled into a \gls{DRM} in which each object can be independently repositioned, scaled or removed. This stage is addressed in Chapter~\ref{ch:8_Scene_Dynamification}.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Existing Approaches to Scene Dynamification}
+\label{sec:bg_sota_dynamification}
+
+Although the individual components of the proposed pipeline, such as object detection, completion and inpainting, have been studied extensively in isolation, the specific problem of transforming a partial scan into a fully dynamic and editable scene representation has received comparatively little attention.
+
+The closest relevant body of work includes methods for indoor scene understanding that decompose a scan into structural and object components. Li~et~al.~\cite{li_hybrid_2024} segment indoor point clouds into planar structural elements and detected objects, reconstruct the structural geometry via plane fitting, and replace detected objects with matched CAD models retrieved from a database. This approach produces a lightweight and semantically structured scene, but is limited to objects that have a close match in a predefined database and does not address the visual completeness of the reconstruction.
+
+Methods based on neural implicit representations, such as NeRFiller~\cite{weber_nerfiller_2023} and related work, use generative 2D inpainting to complete missing regions within neural radiance field representations. While these approaches can produce visually plausible completions, the resulting representations are not decomposed at the object level and do not support object-level manipulation or explicit geometric editing.
+
+Gen3DSR~\cite{ardelean_gen3dsr_2025} reconstructs a dynamic 3D scene from a single RGB image by separating objects from the scene using 2D segmentation masks and completing each independently using depth estimation and generative models. This is conceptually the closest existing approach to the pipeline proposed here, but it relies on a single image as input, limiting geometric accuracy, and does not address the alignment, updating or part-aware scaling stages that are central to this work.
+
+More broadly, the field of semantic scene completion~\cite{roldao_3d_2022} aims to predict complete geometry and semantics from partial observations, but typically treats the scene as a monolithic volume and does not produce object-level decompositions suitable for interactive manipulation.
+
+In summary, while components of the proposed pipeline exist in the literature, no existing work integrates alignment, object-level completion, scene completion and part-aware dynamification into a unified framework operating on multi-source, multi-temporal scan data. This gap motivates the contributions of the subsequent chapters.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Scope and Assumptions}
+\label{sec:bg_conclusion}
+
+Having established the terminological and conceptual foundation, we conclude this chapter by summarising the scope and assumptions that govern the remainder of this thesis.
+
+\textbf{Scene type.} The pipeline is designed for single-room indoor environments containing furniture or industrial objects. This constraint reflects the focus on densely furnished scenes where occlusions are significant but the scene structure remains largely planar. Outdoor environments, multi-room layouts and highly organic or curved architectural elements are outside the scope of this work.
+
+\textbf{Input modalities.} The pipeline operates on coloured point clouds and panoramic or localised images. At least one high-quality baseline scan and one set of co-registered images are assumed to be available. The pipeline is designed to accommodate additional incremental observations from lower-end devices.
+
+\textbf{Object types.} The pipeline targets geometrically distinct, rigid objects that are at least partially observed in the scan data. Deformable objects, transparent or highly reflective surfaces, and objects with no observable geometry are not addressed.
+
+\textbf{Output representation.} The \gls{DRM} is represented as a textured mesh for the background scene and as coloured SDFs or textured meshes for individual objects, with associated part indices. This representation is compatible with standard rendering and game engine pipelines.
+
+\textbf{Evaluation.} Quantitative evaluation is performed primarily on the synthetic V-Scan dataset introduced in Chapter~\ref{ch:3_Data_Acquisition}, which provides ground-truth geometry for both the scene and individual objects. Real-world datasets are used for qualitative evaluation and to assess generalisation.
+
+These assumptions and constraints are revisited in Chapter~\ref{ch:conclusion}, where the limitations of the proposed pipeline are discussed alongside directions for future work.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Keep the following \cleardoublepage at the end of this file, 
-% otherwise \includeonly includes empty pages.
 \cleardoublepage
-
-% vim: tw=70 nocindent expandtab foldmethod=marker foldmarker={{{}{,}{}}}
