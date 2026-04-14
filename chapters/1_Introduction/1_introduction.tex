@@ -8,7 +8,6 @@
 \newglossaryentry{BIM}{name={BIM}, description={Building Information Model}}
 \newglossaryentry{DRM}{name={DRM}, description={Dynamic Reality Model}}
 \newglossaryentry{XR}{name={XR}, description={Extended Reality}}
-\newglossaryentry{SDF}{name={SDF}, description={Signed Distance Function}}
 
 %  introduce industry context and motivation for digital transformation
 The Architecture, Engineering, Construction and Operations (\gls{AECO}) industry is undergoing a rapid digital transformation, driven by advances in reality capture technologies such as laser scanning and photogrammetry~\cite{bassier_geomapi_2024}. These technologies enable the efficient acquisition of high-resolution 3D models of the physical environment, forming a foundation for data-driven workflows and digital twins~\cite{coupry_bim-based_2021}.
@@ -40,7 +39,7 @@ DRMs enable a range of applications that require both accuracy and flexibility. 
 Despite this potential, two fundamental barriers prevent \gls{DRM}s from being efficiently and reliably produced from existing building data.
 
 %  explain first barrier — incompleteness and lack of structure
-The first fundamental barrier is the intrinsic incompleteness and unstructured nature of captured data. Scan-based devices record only surfaces visible from their measurement positions, leaving significant portions of every scene unobserved due to occlusions~\cite{vermandere_guided_2025}. Even dense point clouds therefore contain gaps at multiple scales. In addition, captured data lacks explicit structural organisation, representing scenes as undifferentiated collections of points or surfaces without object-level decomposition~\cite{de_geyter_point_2022}. This makes the extraction of manipulable entities a non-trivial task.
+The first fundamental barrier is the intrinsic incompleteness and unstructured nature of captured data. Scan-based devices record only surfaces visible from their measurement positions, leaving significant portions of every scene unobserved due to occlusions~\cite{vermandere_guided_2025}. Even dense point clouds therefore contain gaps at multiple scales. In addition, captured data lacks explicit structural organisation, representing scenes as undifferentiated collections of points or surfaces without object-level decomposition~\cite{geyter_point_2022}. This makes the extraction of manipulable entities a non-trivial task.
 
 %  explain second barrier — temporal staleness and updating difficulty
 The second fundamental barrier is temporal staleness. Buildings are dynamic environments: furniture is rearranged, equipment is replaced, and layouts evolve over time~\cite{vermandere_two-step_2022}. Any captured dataset therefore begins to diverge from reality immediately after acquisition. While high-end scanning provides accurate data, frequent full re-capture is impractical~\cite{bassier_standalone_2016}. More accessible mobile and \gls{XR}-based devices introduce additional heterogeneity in accuracy and coverage~\cite{vermandere_automatic_2022}. Maintaining an up-to-date representation therefore requires incremental integration of heterogeneous, multi-temporal observations.
@@ -70,10 +69,10 @@ A second major challenge is the incompleteness of reality capture data, as intro
 A deeper difficulty is that scene-level and object-level completion are typically treated as separate problems. Scene-level methods reconstruct geometry globally but cannot resolve occlusions between contacting objects. Object-level methods require pre-segmented objects and discard contextual information necessary for plausible reconstruction. Resolving this mutual dependency requires a framework in which scene and object completion are jointly addressed through shared constraints.
 
 %  define dynamification challenge
-Even when complete reconstructions are available, transforming them into dynamic and interactive environments remains non-trivial. This requires structuring geometry into representations that support object-level manipulation and interaction~\cite{ardelean_gen3dsr_2025, vermandere_adaptive_2025}.
+Even when complete reconstructions are available, transforming them into dynamic and interactive environments remains non-trivial. This requires structuring geometry into representations that support object-level manipulation and interaction~\cite{ardelean_gen3dsr_2025,vermandere_adaptive_2026}.
 
 %  define evaluation challenge
-A final challenge lies in evaluation. Ground truth for occluded regions is rarely available in real-world datasets~\cite{dai_scannet_2017, chang_matterport3d_2017}. Synthetic datasets offer an alternative, but must accurately reproduce real-world scanning characteristics to ensure valid evaluation~\cite{de_geyter_automated_2022, vermandere_synthetic_2025}.
+A final challenge lies in evaluation. Ground truth for occluded regions is rarely available in real-world datasets~\cite{dai_scannet_2017, chang_matterport3d_2017}. Synthetic datasets offer an alternative, but must accurately reproduce real-world scanning characteristics to ensure valid evaluation~\cite{de_geyter_automated_2022,vermandere_synthetic_2026}.
 
 %  explicitly state central research gap
 The absence of a unified framework that jointly addresses alignment, completion, and dynamification across heterogeneous and multi-temporal data constitutes the central research gap addressed in this thesis.
