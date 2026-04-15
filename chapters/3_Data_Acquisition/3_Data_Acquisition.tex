@@ -174,6 +174,7 @@ The captured data from these campaigns has been previously reported and analysed
   \includegraphics[width=1\textwidth]{Campus}
   \caption[Captured scenes]{Example scenes captured at the KU~Leuven campus.}
   \label{fig:3_captured_scenes}
+\end{figure}
 
 \subsection{Summary}
 
@@ -259,7 +260,7 @@ For each scene entry, the dataset provides the partial scene scan, the associate
 Table~\ref{tab:dataset_comparison} provides a comparative overview of all datasets used in this thesis. The comparison highlights the complementary nature of the data sources: real datasets provide realistic scanning characteristics but lack ground-truth completion data, while the synthetic V-Scan dataset provides comprehensive ground truth at the cost of reduced visual realism. By combining these sources, each pipeline stage can be evaluated using the most appropriate data.
 
 \begin{table}[h]
-    \centering 
+    \centering
     \caption[Dataset comparison]{Comparative overview of datasets used in this thesis. GT = ground truth available, MT = multi-temporal captures, MS = multiple scanner types.}
     \label{tab:dataset_comparison}
     \resizebox{\textwidth}{!}{%
@@ -270,7 +271,7 @@ Table~\ref{tab:dataset_comparison} provides a comparative overview of all datase
         ScanNet~\cite{dai_scannet_2017} & Real & \texttimes & \texttimes & \texttimes & 1,513 & Residential & Qual.\ eval. \\
         ScanNet++~\cite{yeshwanth_scannet_2023} & Real & \texttimes & \texttimes & \checkmark & 1,000+ & Mixed & Qual.\ eval. \\
         Matterport3D~\cite{chang_matterport3d_2017} & Real & \texttimes & \texttimes & \texttimes & 90 & Residential & Qual.\ eval. \\
-        ARKitScenes~\cite{baruch_arkitscenes_2021} & Real & \texttimes & \texttimes & \texttimes & 5,047 & Mixed & Detection \\
+        ARKitScenes~\cite{baruch_arkitscenes_2022} & Real & \texttimes & \texttimes & \texttimes & 5,047 & Mixed & Detection \\
         ShapeNet~\cite{chang_shapenet_2015} & Synthetic & \checkmark & -- & -- & -- & Objects only & Training \\
         Redwood~\cite{choi_large_2016} & Real & \checkmark & \texttimes & \texttimes & -- & Objects only & Training \\
         Campus captures & Real & \texttimes & \checkmark & \checkmark & 10+ & Industrial & Alignment \\

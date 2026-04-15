@@ -1,15 +1,321 @@
 % !TeX root = ../../thesis.tex
 
+\chapter{Alignment and Updating of the Data}
+\label{ch:4_Alignment_Updating}
+
+% ── New glossary entries ─────────────────────────────────────────────────────
+\newglossaryentry{GNSS}{name={GNSS}, description={Global Navigation Satellite System}}
+\newglossaryentry{IMU}{name={IMU}, description={Inertial Measurement Unit}}
+\newglossaryentry{BLE}{name={BLE}, description={Bluetooth Low Energy}}
+\newglossaryentry{SfM}{name={SfM}, description={Structure-from-Motion}}
+\newglossaryentry{ORB}{name={ORB}, description={Oriented FAST and Rotated BRIEF}}
+\newglossaryentry{FPFH}{name={FPFH}, description={Fast Point Feature Histograms}}
+\newglossaryentry{RMSE}{name={RMSE}, description={Root Mean Square Error}}
+\newglossaryentry{RDF}{name={RDF}, description={Resource Description Framework}}
+\newglossaryentry{SUPER4PCS}{name={SUPER4PCS}, description={Super 4-Points Congruent Sets}}
+\newglossaryentry{ICP}{name={ICP}, description={Iterative Closest Point}}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Introduction}
+\label{sec:4_intro}
+
+% Paragraph purpose: motivate the need for alignment and updating in the context of the full pipeline
+This chapter addresses the first stage of the \gls{DRM} pipeline: the alignment of newly captured data with pre-existing reference datasets, and the incremental updating of those datasets with new observations.
+
+% Paragraph purpose: explain why incremental updating is necessary
+Indoor environments are not static. Furniture is rearranged, equipment is replaced, and layouts evolve through daily use. Complete re-documentation of a facility each time a change occurs is prohibitively expensive and time-consuming. High-end terrestrial laser scanning campaigns, while producing the most accurate data, require significant setup time, post-processing effort, and specialised equipment~\cite{bassier_standalone_2016, geyter_point_2022}. As a result, detailed scan data quickly becomes outdated as a representation of the current state of the environment. A more practical approach is to capture only the changed portions of the environment using faster, more accessible sensing devices, and to integrate these observations into the existing high-quality dataset~\cite{bassier_geomapi_2024}. This incremental strategy extends the lifespan of expensive baseline scans while keeping the digital representation up to date.
+
+% Paragraph purpose: introduce the indoor localisation challenge
+However, integrating newly captured data requires solving a fundamental localisation problem. In outdoor environments, \gls{GNSS} provides a straightforward means of geo-referencing captured data. In indoor environments, satellite signals are unavailable or severely degraded, making direct geo-referencing impractical~\cite{vermandere_two-step_2022}. Instead, the position and orientation of the capturing device must be determined relative to pre-existing reference data. This is particularly challenging when the capturing device is a low-cost sensor such as a head-mounted \gls{XR} device or a smartphone, which produces data of significantly lower resolution and accuracy compared to the reference datasets~\cite{geyter_point_2022}.
+
+% Paragraph purpose: introduce the temporal change challenge
+A second difficulty arises from the temporal changes between data captures. Reference data may have been captured weeks, months, or even years before the new observations. During this interval, objects may have been moved, added, or removed, and even the appearance of permanent structures may have changed due to lighting conditions, weathering, or surface treatment. Registration methods that assume a static scene may therefore fail when applied across temporal gaps, as the features they rely on may no longer be present in the new observation~\cite{vermandere_two-step_2022}.
+
+% Paragraph purpose: outline the chapter structure and contributions
+This chapter presents a two-step alignment framework that addresses both challenges, together with a dataset updating mechanism that integrates new observations into existing point clouds. The alignment framework combines a coarse global positioning step with a fine registration step that leverages both 2D image features and 3D geometric features to compute a robust pose estimate. The updating mechanism determines which points in the existing dataset are still current and which should be replaced by new observations. The methods presented in this chapter are based on two publications: the two-step alignment of mixed reality devices to existing building data~\cite{vermandere_two-step_2022} and the automatic alignment and completion of point cloud environments using XR data~\cite{vermandere_automatic_2022}, with the dataset management infrastructure provided by the GEOMAPI framework~\cite{bassier_geomapi_2024}.
+
+% Paragraph purpose: provide the chapter roadmap
+The remainder of this chapter is organised as follows. Section~\ref{sec:4_related} reviews the related work on indoor localisation and data alignment. Section~\ref{sec:4_methodology} presents the methodology, covering the global alignment, local pose estimation, and dataset updating procedures. Section~\ref{sec:4_experiments} describes the experimental setup and results. Section~\ref{sec:4_conclusion} concludes the chapter.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Related Work}
+\label{sec:4_related}
+
+The alignment of newly captured data with pre-existing reference datasets can be framed as a pose estimation problem: given a set of local observations and a set of geo-referenced reference data, determine the rigid body transformation that maps the local coordinate system onto the global one. This section reviews the main categories of approaches for solving this problem.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Low-Cost Sensor Data Alignment}
+\label{sec:4_related_lowcost}
+
+% Paragraph purpose: introduce the challenge of aligning low-cost sensor data
+The alignment of data captured by low-cost sensors such as \gls{XR} devices and smartphones presents unique challenges compared to the registration of high-end scanner data. These devices produce measurements of significantly lower accuracy, density, and spatial extent, which limits the effectiveness of conventional registration algorithms~\cite{geyter_point_2022}.
+
+% Paragraph purpose: discuss local tracking and SLAM
+Within a single measurement session, low-cost devices maintain their local pose through \gls{SLAM} algorithms that combine visual and inertial measurements. For instance, the Microsoft HoloLens~2 employs ORB-SLAM~\cite{cyrus_hololens_2019} using four grey-scale tracking cameras and an \gls{IMU} to continuously estimate the device's position and orientation within a local coordinate system. These local tracking methods are sufficiently accurate for small-scale scenes, achieving accuracies conforming to LOA20 ($2\sigma \leq 0.05$\,m) given adequate control and loop closures~\cite{geyter_point_2022}. However, the resulting data remains in an arbitrary local coordinate frame that bears no relation to any global or facility-wide reference system.
+
+% Paragraph purpose: discuss the gap between local tracking and global registration
+Bridging this gap between accurate local tracking and global positioning is the central challenge addressed in this chapter. The local SLAM provides reliable relative positioning within a session, but the entire session must still be placed within the coordinate system of the pre-existing reference data. This is fundamentally a one-time transformation estimation per session, rather than a continuous tracking problem.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{3D-Based Alignment}
+\label{sec:4_related_3d}
+
+% Paragraph purpose: review geometric registration approaches
+Three-dimensional registration methods estimate the transformation between two geometric datasets by matching corresponding features in 3D space. The most established approach is the Iterative Closest Point (\gls{ICP}) algorithm and its variants, which iteratively minimise the distance between corresponding point pairs. While effective for fine alignment, ICP requires a reasonable initial estimate and is sensitive to partial overlap and noise~\cite{bassier_geomapi_2024}.
+
+% Paragraph purpose: discuss feature-based global registration
+For coarse alignment without a prior estimate, feature-based methods extract distinctive geometric descriptors from each dataset and establish correspondences between them. \gls{FPFH} descriptors~\cite{rusu_fast_2009} encode the local surface geometry around each point through histograms of angular relationships between surface normals. These descriptors can be matched across datasets to establish candidate correspondences, from which a rigid body transformation is estimated. The Fast Global Registration method proposed by Zhou et al.~\cite{zhou_fast_2016} avoids computationally demanding RANSAC-based outlier rejection by instead using a robust correspondence estimation function that simultaneously minimises distances between correspondences and down-weights outliers.
+
+% Paragraph purpose: discuss BIM-based alignment
+When a \gls{BIM} model is available, it can serve as an additional reference for geometric alignment. However, BIM geometries are typically abstract and sparse compared to captured point clouds, making conventional point-based features unreliable. The \gls{SUPER4PCS} algorithm~\cite{mellado_super_2014} addresses this by matching approximately congruent four-point sets between datasets, relying on geometric ratios rather than local surface detail. This makes it particularly well suited for aligning captured data with the planar and simplified geometry of BIM models.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{2D-Based Alignment}
+\label{sec:4_related_2d}
+
+% Paragraph purpose: review image-based registration approaches
+Image-based alignment methods estimate the pose of a sensor by matching visual features between newly captured images and a set of geo-referenced reference images. This approach is particularly relevant for \gls{XR} devices and smartphones, which are equipped with cameras that produce imagery alongside their geometric measurements.
+
+% Paragraph purpose: discuss feature matching for pose estimation
+Structure-from-Motion (\gls{SfM}) techniques estimate camera poses by detecting and matching distinctive image features across multiple views~\cite{schonberger_structure--motion_2016}. \gls{ORB} features~\cite{cyrus_hololens_2019} provide a computationally efficient basis for this matching. When two or more reference images can be matched to a session image, the 3D coordinates of the matched feature points can be triangulated from the known reference poses, and the session camera pose can be estimated through a perspective-n-point solver~\cite{jinyu_survey_2019}.
+
+% Paragraph purpose: discuss limitations and challenges
+A significant challenge for image-based alignment in construction and facility environments is the potential for drastic changes in appearance between the reference and test data. Lighting conditions, surface treatments, and the presence or absence of temporary objects can all alter the visual features of a scene. Derivative features such as vanishing lines or geometric edge features have been proposed as more robust alternatives, as they are less likely to be associated with temporary scene elements~\cite{zollmann_augmented_2014}. Additionally, the repetitive nature of many indoor environments can cause ambiguous matches, where features from different rooms or corridors appear visually identical.
+
+% Paragraph purpose: discuss combined approaches
+Several works have explored the combination of 2D and 3D alignment methods. Liu et al.~\cite{liu_instant_2018} initialise outdoor SLAM by estimating relative poses from localised panoramic images. Ventura et al.~\cite{ventura_global_2014} propose multi-view object detection combined with feature matching for global localisation. Brachmann and Rother~\cite{brachmann_expert_2019} extract CNN features and apply Expert Sample Consensus to handle scene outliers. However, most of these methods focus on either 2D or 3D data independently and do not combine both modalities in a unified pose estimation framework. The method presented in this chapter addresses this gap by jointly leveraging 2D image features, 3D point cloud features, and BIM geometry to produce a robust and accurate alignment.
+
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{figure}[h!]
+  \centering
+  \medskip
+  \includegraphics[width=1\textwidth]{Alignment_Method}
+  \caption[Alignment pipeline overview]{Overview of the proposed two-step alignment and updating pipeline.}
+  \label{fig:4_method_overview}
+\end{figure}
 
 
-%\chapterimage{Mesh Alignment}{Alignment And Updating} \label{ch:4_Alignment_Updating}
-\chapter{Alignment And Updating} \label{ch:4_Alignment_Updating}
+\section{Methodology}
+\label{sec:4_methodology}
+
+The proposed alignment and updating pipeline consists of three sequential stages (Figure~\ref{fig:4_method_overview}). First, a global alignment narrows the search area for the pose estimation. Second, a local alignment computes the precise pose of the captured session using multiple complementary methods. Third, a dataset updating procedure integrates the newly captured data into the existing reference point cloud. Each stage is described in detail below.
 
 
+% ── 4.3.1 ────────────────────────────────────────────────────────────────────
+\subsection{Data Preprocessing and Session Management}
+\label{sec:4_preprocessing}
+
+% Paragraph purpose: explain the session concept and data organisation
+When handling datasets from different sensors, time periods, and locations, a standardised data management framework is essential. In this work, each data capture is organised as a \textit{session}. A session contains all data captured during a single measurement campaign with a single device, including point clouds, meshes, images, and their associated metadata. Sessions can originate from any of the sensing technologies described in Chapter~\ref{ch:3_Data_Acquisition}: high-end TLS, mobile mapping systems, \gls{XR} devices, or smartphones.
+
+% Paragraph purpose: explain the RDF-based metadata management
+To enable interoperability between sessions captured by different sensors and at different times, the metadata of each session is serialised as an \gls{RDF} graph using the GEOMAPI framework~\cite{bassier_geomapi_2024}. The graph stores the geospatial metadata of each resource---position, orientation, bounding box, coordinate system, accuracy, and timestamp---without duplicating the actual point cloud or image data. This lightweight representation allows rapid spatial queries across large collections of sessions without loading the underlying datasets.
+
+% Paragraph purpose: explain reference data preprocessing
+The reference data used for the alignment can consist of any combination of previously captured sessions: \gls{TLS} point clouds, \gls{iMMS} data, geolocated imagery, and \gls{BIM} models. Each reference resource is preprocessed as follows. Point clouds are converted to PCD format and a downsampled voxel octree together with \gls{FPFH} geometric features is extracted and stored in the RDF graph. Images have their \gls{ORB} features extracted during the \gls{SfM} processing and these features are stored per image in the graph. BIM geometries are sampled to point clouds and \gls{SUPER4PCS} features are extracted. In all cases, only the metadata and features are stored in the graph; the raw data remains at its original location.
+
+% Paragraph purpose: explain XR session preprocessing
+For each new XR measurement session, the captured images and meshes are sent to a processing server. The server extracts the relevant metadata and features and organises them in the session's RDF graph, analogous to the reference data preprocessing. The relative poses within the session are directly adopted from the device's local SLAM output, which is assumed to be sufficiently accurate for single-room environments~\cite{geyter_point_2022}.
+
+% ── 4.3.2 ────────────────────────────────────────────────────────────────────
+\subsection{Global Alignment}
+\label{sec:4_global}
+
+% Paragraph purpose: explain the purpose and mechanism of the global alignment
+The first step of the alignment process is a coarse global positioning that restricts the search space for the subsequent fine alignment. Due to the potentially large volume of reference data accumulated over time, it is computationally infeasible to match every new session against all available reference resources.
+
+% Paragraph purpose: explain the positioning mechanism
+The global position is obtained from the HTML Geolocation API, which estimates the device's location based on available Wi-Fi, radio, and \gls{GNSS} signals~\cite{vermandere_two-step_2022}. In indoor environments, the resulting position estimate $[\mathbf{p}_s \pm \sigma_g]$ has an accuracy of approximately 20\,m, which is sufficient to narrow down the available reference data to the correct building or floor, but not to achieve the metric-level accuracy required for data integration.
+
+% Paragraph purpose: explain the reference data sub-selection
+Given the coarse position estimate, relevant subsets of the reference point clouds and images are extracted. For images, the Euclidean distance between the focal point of each session image and each reference image is evaluated, retaining only reference images within a threshold distance $t_d$ augmented by the positioning uncertainty $\sigma_g$. For point clouds, any reference cloud whose bounding box intersects with the session's bounding box expanded by $\sigma_g$ is retained:
+\begin{equation}
+\label{eq:4_global_selection}
+\begin{split}
+& \boldsymbol{P'_r}=\left\{ P_r \in \boldsymbol{P_r} \Big| P_{r} \cap \left[P_{s,\min}-\sigma_g;\; P_{s,\max}+\sigma_g\right]\right\}  \\
+& I'_r=\left\{i_r \in I_r \Big| i_{s} \in I_{s}: \|i_r(c)-i_{s}(c)\|\leq t_d+\sigma_g\right\}
+\end{split}
+\end{equation}
+where $\boldsymbol{P_r}$ and $I_r$ denote the full reference point cloud and image collections, and $\boldsymbol{P'_r}$ and $I'_r$ denote the selected subsets. This selection is performed entirely on the RDF metadata graphs, making it extremely fast and avoiding the need to load any raw data at this stage.
+
+% ── 4.3.3 ────────────────────────────────────────────────────────────────────
+\subsection{Local Alignment}
+\label{sec:4_local}
+
+% Paragraph purpose: introduce the multi-method local alignment
+Once the relevant reference data has been identified, the precise pose of the session is computed using multiple complementary alignment methods. Each method produces a candidate transformation together with quality metrics. These candidates are subsequently combined in a weighted pose vote to determine the final session pose. The methods are divided into 3D geometric alignment and 2D image-based alignment.
+
+% ── 4.3.3.1 ──────────────────────────────────────────────────────────────────
+\subsubsection{3D Alignment}
+\label{sec:4_3d_alignment}
+
+% Paragraph purpose: explain FPFH-based point cloud alignment
+The first 3D alignment method matches the session's point cloud or mesh against reference point clouds using \gls{FPFH} feature correspondences. Given the 3D features of the reference and session datasets, a rigid body transformation is computed using the Fast Global Registration algorithm~\cite{zhou_fast_2016}. This method minimises the distances between feature correspondences while simultaneously rejecting outliers through a correspondence estimation function $\rho$:
+\begin{equation}
+\label{eq:4_fpfh}
+\argmin_{\boldsymbol{T}_{P_s}} \sum_{X_r',X_s'} \rho \left(\| X_r'- \boldsymbol{T}_{P_s} X_s'\|\right)
+\end{equation}
+where $X_r'$ and $X_s'$ are the matched 3D feature points in the reference and session datasets, and $\boldsymbol{T}_{P_s}$ is the target rigid body transformation. Only the precomputed feature graphs need to be transferred to the server, avoiding the computational cost of processing the full point clouds in real time.
+
+% Paragraph purpose: explain BIM-based alignment
+The second 3D alignment method targets the \gls{BIM} model using the \gls{SUPER4PCS} algorithm~\cite{mellado_super_2014}. This approach identifies approximately congruent four-point sets between the session data and the BIM geometry. A key advantage of \gls{SUPER4PCS} over \gls{FPFH}-based methods is its reliance on geometric ratios rather than local surface detail, making it robust to the abstract and sparse nature of BIM representations. The computational complexity is reduced from $O(n^2+k)$ to $O(n+k)$ compared to the original 4PCS algorithm, where $k$ is the number of reported congruent sets.
+
+% ── 4.3.3.2 ──────────────────────────────────────────────────────────────────
+\subsubsection{2D Alignment}
+\label{sec:4_2d_alignment}
+
+% Paragraph purpose: introduce the three image-based alignment variants
+Three image-based alignment methods are employed, each addressing a different configuration of available reference imagery. All methods are based on \gls{ORB} feature matching between session and reference images.
+
+% Paragraph purpose: explain the two overlapping references method
+\paragraph{Two overlapping references.}
+When a session image $i_s$ can be matched with at least two overlapping reference images $i_{r_1}$ and $i_{r_2}$, the 3D coordinates of the matched features are already determined in the global coordinate system through the known reference poses. The session camera pose $\boldsymbol{T}_{i_s}$ is then retrieved by solving the perspective-n-point problem using at least six 3D--2D correspondences. This method is analogous to conventional \gls{SfM} processing and produces the most reliable image-based alignment when dense, overlapping reference imagery is available.
+
+% Paragraph purpose: explain the two separate references method
+\paragraph{Two separate references.}
+When two non-overlapping reference images can each be matched to the session image, the global pose is estimated by triangulating the session camera position from the two independent relative transformations. The accuracy of this method depends strongly on the angular separation between the two reference viewpoints: near-perpendicular configurations produce more accurate results than near-parallel ones, as small directional errors are amplified when the matching angle is small.
+
+% Paragraph purpose: explain the single reference with geometry method
+\paragraph{One reference image with geometry.}
+When only a single reference image match is available but 3D geometry is present in either the session or the reference data, the scale of the transformation is recovered through raycasting. A set of rays is constructed from the camera focal point through the matched 2D feature points, and the intersections with the available 3D geometry yield the 3D coordinates of the correspondences:
+\begin{equation}
+\label{eq:4_raycast}
+\boldsymbol{X}=\left\{ p \in P \Big| l(c,x) \in L: p= l(c,x) \cap P\right\}
+\end{equation}
+where $L$ is the set of rays constructed from the focal point through the matched pixels, and $P$ is the available geometry. This method is particularly useful when only sparse imagery is available but the session contains depth information from a ToF sensor.
+
+% ── 4.3.3.3 ──────────────────────────────────────────────────────────────────
+\subsubsection{Final Pose Estimation}
+\label{sec:4_pose_vote}
+
+% Paragraph purpose: explain the weighted voting mechanism
+Each alignment method produces a candidate transformation together with quality parameters. To combine these into a single robust pose estimate, a weighted pose vote is computed over all candidate transformations (Equation~\ref{eq:4_pose_vote}):
+\begin{equation}
+\label{eq:4_pose_vote}
+\boldsymbol{T}_{s}=\frac{1}{n} \sum_{\boldsymbol{T}} \omega \left(\boldsymbol{T}_{P}, \boldsymbol{T}_{I}\right)
+\end{equation}
+where $\boldsymbol{T}_{P}$ and $\boldsymbol{T}_{I}$ denote the point cloud-based and image-based transformations, and $\omega$ is a weight function.
+
+% Paragraph purpose: explain the weight computation
+For image-based transformations, the weight is derived from the reprojection error, the number of feature matches, the inlier percentage, and the spatial extent of the inlier correspondences. For point cloud-based transformations, the weight is based on the \gls{RMSE} of the matched correspondences, the number of matches, and the spatial extent of the match region. Additionally, a method-specific weight reflects the empirical reliability of each approach: \gls{SUPER4PCS} alignment receives the highest base weight (1.0), followed by \gls{FPFH}-based registration and \gls{SfM} with overlapping references (both 0.8), two separate reference images (0.5), and single-reference raycasting (0.4).
+
+% Paragraph purpose: explain the output
+The result of the pose voting is both a position and orientation estimate for the session and a confidence measure that reflects the degree of agreement among the contributing methods. This confidence measure is valuable for downstream quality control, as it indicates how reliably the session has been positioned within the reference coordinate system.
+
+% ── 4.3.4 ────────────────────────────────────────────────────────────────────
+\subsection{New Data Combination}
+\label{sec:4_combination}
+
+% Paragraph purpose: motivate the need for point cloud updating
+Once the newly captured session is aligned to the reference coordinate system, the new observations can be used to update the existing reference point cloud. The goal is to extend the lifespan of the high-quality reference data by replacing only the portions that have changed, while preserving the more accurate existing data wherever possible. This requires determining, at the point level, which observations in the reference dataset are still current and which have become outdated~\cite{vermandere_automatic_2022, bassier_geomapi_2024}.
+
+% Paragraph purpose: introduce the two-phase updating process
+The updating process consists of two sequential phases: the removal of out-of-date points from the reference dataset, and the addition of new points from the session dataset.
+
+% ── 4.3.4.1 ──────────────────────────────────────────────────────────────────
+\subsubsection{Out-of-Date Point Removal}
+\label{sec:4_removal}
+
+% Paragraph purpose: explain the sub-selection step
+To prevent false positives in regions not covered by the new session, only the portion of the reference point cloud that falls within the spatial extent of the new data is considered for updating. The convex hull of the session's point cloud is used to define this region, providing a tighter bound than an axis-aligned bounding box and reducing the number of incorrectly flagged points.
+
+% Paragraph purpose: explain the coverage check
+Within this sub-selection, each reference point is subjected to two sequential checks: a coverage check and a visibility check. The coverage check determines whether a reference point $p_i$ has a corresponding observation in the new dataset by evaluating the nearest-neighbour distance to the session point cloud $Q$:
+\begin{equation}
+\label{eq:4_coverage}
+P' = \left \{ p_i \Big| \forall p_i \in P, q_j \in Q : \argmin_{q_j}\|p_i-q_j\| \geq t_d\right\}
+\end{equation}
+where $t_d$ is a distance threshold. Points for which no nearby session observation exists are considered uncovered and form the subset $P'$.
+
+% Paragraph purpose: explain the visibility check
+However, not all uncovered points are necessarily outdated. Some may simply have been occluded during the new session---for instance, a point on a wall that was hidden behind furniture during the XR capture. To distinguish between genuinely outdated points and occluded ones, a visibility check is performed. For each uncovered point $p_i \in P'$, the normals of the $n$ closest faces in the session mesh are evaluated. If the majority of these normals face away from $p_i$, the point is considered occluded (not visible to the new sensor) and is retained in the reference dataset. Otherwise, it is flagged as visible and removed:
+\begin{equation}
+\label{eq:4_visibility}
+\begin{gathered}
+Q_i = \left\{q_j \Big| p_i \in P', q_j \in Q :  \argmin_{q_j,n} \|p_i-q_j\| \right\} \\
+Q_i' = \left\{q_j \Big| \forall q_j \in Q_i, p_i \in P': \overrightarrow{p_iq_j} \cdot \overrightarrow{n(q_j)} \geq t_n\right\} \\
+P'' = \left \{ p_i \Big| \forall p_i \in P': \frac{|Q_i'|}{|Q_i|} \leq t_p\right\}
+\end{gathered}
+\end{equation}
+where $t_n$ is the normal alignment threshold and $t_p$ is the percentage threshold for the visibility decision. Points that pass both checks---uncovered and visible---are removed from the reference dataset.
+
+% ── 4.3.4.2 ──────────────────────────────────────────────────────────────────
+\subsubsection{New Point Introduction}
+\label{sec:4_addition}
+
+% Paragraph purpose: explain the addition of new points
+After removing outdated points, new observations from the session dataset are added to fill the resulting gaps and to represent newly appeared objects. Since the reference point cloud is assumed to have higher accuracy than the session data, only session points that have no existing counterpart in the (updated) reference dataset are added. This is determined by an inverse distance query: session points whose nearest neighbour in the remaining reference dataset exceeds the threshold $t_d$ are appended:
+\begin{equation}
+\label{eq:4_addition}
+Q' = \left \{ q_j \Big| \forall q_j \in Q, p_i \in \{ P \setminus P'' \} : \argmin_{p_i}\|q_j-p_i\| \geq t_d\right\}
+\end{equation}
+
+% Paragraph purpose: explain the final combined dataset
+The final updated dataset consists of three parts: the original reference points outside the convex hull of the session (unaffected by the updating), the reference points inside the convex hull that passed both checks (still current), and the newly added session points. This composition ensures that the more accurate reference data is preserved wherever possible, while outdated regions are replaced by the most recent observations. Colour information for the newly added points, which may not be present in the session mesh, can be recovered by projecting the localised session images onto the new points and assigning the corresponding pixel values.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Experiments}
+\label{sec:4_experiments}
+
+The alignment and updating methodology is evaluated on three test cases that span different environments and temporal conditions. The experiments assess both the alignment accuracy and the effectiveness of the dataset combination.
+
+% ── 4.4.1 ────────────────────────────────────────────────────────────────────
+\subsection{Alignment Experiments}
+\label{sec:4_alignment_experiments}
+
+% Paragraph purpose: introduce the alignment test cases
+Three periodic test cases were captured and processed, covering both operational facilities and buildings under construction~\cite{vermandere_two-step_2022}. In total, 45 sessions were documented using static TLS (Leica P30 and Leica BLK), the indoor mobile mapping system NavVis VLX, a CANON EOS 5D MARK II camera, the Microsoft HoloLens~2, and conventional smartphones.
+
+% Paragraph purpose: describe test case 1
+The first test case is a soil technology laboratory on the KU~Leuven campus in Ghent. It is an industrial-style laboratory space of approximately 10\,m $\times$ 30\,m containing working desks, machinery, and bulk materials. Between periodic captures taken several months apart, the laboratory was in active use and all movable objects were displaced. This test case evaluates the ability of the alignment to handle multi-temporal inputs of an operational environment where objects have changed position.
+
+% Paragraph purpose: describe test case 2
+The second test case is the construction of a prefab living lab on the campus. This project was periodically captured starting from early stake-out through to MEP installations. The structure is a three-storey building constructed from prefab elements. This test case evaluates the robustness of the alignment when both texture and geometry change drastically between captures, as is typical of construction site monitoring.
+
+% Paragraph purpose: describe test case 3
+The third test case is a renovation of a four-storey house in Bruges, including a full basement and attic. The refurbishment was periodically captured with both smartphones and the HoloLens~2, with Leica BLK data serving as baseline. This test case evaluates the alignment in an indoor construction site environment with significant clutter and temporary storage of materials.
+
+% Paragraph purpose: present alignment results
+The alignment was performed using the five methods described in Section~\ref{sec:4_local}, with the best-fit parameters determined empirically over all measurements. The global distance threshold $t_d$ was set to 10\,m. The feature correspondence function $\rho$ for image matches was set to 50 pixels, and for point cloud matches to 1.5 times the voxel size (0.05\,m).
+
+% Paragraph purpose: summarise quantitative results
+Across all three test cases, the average positional accuracy of the combined pose estimation is 0.06\,m, the average rotational accuracy is 0.34°, and the average confidence is approximately 50\%. These results are promising given the diversity of low- and high-end sensors used across the large number of sessions. The geometric alignment methods (FPFH and SUPER4PCS) achieve the highest individual confidences (averaging 75\%), while the image-based methods achieve lower individual confidences (averaging 25\%) but provide more candidate matches, increasing the overall robustness. The SUPER4PCS method yields the highest average confidence (81\%) and the lowest positional RMSE (0.07\,m), demonstrating the value of BIM-based alignment when a model is available.
+
+% Paragraph purpose: discuss method complementarity
+A key finding is that relying on both 2D and 3D alignment methods is essential for robust pose estimation. Individual methods are prone to failure in specific scenarios---for instance, FPFH matching struggles when the scene has undergone large geometric changes, while image-based methods fail when texture has changed dramatically---but the weighted pose voting mechanism mitigates these individual weaknesses. The computational time for the complete alignment averages 5 minutes per session, which is acceptable for a background optimisation process that does not need to complete before the XR device can be used.
+
+% ── 4.4.2 ────────────────────────────────────────────────────────────────────
+\subsection{Combination Experiments}
+\label{sec:4_combination_experiments}
+
+% Paragraph purpose: describe the combination test case
+The dataset updating methodology is evaluated on a test case that combines two datasets of the same laboratory space (Lab 2, Asphalt), captured at different times and with different sensors~\cite{vermandere_automatic_2022, bassier_geomapi_2024}. The original dataset was captured by a high-end NavVis VLX mobile mapping system (743,618 points, 0.005\,m density, 0.005\,m accuracy), while the new dataset was captured using the Microsoft HoloLens~2 (13,107 points, 0.05\,m density, 0.05\,m accuracy). Between captures, significant changes occurred: some objects were removed, new objects appeared, and existing objects were repositioned.
+
+% Paragraph purpose: present combination results
+The convex hull filtering reduced the relevant portion of the original dataset by 95.5\%, demonstrating the effectiveness of the spatial sub-selection. During the removal phase, 36.2\% of the relevant reference points were not covered by the new dataset and were subjected to the visibility check. Of these, 56.6\% were determined to be visible (and therefore outdated), resulting in the removal of 15.7\% of the relevant reference points. In the addition phase, 26.4\% of the session points had no existing counterpart and were added to the combined dataset.
+
+% Paragraph purpose: summarise the composition of the updated dataset
+The final relevant portion of the combined dataset consists of 54.4\% preserved reference points, 13.4\% inconclusive occluded points retained from the reference, and 32.2\% newly added session points. The complete updating algorithm executed in 1.47 seconds on a standard notebook, demonstrating the computational efficiency of the approach. The resulting combined point cloud preserves the high accuracy of the original VLX data in regions that have not changed, while incorporating the HoloLens~2 observations in regions where updates have occurred.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusion}
+\label{sec:4_conclusion}
+
+% Paragraph purpose: summarise the contributions of this chapter
+This chapter presented a two-step alignment framework for positioning heterogeneous sensor data within pre-existing reference coordinate systems, together with a dataset updating mechanism for integrating new observations into existing point clouds. The alignment framework combines a coarse global positioning step based on available wireless signals with a fine registration step that leverages five complementary methods spanning both 2D image features and 3D geometric features. A weighted pose voting mechanism combines the individual estimates into a robust final pose with an associated confidence measure.
+
+% Paragraph purpose: highlight key findings
+The experiments across three test cases demonstrate that the combined use of 2D and 3D alignment methods is essential for robust indoor pose estimation, particularly in environments that undergo significant changes between measurement epochs. Individual methods are unreliable in isolation, but their complementary strengths---image-based methods providing many candidate matches and geometric methods providing high accuracy---yield a robust combined estimate. The average positional accuracy of 0.06\,m across diverse sensors and environments meets or exceeds the resolution of the lowest-quality sensors used, confirming that the alignment does not introduce additional error beyond the inherent sensor limitations.
+
+% Paragraph purpose: highlight the updating contribution
+The dataset updating methodology enables the incremental maintenance of digital facility documentation without requiring complete re-documentation. By distinguishing between outdated, occluded, and current observations, the method preserves high-quality reference data wherever possible while incorporating new observations only where necessary. This extends the effective lifespan of expensive baseline scans and keeps the digital representation aligned with the current state of the physical environment.
+
+% Paragraph purpose: connect to the broader pipeline
+Within the broader pipeline introduced in Chapter~\ref{ch:introduction}, this chapter establishes the aligned and up-to-date point cloud representation that serves as input for all subsequent stages. The scene segmentation, object detection, and completion methods presented in the following chapters all operate on the assumption that the input data is spatially consistent and represents the current state of the environment. The alignment and updating framework presented here ensures that this assumption is met, even when the input originates from heterogeneous sensors captured at different times.
+
+% Paragraph purpose: discuss limitations and future work
+Several limitations remain. The coarse global alignment depends on the availability of wireless positioning signals, which may be unreliable in certain indoor environments. The visibility check in the updating procedure relies on the quality of the session mesh normals, which may be noisy for low-end sensors. Future work could explore the use of virtual imagery generated from BIM or point cloud models to provide additional reference data for the image-based alignment methods, and the integration of more robust change detection algorithms that can distinguish between temporary and permanent scene modifications.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Keep the following \cleardoublepage at the end of this file, 
-% otherwise \includeonly includes empty pages.
 \cleardoublepage
-
-% vim: tw=70 nocindent expandtab foldmethod=marker foldmarker={{{}{,}{}}}
