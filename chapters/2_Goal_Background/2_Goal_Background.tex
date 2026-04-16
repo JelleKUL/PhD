@@ -158,11 +158,12 @@ Implicit representations do not store surfaces directly. Instead, geometry is de
 \paragraph{Signed Distance Functions.}
 
 A \gls{SDF} assigns to every point in space a value equal to its signed distance to the nearest surface. By convention, values are negative inside an object, positive outside, and zero exactly on the surface:
-\[
-f(\mathbf{x}) < 0 \quad \text{inside the object}.
-f(\mathbf{x}) = 0 \quad \text{on the surface}.
+
+\begin{gather}
+f(\mathbf{x}) < 0 \quad \text{inside the object}. \\
+f(\mathbf{x}) = 0 \quad \text{on the surface}. \\
 f(\mathbf{x}) > 0 \quad \text{outside the object}.
-\]
+\end{gather}
 
 The surface can therefore be recovered as the zero level set of the function, giving a smooth and continuous description of geometry.
 
@@ -279,7 +280,15 @@ Having established the representational landscape, this section formalises what 
 \subsection{Inputs}
 \label{sec:bg_inputs}
 
-The pipeline takes as input heterogeneous, multi-source data captured from real indoor environments. No single scan captures a scene in its entirety, so the input is inherently incomplete. Two primary modalities are considered.
+The pipeline takes as input heterogeneous, multi-source data captured from real indoor environments. No single scan captures a scene in its entirety, so the input is inherently incomplete. Two primary modalities are considered (\ref{fig:Pointcloud_Pano}).
+
+\begin{figure}[h]
+  \centering
+  \medskip
+  \includegraphics[width=1\textwidth]{Pointcloud_Pano}
+  \caption[Pointcloud and panoramic images]{Example of the input data: an unstructured point cloud (left) and a panoramic image (right) captured at the same scanner position. The point cloud provides geometric information, while the panoramic image provides complementary appearance information that can be projected onto the point cloud for colour assignment.}
+  \label{fig:Pointcloud_Pano}
+\end{figure}
 
 \paragraph{Point clouds.}
 Unstructured point clouds form the geometric backbone of the input data. These may originate from high-end terrestrial laser scanners, which provide millimetre-level accuracy over large ranges, or from lower-end mobile and \gls{XR}-based devices with lower accuracy but faster acquisition speeds. Per-point colour information may optionally be present. Multiple scans of the same scene can be captured at different times or with different devices to provide complementary coverage and to enable temporal updates~\cite{vermandere_two-step_2022, vermandere_automatic_2022}.

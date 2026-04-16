@@ -16,7 +16,7 @@
 \label{sec:3_intro}
 
 % Paragraph purpose: define the data requirements imposed by the full pipeline
-The pipeline introduced in Chapter~\ref{ch:background} imposes a set of data requirements that cannot be satisfied by a single conventional dataset. At scene level, the input must consist of partially scanned indoor single-room environments with accompanying colour information, covering both residential and industrial contexts. To support the alignment and updating stage (Chapter~\ref{ch:4_Alignment_Updating}), repeated captures of the same environment are required across time and across sensing technologies. To support scene segmentation and object detection (Chapter~\ref{ch:5_Scene_Segmentation}), object-level annotations such as bounding boxes are needed. For scene completion (Chapter~\ref{ch:6_Scene_Completion}), ground-truth geometry of the empty scene is required, while object completion (Chapter~\ref{ch:7_Object_Completion}) additionally requires complete object geometry together with isolated partial scans of individual objects.
+This chapter outlines the data used for the remainder of the thesis. Each stage of the pipeline (Figure \ref{fig:1_Research_Aim}) has specific requirements. At scene level, the input must consist of partially scanned indoor single-room environments with accompanying colour information, covering both residential and industrial contexts. To support the alignment and updating stage (Chapter~\ref{ch:4_Alignment_Updating}), repeated captures of the same environment are required across time and across sensing technologies. To support scene segmentation and object detection (Chapter~\ref{ch:5_Scene_Segmentation}), object-level annotations such as bounding boxes are needed. For scene completion (Chapter~\ref{ch:6_Scene_Completion}), ground-truth geometry of the empty scene is required, while object completion (Chapter~\ref{ch:7_Object_Completion}) additionally requires complete object geometry together with isolated partial scans of individual objects.
 
 % Paragraph purpose: explain why existing datasets are insufficient as a complete solution
 To the best of our knowledge, no single existing dataset satisfies all of these requirements simultaneously. Public scene-level datasets such as ScanNet~\cite{dai_scannet_2017} and Matterport3D~\cite{chang_matterport3d_2017} provide realistic indoor scans and useful semantic annotations, but they do not include ground-truth geometry for occluded regions. Synthetic scene datasets can provide controlled annotations and complete geometry, but often fail to reproduce the sampling characteristics, noise behaviour, and occlusion patterns of real scanning devices. At object level, repositories such as ShapeNet~\cite{chang_shapenet_2015} offer large numbers of complete models, but these are CAD assets rather than scanned observations and therefore do not reflect realistic partial acquisition conditions. Conversely, real scanned object datasets such as Redwood~\cite{choi_large_2016} provide realistic reconstructions, but remain limited in scale and diversity.
@@ -24,34 +24,29 @@ To the best of our knowledge, no single existing dataset satisfies all of these 
 % Paragraph purpose: introduce the three-source acquisition strategy as a methodological choice
 For this reason, this thesis adopts a combined data acquisition strategy based on three complementary sources. First, existing public datasets are used where they provide adequate coverage for specific stages of the pipeline (Section~\ref{sec:3_existing}). Second, real-world multi-temporal and multi-sensory captures are recorded on the university campus to provide heterogeneous observations for alignment, updating, and qualitative evaluation under realistic conditions (Section~\ref{sec:3_realworld}). Third, a synthetic dataset generation framework is developed to produce the V-Scan dataset, which supplies controlled scene-level and object-level ground truth, isolated partial object scans, empty-scene reference data, and multi-sensory as well as multi-temporal variations (Section~\ref{sec:3_synthetic}).
 
-% Paragraph purpose: provide the roadmap for the rest of the chapter
-The remainder of this chapter is organised as follows. Section~\ref{sec:3_existing} reviews the public datasets used in this thesis and explains their role within the pipeline. Section~\ref{sec:3_realworld} describes the real-world capture campaigns and the sensing technologies used. Section~\ref{sec:3_synthetic} presents the synthetic data generation framework and the resulting V-Scan dataset. Section~\ref{sec:3_comparison} compares all data sources used throughout the thesis, and Section~\ref{sec:3_conclusion} concludes the chapter.
+Additionally, Section~\ref{sec:3_comparison} compares all data sources used throughout the thesis, and Section~\ref{sec:3_conclusion} concludes the chapter.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Existing Datasets}
 \label{sec:3_existing}
 
-% Paragraph purpose: explain the role of public datasets within the thesis
-Publicly available datasets remain an essential resource for benchmarking, training and external validation in 3D scene understanding. While no single dataset satisfies all requirements of the proposed pipeline, several established datasets provide complementary strengths. In this thesis, public datasets are used for two main purposes: (i) quantitative evaluation of specific pipeline stages using datasets that best match the task requirements, and (ii) broader contextual comparison with commonly used benchmarks in the field.
+Publicly available datasets remain an essential resource for benchmarking, training and external validation in 3D scene understanding. Because the proposed pipeline operates at both scene level and object level, the datasets are grouped in two categories: Scene-level datasets, typically providing scanned indoor environments, and object-level datasets, consisting of isolated complete object models or scans.
 
-% Paragraph purpose: explain section structure and prioritisation
-Particular emphasis is placed on ScanNet++ and Matterport3D for quantitative scene-level evaluation of the scene completion pipeline, and on ShapeNet and Redwood for quantitative isolated object completion experiments. Other datasets are included to illustrate the wider landscape of available benchmarks and to contextualise the chosen evaluation strategy.
-
+The following sections therefore review the most relevant public datasets according to these two levels of representation.
 % ─────────────────────────────────────────────────────────────────────────────
 \todo{Should I add more datasets in a related work section?}
 \subsection{Scene-Level Datasets}
 \label{sec:3_scene_datasets}
 
 % Paragraph purpose: introduce why scene datasets matter
-Scene-level datasets provide complete indoor environments containing structural elements, furniture and object clutter. They are particularly relevant for evaluating methods that must reason jointly about room geometry, object placement and partial observations. For this thesis, datasets are especially valuable when they offer large scene diversity, realistic clutter, accurate geometry, and sufficient scale for statistically meaningful benchmarking.
+Scene-level datasets provide indoor environments containing structural elements, furniture and object clutter. They are particularly relevant for evaluating methods that must reason jointly about room geometry, object placement and partial observations.
 
 Large-scale real-world indoor datasets have played a central role in advancing scene understanding and reconstruction. Early datasets such as \textit{SUN RGB-D}~\cite{song_sun_2015} provided RGB-D images with room layout and object annotations, while \textit{Matterport3D}~\cite{chang_matterport3d_2017}, \textit{ScanNet}~\cite{dai_scannet_2017}, and \textit{Stanford 2D-3D-S}~\cite{armeni_joint_2017} introduced richly annotated indoor environments with registered imagery, depth data, and reconstructed geometry. More recent datasets such as \textit{ARKitScenes}~\cite{baruch_arkitscenes_2022} and \textit{ScanNet++}~\cite{yeshwanth_scannet_2023} further improved scene diversity and geometric quality through mobile LiDAR and refined capture pipelines. These datasets have been highly valuable for semantic segmentation, scene reconstruction, and 3D perception, but they share an important limitation for the purposes of this thesis: they only contain observed geometry. The occluded regions that completion methods are expected to reconstruct are, by definition, absent from the captured data, which prevents direct supervised evaluation of completion quality.
 
 \paragraph{ScanNet++.}
 
-ScanNet++~\cite{yeshwanth_scannet_2023} is one of the primary real-world datasets used for quantitative evaluation of the full pipeline. It extends earlier RGB-D indoor datasets such as ScanNet~\cite{dai_scannet_2017} through significantly higher geometric and visual fidelity. The dataset contains more than 1,000 indoor scenes, each captured using a combination of sub-millimetre terrestrial laser scans, registered 33-megapixel DSLR imagery, and commodity RGB-D streams from mobile devices. This multi-modal acquisition strategy provides both highly accurate reference geometry and realistic lower-cost sensor observations within the same environments. (Figure~\ref{fig:3_ScanNet}).
+ScanNet++~\cite{yeshwanth_scannet_2023} is one of the primary real-world datasets used for both quantitative and qualitative evaluation of the pipeline. It extends earlier RGB-D indoor datasets such as ScanNet~\cite{dai_scannet_2017} through significantly higher geometric and visual fidelity. The dataset contains more than 1,000 indoor scenes, each captured using a combination of sub-millimetre terrestrial laser scans, registered 33-megapixel DSLR imagery, and commodity RGB-D streams from mobile devices. This multi-modal acquisition strategy provides both highly accurate reference geometry and realistic lower-cost sensor observations within the same environments. (Figure~\ref{fig:3_ScanNet}).
 
-The datasets contains more than 1000 rooms, spanning offices, living spaces, kitchens and shared indoor areas, typically containing dense furniture layouts and object clutter.
 
 \begin{figure}[h]
   \centering
@@ -63,13 +58,11 @@ The datasets contains more than 1000 rooms, spanning offices, living spaces, kit
 
 \paragraph{Matterport3D.}
 
-Matterport3D~\cite{chang_matterport3d_2017} is the second primary real-world dataset used for quantitative evaluation of the completion pipeline. It contains 90 building-scale environments comprising approximately 10,800 panoramic viewpoints reconstructed from 194,400 RGB-D images. Captures were obtained using the Matterport Pro camera system and include globally aligned camera poses, textured meshes and semantic annotations (Figure~\ref{fig:3_Matterport3D}).
+Matterport3D~\cite{chang_matterport3d_2017} is the second primary real-world dataset used for evaluation. It contains 90 building-scale environments comprising approximately 10,800 panoramic viewpoints reconstructed from 194,400 RGB-D images. Captures were obtained using the Matterport Pro camera system and include globally aligned camera poses, textured meshes and semantic annotations (Figure~\ref{fig:3_Matterport3D}).
 
-Each environment is subdivided into multiple rooms, resulting in a large variety of bedrooms, living rooms, kitchens, hallways, offices and commercial interiors. Rooms typically contain realistic furniture arrangements, decorative objects and architectural complexity. This makes Matterport3D particularly useful for evaluating completion methods under realistic room layouts, varied furnishing styles and larger navigable spaces than room-centric datasets.
+Each environment is subdivided into multiple rooms, resulting in a large variety of bedrooms, living rooms, kitchens, hallways, offices and commercial interiors. This makes Matterport3D particularly useful for evaluating completion methods under realistic room layouts and varied furnishing styles.
 
 Its widespread adoption in scene understanding and embodied AI research also facilitates comparison with prior work and improves external validity of the reported results.
-
-Together, ScanNet++ and Matterport3D provide two complementary real-world benchmarks: one prioritising geometric fidelity and sensor diversity, the other prioritising spatial diversity, room-scale complexity and realistic residential scenes.
 
 \begin{figure}[h]
   \centering
@@ -79,6 +72,8 @@ Together, ScanNet++ and Matterport3D provide two complementary real-world benchm
   \label{fig:3_Matterport3D}
 \end{figure}
 
+Together, ScanNet++ and Matterport3D provide two complementary real-world benchmarks: one prioritising geometric fidelity and sensor diversity, the other prioritising spatial diversity and room-scale complexity.
+
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Object-Level Datasets}
 \label{sec:3_object_datasets}
@@ -86,15 +81,14 @@ Together, ScanNet++ and Matterport3D provide two complementary real-world benchm
 % Paragraph purpose: explain why object datasets matter
 Object-level datasets are required for evaluating isolated object completion methods, where the goal is to reconstruct complete object geometry from partial observations. In this thesis, both synthetic CAD repositories and real scanned object datasets are used to capture complementary aspects of this problem.
 
-Datasets such as the \textit{Redwood Object Scan Dataset}~\cite{choi_large_2016}, \textit{Pix3D}~\cite{sun_pix3d_2018}, \textit{Google Scanned Objects}~\cite{downs_google_2022}, and \textit{OmniObject3D}~\cite{wu_omniobject3d_2023} provide high-quality 3D object models derived from real scanning or image-based reconstruction. These resources are valuable for object reconstruction, novel-view synthesis, and shape modelling, but they do not capture the interaction between objects and the surrounding indoor scene. In particular, they do not provide the scene context, structured occlusion patterns, or paired scene-level scans needed to study the relationship between scene completion and object completion.
+\todo{iets sterker verwoorden waarom we syntetisch en echt object gebruiken}
+Datasets such as the \textit{Redwood Object Scan Dataset}~\cite{choi_large_2016}, \textit{Pix3D}~\cite{sun_pix3d_2018}, \textit{Google Scanned Objects}~\cite{downs_google_2022}, and \textit{OmniObject3D}~\cite{wu_omniobject3d_2023} provide high-quality 3D object models derived from real scanning or image-based reconstruction. These resources are valuable for object reconstruction, novel-view synthesis, and shape modelling, However they remain limited in scale, diversity and annotation quality compared to synthetic repositories like ShapeNet\cite{chang_shapenet_2015}.
 
 \paragraph{ShapeNet.}
 
-ShapeNet~\cite{chang_shapenet_2015} is one of the primary datasets used for quantitative isolated object completion experiments in Chapter~\ref{ch:7_Object_Completion}. It is a large-scale repository of 3D object models organised into semantic categories, containing tens of thousands of examples across common furniture and household object classes (Figure~\ref{fig:3_ShapeNet}).
+ShapeNet~\cite{chang_shapenet_2015} is one of the primary datasets used for quantitative isolated object completion experiments in Chapter~\ref{ch:7_Object_Completion}. It is a large-scale repository of CAD-based 3D object models organised into semantic categories, containing tens of thousands of examples across common furniture and household object classes (Figure~\ref{fig:3_ShapeNet}).
 
 Its principal strength lies in the availability of clean and complete geometry, making it well suited for controlled benchmarking and for training data-hungry completion networks. Because models are complete and consistently structured, ShapeNet enables reliable geometric error measurement between predicted and reference shapes.
-
-However, ShapeNet models are CAD assets rather than scanned observations. They therefore lack realistic acquisition artefacts such as noise, partial visibility and surface irregularities. For this reason, ShapeNet is complemented by real scanned object data.
 
 \begin{figure}[h]
   \centering
@@ -110,8 +104,6 @@ The Redwood 3D Scan Dataset~\cite{choi_large_2016} is the second primary dataset
 
 Unlike ShapeNet, Redwood reflects the imperfections of real-world acquisition, including sensor noise, incomplete observations and reconstruction artefacts. This makes it particularly valuable for assessing whether methods trained or benchmarked on synthetic CAD models remain effective on realistic scanned objects.
 
-Together, ShapeNet and Redwood provide complementary object-level benchmarks: ShapeNet offers scale and clean geometry, while Redwood offers realism and sensor-derived shape variation.
-
 \begin{figure}[h]
   \centering
   \medskip
@@ -120,6 +112,7 @@ Together, ShapeNet and Redwood provide complementary object-level benchmarks: Sh
   \label{fig:3_Redwood}
 \end{figure}
 
+Together, ShapeNet and Redwood provide complementary object-level benchmarks: ShapeNet offers scale and clean geometry, while Redwood offers realism and sensor-derived shape variation.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Summary}
@@ -136,11 +129,60 @@ Despite their individual strengths, none of these datasets simultaneously provid
 \subsection{Introduction}
 
 The first set of manually scanned data used in this thesis consists of real-world captures performed at the KU~Leuven Technology Campus in Ghent, Belgium. These captures serve two primary purposes: providing multi-temporal and multi-sensory data for evaluating the alignment and updating pipeline (Chapter~\ref{ch:4_Alignment_Updating}), and providing real indoor scenes with diverse object configurations for qualitative evaluation of the detection and completion stages. The captures cover a range of industrial laboratory spaces and classroom-style environments, using a combination of high-end terrestrial laser scanners and consumer-grade \gls{XR} devices.
-\todo{Is het nodig om over de verschillende scannertypes te praten hier?, of kan ik hier korter over praten, moet ik al vroeger over de soorten scannes beginnen om de multi-temporal en sensory meer bij te staven?}
+
 \subsection{Sensing Technologies}
 \label{sec:3_sensors}
 
 The sensing technologies used in this dataset span a wide range of accuracy, density, and operational characteristics. Their properties directly influence the nature of the captured data and the challenges that each pipeline stage must address.
+
+\begin{figure}[htbp]
+    \centering
+    \resizebox{\textwidth}{!}{%
+        \begin{tabular}{C{6cm} C{6cm}}
+
+            %==================== ROW 1 ====================
+            \includegraphics[width=4cm]{P30} &
+            \includegraphics[height=4cm]{VLX} \\[2pt]
+
+            \textbf{(a) Leica ScanStation P30} &
+            \textbf{(b) NavVis VLX} \\
+
+            Scan rate: $1$ MHz &
+            Scan rate: $2 \times 0.6$ MHz \\
+
+            Range: $100$ m &
+            Range: $100$ m \\
+
+            Cam: $175 \times 4$ MP &
+            Cam: $4 \times 20$ MP \\
+
+            $\sigma_r$: $1.2$ mm $+ 10$ ppm &
+            $\sigma_r$: $6$ mm / $500$ m$^2$ \\[12pt]
+
+            %==================== ROW 2 ====================
+            \includegraphics[height=4cm]{BLK360} &
+            \includegraphics[height=4cm]{Hololens} \\[2pt]
+
+            \textbf{(c) Leica BLK360} &
+            \textbf{(d) Microsoft HoloLens 2} \\
+
+            Density: $6.0$ mm / $10$ m &
+            Density: $80.0$ mm / $10$ m \\
+
+            Range: $60$ m &
+            Range: $4$ m \\
+
+            Vert.\ range: $300^\circ$ &
+            Vert.\ range: $120^\circ$ \\
+
+            Sys.\ noise: $4.0$ mm &
+            Sys.\ noise: $10.0$ mm \\
+
+        \end{tabular}%
+    }
+    \caption[Sensor overview]{Overview of the theoretical sensor characteristics for the sensors used in this thesis. Values are based on manufacturer specifications and virtual scanner presets.}
+    \label{fig3:sensors}
+\end{figure}
 
 \paragraph{Terrestrial Laser Scanners.}
 Static \gls{TLS} systems such as the Leica ScanStation P30 \cite{noauthor_leica_nodate} and BLK360 \cite{noauthor_leica_nodate-1} provide the highest measurement accuracy, typically achieving single-point accuracies below 5\,mm at ranges up to 50\,m~\cite{bassier_standalone_2016}. These systems capture structured point grids of 10 to 40 million points per setup, along with panoramic imagery. However, the static nature of the measurement introduces significant occlusions at ground level and behind objects, as only surfaces visible from the scanner position are recorded. Consecutive setups must be registered, typically through a combination of target-based and cloud-to-cloud methods, with sub-millimetre error propagation achievable across setups~\cite{geyter_point_2022}.
@@ -154,6 +196,7 @@ Extended Reality devices such as the Microsoft HoloLens~2 \cite{hubner_evaluatio
 \paragraph{Smartphone LiDAR.}
 Recent smartphones equipped with LiDAR sensors, such as iPhone models with the Apple LiDAR \cite{abdel-majeed_indoor_2024} Scanner, provide another commodity-level capture modality. These devices produce dense point clouds at close range with moderate accuracy, and their widespread availability makes them relevant for incremental updating scenarios where dedicated scanning equipment is not practical.
 
+
 \subsection{Capture Methodology}
 \label{sec:3_capture_method}
 
@@ -164,15 +207,61 @@ This deliberate combination of sensors and deployment strategies produces comple
 \subsection{Captured Scenes}
 \label{sec:3_captured_scenes}
 
-Multiple indoor environments were captured across the KU~Leuven campus. These include industrial laboratory spaces used for concrete processing, road construction research, and building physics experiments, as well as a residential-style living lab environment. Each environment was captured at multiple time points and with multiple sensors, producing the multi-temporal and multi-sensory datasets required for the alignment experiments in Chapter~\ref{ch:4_Alignment_Updating}. Between capture epochs, the environments were in active use, resulting in natural variations in object placement and configuration.
+% Paragraph purpose: introduce the set of captured environments
+Three categories of indoor environments were captured across the KU~Leuven campus in Ghent and at a residential site in Bruges (Figure~\ref{fig:3_captured_scenes}). These comprise industrial laboratory rooms used for soil, asphalt, and building physics research, a prefab living lab constructed on the campus, and a four-storey residential renovation in Bruges. Each environment was documented at multiple time points and with multiple sensors, producing the multi-temporal and multi-sensory data required for the alignment experiments in Chapter~\ref{ch:4_Alignment_Updating}. Between capture epochs, the environments were in active use or under active construction, resulting in natural variations in object placement, surface treatment, and structural configuration.
 
-The captured data from these campaigns has been previously reported and analysed in~\cite{geyter_point_2022, vermandere_two-step_2022, vermandere_automatic_2022}, where the sensor capacity, alignment accuracy, and data processing characteristics were evaluated in detail(Fig.~\ref{fig:3_captured_scenes}).
+% Paragraph purpose: describe the laboratory rooms
+The laboratory rooms are single-storey industrial spaces with footprints on the order of 10\,m~$\times$~30\,m, containing working desks, test equipment, machinery, and bulk materials. Between captures taken several months apart, all movable objects were displaced in the course of ongoing research activity. These rooms serve as the primary test case for multi-temporal alignment under layout change in an otherwise stable structural envelope.
+
+% Paragraph purpose: describe the living lab
+The living lab is a three-storey prefab residential building erected on the campus as a dedicated research facility. It was captured repeatedly throughout its construction, from early stake-out through to the installation of mechanical, electrical, and plumbing (MEP) systems. This site provides test data in which both the geometry and the surface appearance of the scene change drastically between epochs, as structural elements are added and interior finishes are applied.
+
+% Paragraph purpose: describe the Bruges renovation
+The Bruges renovation is a four-storey residential building including a full basement and attic, captured during an interior refurbishment. Here the structural envelope is largely fixed, but the interior is cluttered with construction materials, tools, and temporary storage that change position between visits. This site complements the living lab by providing a residential-scale renovation environment rather than a new-build construction site.
+
+% Paragraph purpose: summarise the capture campaign and introduce the table
+In total, 45 measurement sessions were recorded across the three sites using the full range of sensors introduced in Section~\ref{sec:3_sensors}~\cite{vermandere_two-step_2022}. Table~\ref{tab:3_captured_scenes_metrics} summarises the dataset at the scene level, reporting per-sensor session counts, image and point counts, and the number of modelled 3D reference objects per scene. The figures are aggregated across all sessions of a given sensor within each scene.
+
+\begin{table}[htbp]
+    \centering
+    \caption[Captured scenes dataset metrics]{Dataset-level metrics for the three captured environments, aggregated per sensor across all sessions of that sensor within each scene. Image counts refer to per-session imagery (TLS panoramic frames, iMMS keyframes, DSLR photogrammetry sets, or XR RGB captures); point counts refer to the total raw points captured across all sessions of the corresponding sensor.}
+    \label{tab:3_captured_scenes_metrics}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{l l c c c c}
+        \toprule
+        \textbf{Scene} & \textbf{Sensor} & \textbf{\# Sessions} & \textbf{\# Images} & \textbf{\# 3D Objects} & \textbf{\# Points} \\
+        \midrule
+        \multirow{3}{*}{Laboratory rooms (Ghent)}
+            & NavVis VLX           & 3  & 241  & 3   & 162{,}108{,}105 \\
+            & Microsoft HoloLens~2 & 6  & 35   & 483 & 1{,}089{,}574   \\
+            & BIM reference        & 3  & --   & 186 & 3{,}980         \\
+        \midrule
+        \multirow{4}{*}{Living lab (Ghent)}
+            & Leica ScanStation P30 & 1  & 274  & 2   & 7{,}638{,}931   \\
+            & DSLR photogrammetry   & 3  & 642  & 3   & 1{,}013{,}736   \\
+            & Microsoft HoloLens~2  & 5  & 30   & 15  & 439{,}816       \\
+            & BIM reference         & 1  & --   & 368 & 41{,}825        \\
+        \midrule
+        \multirow{4}{*}{Bruges renovation}
+            & Leica BLK360          & 1  & --   & 20  & 264{,}525{,}819 \\
+            & DSLR photogrammetry   & 1  & 430  & 0   & --              \\
+            & Microsoft HoloLens~2  & 20 & 91   & 18  & 378{,}075       \\
+            & BIM reference         & 1  & --   & 594 & 24{,}783        \\
+        \midrule
+        \textbf{Total} & & \textbf{45} & \textbf{1{,}743} & \textbf{1{,}692} & $\sim \mathbf{1.72\times 10^{8}}$ \\
+        \bottomrule
+    \end{tabular}%
+    }
+\end{table}
+
+% Paragraph purpose: characterise the resulting heterogeneity
+The dataset therefore spans more than three orders of magnitude in per-session point count, from roughly $10^{4}$ points on a HoloLens~2 session to over $10^{8}$ points on a single BLK360 setup, and covers four complementary sensor modalities per scene (TLS or BLK, mobile mapping or photogrammetry, XR, and as-built BIM). This intentional heterogeneity is the primary methodological value of the campus dataset: it provides realistic worst-case conditions under which the alignment and updating methods of Chapter~\ref{ch:4_Alignment_Updating} must still produce consistent pose estimates and coherent combined point clouds. The captured data and its sensor-by-sensor analysis have been reported in~\cite{geyter_point_2022, vermandere_two-step_2022, vermandere_automatic_2022}.
 
 \begin{figure}[h]
   \centering
   \medskip
   \includegraphics[width=1\textwidth]{Campus}
-  \caption[Captured scenes]{Example scenes captured at the KU~Leuven campus.}
+  \caption[Captured scenes]{Example captures of the three environments: the laboratory rooms (left), the prefab living lab under construction (middle), and the Bruges residential renovation (right).}
   \label{fig:3_captured_scenes}
 \end{figure}
 
