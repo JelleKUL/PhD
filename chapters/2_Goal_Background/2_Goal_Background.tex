@@ -8,6 +8,7 @@
 \newglossaryentry{NeRF}{name={NeRF}, description={Neural Radiance Field — a learned continuous function mapping 3D coordinates and viewing directions to colour and volume density, enabling novel view synthesis}}
 \newglossaryentry{UV}{name={UV}, description={UV coordinates — two-dimensional texture coordinates assigned to mesh vertices that define the mapping between the 3D surface and a 2D texture image}}
 \newglossaryentry{CAD}{name={CAD}, description={Computer-Aided Design — a digital representation of a physical object used in engineering and manufacturing}}
+\newglossaryentry{CI/SFB}{name={CI/SFB}, description={Classification and Information System for Building Elements — a standardized code for categorizing building elements}}
 
 % ── Bib keys first introduced in this chapter ────────────────────────────────
 % kerbl_3d_2023              → Kerbl et al. 2023, 3D Gaussian Splatting
@@ -43,7 +44,9 @@
 \label{sec:bg_intro}
 
 % explain the outline of the chapter
-This chapter establishes the conceptual and terminological foundation for the remainder of the thesis by defining the scope and requirements of the dynamification process and positioning it relative to existing representations. Section~\ref{sec:bg_sota_dynamification} surveys existing work most directly related to scene dynamification as a unified problem. Section~\ref{sec:bg_representations} reviews the main categories of 3D representation and discusses their suitability as inputs and outputs of the proposed pipeline. Section~\ref{sec:bg_drm_requirements} formalises the input and output requirements of a \gls{DRM}, connecting them to the occlusion typology and design decisions established in Chapter~\ref{ch:introduction}. Section~\ref{sec:bg_conclusion} summarises the representational choices made for this thesis and the assumptions that follow from them.
+This chapter establishes the conceptual and terminological foundation for the remainder of the thesis by defining the scope and requirements of the dynamification process and positioning it relative to existing representations. Section~\ref{sec:bg_sota_dynamification} surveys existing work most directly related to scene dynamification as a unified problem. Section~\ref{sec:bg_representations} reviews the main categories of 3D representation and discusses their suitability as inputs and outputs of the proposed pipeline. Section~\ref{sec:bg_drm_requirements} formalises the input and output requirements of a \gls{DRM}, connecting them to the occlusion typology and design decisions established in Chapter~\ref{ch:introduction}. Section~\ref{sec:bg_metrics} defines the evaluation metrics used throughout this thesis to assess reconstruction quality across all pipeline stages. Section~\ref{sec:bg_conclusion} summarises the representational choices made for this thesis and the assumptions that follow from them.
+
+
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Existing Approaches to Scene Dynamification}
@@ -306,6 +309,8 @@ The output of the pipeline is a \gls{DRM}: a complete and editable representatio
 
 Both the fixed structural elements of the scene and the individual objects within it must be geometrically complete. Occluded or unobserved regions must be reconstructed so that the resulting representation contains no holes, missing surfaces or incomplete volumes. This requirement applies across multiple categories of indoor elements, which are treated differently throughout the pipeline.
 
+To distinguish between the types of elements in a scene, we use the \gls{CI/SFB} code \cite{2ILFXM_2024}, where building elements are divided in primary, secondary and tertiary categories.
+
 Primary building elements comprise the permanent structural fabric of the environment, such as walls, floors, ceilings, columns, beams and stair cores. These components define the global enclosure and spatial layout of the room and are therefore handled by the \textit{environment completion} stage. Secondary building elements comprise fixed but typically non-structural architectural components such as doors, windows, partition walls, façade panels, radiators, built-in cabinets and suspended ceilings. Depending on their permanence and geometric integration with the surrounding structure, these elements may be reconstructed either as part of the environment or as separate editable objects. Tertiary elements comprise movable or replaceable interior assets such as furniture, machinery, shelving, desks, chairs and equipment. These elements are treated by the \textit{object completion} stage, where they are reconstructed as individually manipulable entities.
 
 The distinction between environment and object completion is motivated by both geometry and intended interaction. Elements that define the room envelope or are permanently integrated into the building are most efficiently reconstructed as part of a continuous background model. Movable or replaceable elements instead require independent representations that support repositioning, removal or scaling after reconstruction.
@@ -319,15 +324,145 @@ Individual objects must be represented as separate entities rather than as part 
 \paragraph{Part awareness and scalability.}
 To support realistic manipulation, completed objects must carry a notion of their internal part structure. This enables part-aware scaling operations in which individual structural components can be scaled independently or repeated rather than applying a uniform deformation to the entire object.
 
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Evaluation Metrics}
+\label{sec:bg_metrics}
+
+The output requirements formalised in the previous section demand geometric completeness, textural completeness, correct object detection and part-aware editability. Assessing whether a given method satisfies these requirements requires quantitative metrics that are appropriate for each output modality. Rather than introducing these metrics separately in each experimental chapter, this section defines them once in a unified framework. The metrics are organised by type: geometric metrics that assess spatial accuracy, overlap metrics that assess volumetric or categorical agreement, detection metrics that assess identification performance, and perceptual metrics that assess visual quality.
+
+% ── Geometric ────────────────────────────────────────────────────────────────
+\subsection{Geometric Metrics}
+\label{sec:bg_metrics_geometric}
+
+\paragraph{Chamfer Distance.}
+The Chamfer Distance (CD) measures the average closest-point distance between two point sets and is the most widely used metric for evaluating 3D shape reconstruction quality. Given two point sets $P$ and $Q$, the Chamfer Distance is defined as:
+
+\begin{equation}
+\label{eq:chamfer}
+\text{CD}(P, Q) = \frac{1}{|P|} \sum_{p \in P} \min_{q \in Q} \|p - q\|^2 \;+\; \frac{1}{|Q|} \sum_{q \in Q} \min_{p \in P} \|q - p\|^2
+\end{equation}
+
+The first term measures the \textit{accuracy} of the prediction, while the second term measures its \textit{completeness}. A lower Chamfer Distance indicates a better geometric match. The metric is symmetric and captures both missing and excessive geometry, but it is sensitive to outliers and does not account for surface normals or topology.
+
+In this thesis, the Chamfer Distance is used to evaluate the geometric accuracy of completed objects (Chapter~\ref{ch:7_Object_Completion}) and reconstructed scene elements (Chapter~\ref{ch:6_Scene_Completion}).
+
+% ── Overlap ──────────────────────────────────────────────────────────────────
+\subsection{Overlap Metrics}
+\label{sec:bg_metrics_overlap}
+
+\paragraph{Intersection over Union.}
+The Intersection over Union (IoU) measures the ratio of shared space to total occupied space between a prediction and a ground-truth reference. In its general form, given two spatial regions $A$ and $B$:
+
+\begin{equation}
+\label{eq:iou}
+\text{IoU}(A, B) = \frac{|A \cap B|}{|A \cup B|}
+\end{equation}
+
+An IoU of 1 indicates perfect agreement, while 0 indicates no overlap. This formulation applies across multiple contexts in this thesis. For \textit{volumetric object comparison}, $A$ and $B$ represent predicted and ground-truth volumes discretised as voxel occupancy grids or signed distance fields, and $|\cdot|$ denotes the number of occupied voxels. Unlike the Chamfer Distance, which operates on surface points, the volumetric IoU captures how well the interior volume of an object is preserved, making it particularly suitable for evaluating completion methods that operate on voxelised representations (Chapter~\ref{ch:7_Object_Completion}). For \textit{3D object detection}, the same formula is applied to oriented bounding boxes rather than voxel grids. A detection is typically considered correct if the IoU with the ground-truth bounding box exceeds a predefined threshold, commonly 0.25 or 0.5 (Chapter~\ref{ch:5_Scene_Segmentation}).
+
+% ── Detection ────────────────────────────────────────────────────────────────
+\subsection{Detection Performance Metrics}
+\label{sec:bg_metrics_detection}
+
+\paragraph{Precision and Recall.}
+Precision and recall characterise the trade-off between false positives and false negatives in detection tasks. Given a set of detections, each classified as a true positive (TP), false positive (FP), or false negative (FN) based on the IoU threshold defined above:
+
+\begin{equation}
+\label{eq:precision_recall}
+\text{Precision} = \frac{\text{TP}}{\text{TP} + \text{FP}}, \qquad
+\text{Recall} = \frac{\text{TP}}{\text{TP} + \text{FN}}
+\end{equation}
+
+Precision measures the proportion of detections that correspond to actual objects, while recall measures the proportion of actual objects that are successfully detected. A high precision with low recall indicates conservative detection with few false alarms but many missed objects; the converse indicates aggressive detection. In this thesis, precision and recall are reported for the 3D object detection stage (Chapter~\ref{ch:5_Scene_Segmentation}) to assess how reliably objects are identified and localised within the scene.
+
+% ── Perceptual ───────────────────────────────────────────────────────────────
+\subsection{Perceptual and Image Quality Metrics}
+\label{sec:bg_metrics_perceptual}
+
+The texture completion and inpainting stages of the pipeline produce visual outputs whose quality cannot be fully captured by geometric metrics alone. Four complementary metrics are used, progressing from pixel-level accuracy to increasingly perceptually meaningful comparisons.
+
+\paragraph{Peak Signal-to-Noise Ratio.}
+The Peak Signal-to-Noise Ratio (PSNR) quantifies the pixel-level reconstruction accuracy of a predicted image $\hat{I}$ relative to a reference image $I$. It is defined in terms of the Mean Squared Error (MSE):
+
+\begin{equation}
+\label{eq:psnr}
+\text{PSNR}(\hat{I}, I) = 10 \cdot \log_{10} \left( \frac{L^2}{\text{MSE}(\hat{I}, I)} \right)
+\end{equation}
+
+where $L$ is the maximum possible pixel value (typically 255 for 8-bit images) and $\text{MSE}(\hat{I}, I) = \frac{1}{N} \sum_{i=1}^{N} (\hat{I}_i - I_i)^2$. Higher PSNR values indicate better reconstruction quality. While PSNR is widely used due to its simplicity, it correlates poorly with human perception of image quality, as it weights all pixel differences equally regardless of their visual significance.
+
+\paragraph{Structural Similarity Index.}
+The Structural Similarity Index Measure (SSIM)~\cite{wang_image_2004} addresses the limitations of PSNR by comparing images based on luminance, contrast, and structural information rather than raw pixel differences. For two image patches $x$ and $y$:
+
+\begin{equation}
+\label{eq:ssim}
+\text{SSIM}(x, y) = \frac{(2\mu_x \mu_y + c_1)(2\sigma_{xy} + c_2)}{(\mu_x^2 + \mu_y^2 + c_1)(\sigma_x^2 + \sigma_y^2 + c_2)}
+\end{equation}
+
+where $\mu_x$, $\mu_y$ are the local means, $\sigma_x^2$, $\sigma_y^2$ the local variances, $\sigma_{xy}$ the cross-covariance, and $c_1$, $c_2$ stabilisation constants. SSIM values range from $-1$ to $1$, with 1 indicating identical images. The metric is computed locally over sliding windows and averaged across the image. SSIM better reflects perceived visual quality than PSNR, particularly for distortions that affect image structure rather than pixel intensity.
+
+\paragraph{Learned Perceptual Image Patch Similarity.}
+The Learned Perceptual Image Patch Similarity (LPIPS)~\cite{zhang_unreasonable_2018} measures the perceptual distance between two images using deep features extracted from a pretrained neural network. Given images $\hat{I}$ and $I$, features are extracted at multiple layers $l$ of a network (typically VGG or AlexNet), and the distance is computed as a weighted sum of normalised feature differences:
+
+\begin{equation}
+\label{eq:lpips}
+\text{LPIPS}(\hat{I}, I) = \sum_l \frac{1}{H_l W_l} \sum_{h,w} \| w_l \odot (\hat{\phi}_l^{hw} - \phi_l^{hw}) \|^2
+\end{equation}
+
+where $\phi_l^{hw}$ and $\hat{\phi}_l^{hw}$ are the unit-normalised feature activations at spatial position $(h, w)$ in layer $l$, and $w_l$ are learned per-channel weights. Lower LPIPS values indicate greater perceptual similarity. LPIPS has been shown to correlate more strongly with human judgements of image similarity than both PSNR and SSIM, particularly for the types of distortions produced by generative models.
+
+\paragraph{Texture Similarity.}
+To assess whether the material appearance of a completed object matches its reference, a texture similarity metric based on learned feature representations is employed. Given two texture patches, feature vectors are extracted using a pretrained EfficientNet~\cite{tan_efficientnet_2019} backbone, and their similarity is measured using cosine similarity:
+
+\begin{equation}
+\label{eq:tex_sim}
+\text{TexSim}(T_1, T_2) = \frac{f(T_1) \cdot f(T_2)}{\|f(T_1)\| \cdot \|f(T_2)\|}
+\end{equation}
+
+where $f(\cdot)$ denotes the feature extraction function. A cosine similarity of 1 indicates identical feature representations. Unlike PSNR and SSIM, which compare images at the pixel level, this metric captures higher-level material and texture properties such as pattern regularity, colour distribution, and surface characteristics. This makes it particularly suited for evaluating texture completion quality, where the completed region should exhibit the same material as the reference but need not reproduce the exact pixel pattern (Chapter~\ref{ch:7_Object_Completion}).
+
+% ── Summary ──────────────────────────────────────────────────────────────────
+\subsection{Summary}
+\label{sec:bg_metrics_summary}
+
+Table~\ref{tab:metrics_overview} summarises the evaluation metrics and indicates the pipeline stages in which each is applied.
+
+\begin{table}[h]
+    \centering
+    \caption[Evaluation metrics overview]{Overview of evaluation metrics used in this thesis. Arrows indicate the direction of improvement: $\uparrow$~higher is better, $\downarrow$~lower is better.}
+    \label{tab:metrics_overview}
+    \begin{tabular}{l l c l}
+        \toprule
+        \textbf{Metric} & \textbf{Type} & \textbf{Range} & \textbf{Pipeline Stage(s)} \\
+        \midrule
+        Chamfer Distance    & Geometric     & $[0, \infty)$ $\downarrow$ & Object \& scene completion \\
+        IoU                 & Overlap       & $[0, 1]$ $\uparrow$       & Object detection \& completion \\
+        Precision and recall& Detection     & $[0, 1]$ $\uparrow$       & Object detection \\
+        PSNR                & Image quality & $[0, \infty)$ $\uparrow$  & Scene \& texture completion \\
+        SSIM                & Image quality & $[-1, 1]$ $\uparrow$      & Scene \& texture completion \\
+        LPIPS               & Perceptual    & $[0, 1]$ $\downarrow$     & Scene \& texture completion \\
+        Texture Similarity  & Perceptual    & $[-1, 1]$ $\uparrow$      & Texture completion \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Together, these metrics provide a comprehensive evaluation framework covering geometric accuracy, volumetric agreement, detection reliability, and visual quality across all stages of the proposed pipeline. The experimental chapters that follow will refer back to these definitions when reporting quantitative results.
+
 %──────────────────────────────────────────────────────────────────────────────────
 \section{Conclusion}
 \label{sec:bg_conclusion}
-
-This chapter established the conceptual foundation for the remainder of the thesis by positioning scene dynamification relative to existing work, clarifying the representational landscape, and formalising the requirements of a \gls{DRM}. The review of prior approaches showed that, although important progress has been made in object detection, scene completion, object completion and visual inpainting, these components are still largely addressed in isolation. No existing method integrates them into a unified workflow capable of producing complete, editable and object-structured scene representations from heterogeneous and multi-temporal indoor scan data.
-
-The chapter further showed that the choice of representation strongly determines which operations are feasible throughout the pipeline. Explicit representations such as point clouds and meshes remain most suitable for acquisition, rendering and editing, while implicit representations such as distance fields provide a flexible intermediate form for completion and learning-based inference. Spatial data structures such as voxel grids, octrees and k-d trees complement these representations by enabling scalable processing of large 3D datasets. On this basis, the thesis adopts unstructured coloured point clouds as primary input, textured meshes as the main output for reconstructed environments, and SDF- or UDF-based volumetric encodings as intermediate representations in completion stages.
-
-Finally, the chapter formalised the input and output requirements of a \gls{DRM}. A valid \gls{DRM} must combine geometric and visual completeness with explicit object-level decomposition and part-aware editability. This directly links the representation choices discussed here to the pipeline design introduced in Chapter~\ref{ch:introduction}. With this conceptual and terminological basis in place, the following chapters can focus on the individual stages of the proposed methodology, beginning with the acquisition and generation of the datasets on which the pipeline operates.
-
+ 
+This chapter established the conceptual and terminological foundation for the remainder of the thesis. It addressed four aspects that the subsequent chapters build upon: the positioning of scene dynamification relative to existing work, the representational landscape of 3D data, the formal requirements of a \gls{DRM}, and the evaluation framework used to assess reconstruction quality.
+ 
+The review of prior approaches in Section~\ref{sec:bg_sota_dynamification} showed that, although important progress has been made in object detection, scene completion, object completion and visual inpainting, these components are still largely addressed in isolation. No existing method integrates them into a unified workflow capable of producing complete, editable and object-structured scene representations from heterogeneous and multi-temporal indoor scan data.
+ 
+The representational overview in Section~\ref{sec:bg_representations} showed that the choice of representation strongly determines which operations are feasible throughout the pipeline. Explicit representations such as point clouds and meshes remain most suitable for acquisition, rendering and editing, while implicit representations such as signed and unsigned distance fields provide a flexible intermediate form for completion and learning-based inference. Spatial data structures such as voxel grids, octrees and k-d trees complement these representations by enabling scalable processing of large 3D datasets. On this basis, the thesis adopts unstructured coloured point clouds as primary input, textured meshes as the main output for reconstructed environments, and SDF- or UDF-based volumetric encodings as intermediate representations in completion stages. BIM, neural implicit and Gaussian splatting representations are excluded from the pipeline output due to their respective limitations in visual fidelity, deterministic editability or geometric maturity.
+ 
+The \gls{DRM} requirements formalised in Section~\ref{sec:bg_drm_requirements} define what the pipeline must produce: geometric and textural completeness, object-level decomposition, and part-aware editability. The distinction between primary, secondary and tertiary building elements --- introduced through the \gls{CI/SFB} classification --- determines how each element is routed through the pipeline: permanent structural elements are completed as part of the environment, while movable objects are reconstructed as individually manipulable entities.
+ 
+Finally, the evaluation metrics defined in Section~\ref{sec:bg_metrics} provide a unified quantitative framework for the experimental chapters that follow. Geometric accuracy is assessed through the Chamfer Distance and volumetric IoU, detection quality through precision, recall and detection IoU, and visual quality through PSNR, SSIM, LPIPS and texture similarity. By defining these metrics here rather than in individual chapters, consistent evaluation criteria are established across all pipeline stages.
+ 
+With this conceptual, representational and evaluative basis in place, the following chapters address the individual stages of the proposed methodology, beginning with the acquisition and generation of the datasets on which the pipeline operates.
+ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \cleardoublepage

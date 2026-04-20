@@ -14,6 +14,7 @@
 \newglossaryentry{RDF}{name={RDF}, description={Resource Description Framework}}
 \newglossaryentry{SUPER4PCS}{name={SUPER4PCS}, description={Super 4-Points Congruent Sets}}
 \newglossaryentry{ICP}{name={ICP}, description={Iterative Closest Point}}
+\newglossaryentry{API}{name={API}, description={Application Programming Interface}}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
@@ -23,7 +24,7 @@
 This chapter addresses the first stage of the \gls{DRM} pipeline: the alignment of newly captured data with pre-existing reference datasets, and the incremental updating of those datasets with new observations.
 
 % Paragraph purpose: explain why incremental updating is necessary
-Indoor environments are not static. Furniture is rearranged, equipment is replaced, and layouts evolve through daily use. Complete re-documentation of a facility each time a change occurs is prohibitively expensive and time-consuming. High-end terrestrial laser scanning campaigns, while producing the most accurate data, require significant setup time, post-processing effort, and specialised equipment~\cite{bassier_standalone_2016, geyter_point_2022}. As a result, detailed scan data quickly becomes outdated as a representation of the current state of the environment. A more practical approach is to capture only the changed portions of the environment using faster, more accessible sensing devices, and to integrate these observations into the existing high-quality dataset~\cite{bassier_geomapi_2024}. This incremental strategy extends the lifespan of expensive baseline scans while keeping the digital representation up to date.
+Indoor environments are not static. Furniture is rearranged, equipment is replaced, and layouts evolve through daily use. Complete re-documentation of a facility each time a change occurs is prohibitively expensive and time-consuming. High-end terrestrial laser scanning campaigns, while producing the most accurate data, require significant setup time, post-processing effort, and specialised equipment~\cite{bassier_standalone_2016, geyter_point_2022}. As a result, detailed scan data quickly becomes outdated as a representation of the current state of the environment. A more practical approach is to capture only the changed portions of the environment using faster, more accessible sensing devices, and to integrate these observations into the existing high-quality dataset~\cite{bassier_geomapi_2024}.
 
 % Paragraph purpose: introduce the indoor localisation challenge
 However, integrating newly captured data requires solving a fundamental localisation problem. In outdoor environments, \gls{GNSS} provides a straightforward means of geo-referencing captured data. In indoor environments, satellite signals are unavailable or severely degraded, making direct geo-referencing impractical~\cite{vermandere_two-step_2022}. Instead, the position and orientation of the capturing device must be determined relative to pre-existing reference data. This is particularly challenging when the capturing device is a low-cost sensor such as a head-mounted \gls{XR} device or a smartphone, which produces data of significantly lower resolution and accuracy compared to the reference datasets~\cite{geyter_point_2022}.
@@ -32,7 +33,10 @@ However, integrating newly captured data requires solving a fundamental localisa
 A second difficulty arises from the temporal changes between data captures. Reference data may have been captured weeks, months, or even years before the new observations. During this interval, objects may have been moved, added, or removed, and even the appearance of permanent structures may have changed due to lighting conditions, weathering, or surface treatment. Registration methods that assume a static scene may therefore fail when applied across temporal gaps, as the features they rely on may no longer be present in the new observation~\cite{vermandere_two-step_2022}.
 
 % Paragraph purpose: outline the chapter structure and contributions
-This chapter presents a two-step alignment framework that addresses both challenges, together with a dataset updating mechanism that integrates new observations into existing point clouds. The alignment framework combines a coarse global positioning step with a fine registration step that leverages both 2D image features and 3D geometric features to compute a robust pose estimate. The updating mechanism determines which points in the existing dataset are still current and which should be replaced by new observations. The methods presented in this chapter are based on two publications: the two-step alignment of mixed reality devices to existing building data~\cite{vermandere_two-step_2022} and the automatic alignment and completion of point cloud environments using XR data~\cite{vermandere_automatic_2022}, with the dataset management infrastructure provided by the GEOMAPI framework~\cite{bassier_geomapi_2024}.
+This chapter presents a two-step alignment framework that addresses both challenges, together with a dataset updating mechanism that integrates new observations into existing point clouds. The alignment framework combines a coarse global positioning step with a fine registration step that leverages both 2D image features and 3D geometric features to compute a robust pose estimate. The updating mechanism determines which points in the existing dataset are still current and which should be replaced by new observations. 
+
+
+%The methods presented in this chapter are based on two publications: the two-step alignment of mixed reality devices to existing building data~\cite{vermandere_two-step_2022} and the automatic alignment and completion of point cloud environments using XR data~\cite{vermandere_automatic_2022}, with the dataset management infrastructure provided by the GEOMAPI framework~\cite{bassier_geomapi_2024}.
 
 % Paragraph purpose: provide the chapter roadmap
 The remainder of this chapter is organised as follows. Section~\ref{sec:4_related} reviews the related work on indoor localisation and data alignment. Section~\ref{sec:4_methodology} presents the methodology, covering the global alignment, local pose estimation, and dataset updating procedures. Section~\ref{sec:4_experiments} describes the experimental setup and results. Section~\ref{sec:4_conclusion} concludes the chapter.
@@ -85,6 +89,15 @@ A significant challenge for image-based alignment in construction and facility e
 % Paragraph purpose: discuss combined approaches
 Several works have explored the combination of 2D and 3D alignment methods. Liu et al.~\cite{liu_instant_2018} initialise outdoor SLAM by estimating relative poses from localised panoramic images. Ventura et al.~\cite{ventura_global_2014} propose multi-view object detection combined with feature matching for global localisation. Brachmann and Rother~\cite{brachmann_expert_2019} extract CNN features and apply Expert Sample Consensus to handle scene outliers. However, most of these methods focus on either 2D or 3D data independently and do not combine both modalities in a unified pose estimation framework. The method presented in this chapter addresses this gap by jointly leveraging 2D image features, 3D point cloud features, and BIM geometry to produce a robust and accurate alignment.
 
+\subsection{Dataset Updating}
+\label{sec:4_rw_updating}
+
+Beyond alignment, combining multi-temporal datasets into a single consistent representation remains an open challenge. The simplest case is coverage improvement in a static environment: Lachat~et~al.~\cite{lachat_assessment_2016} supplement TLS data with close-range photogrammetry, while Bolkas~et~al.~\cite{bolkas_fusing_2020} fuse drone and ground-level point clouds using a grid-based occlusion infilling strategy. Alteirac~et~al.~\cite{alteirac_combining_2021} combine simultaneous multi-sensor captures. These methods assume the scene is unchanged between acquisitions.
+
+When the environment does change, the discrepancies must first be detected. Cloud-to-cloud distance computation is the dominant approach~\cite{mukupa_review_2017}, with voxel-based~\cite{xu_voxel_2021} and learning-based~\cite{meyer_change_2022} variants improving robustness. However, most change detection methods focus on identifying differences between exactly two epochs rather than on integrating the new observations into the existing dataset.
+
+The key difficulty in actual updating is distinguishing unchanged regions, where the higher-quality original data should be preserved, from genuinely changed regions, where the new data must replace the old, and from regions that the new sensor simply did not observe. Partovi~et~al.~\cite{partovi_automatic_2021} focus on filling occlusions with photogrammetric data but do not handle temporal changes.
+
 % ─────────────────────────────────────────────────────────────────────────────
 
 \begin{figure}[h!]
@@ -110,7 +123,7 @@ The proposed alignment and updating pipeline consists of three sequential stages
 When handling datasets from different sensors, time periods, and locations, a standardised data management framework is essential. In this work, each data capture is organised as a \textit{session}. A session contains all data captured during a single measurement campaign with a single device, including point clouds, meshes, images, and their associated metadata. Sessions can originate from any of the sensing technologies described in Chapter~\ref{ch:3_Data_Acquisition}: high-end TLS, mobile mapping systems, \gls{XR} devices, or smartphones.
 
 % Paragraph purpose: explain the RDF-based metadata management
-To enable interoperability between sessions captured by different sensors and at different times, the metadata of each session is serialised as an \gls{RDF} graph using the GEOMAPI framework~\cite{bassier_geomapi_2024}. The graph stores the geospatial metadata of each resource---position, orientation, bounding box, coordinate system, accuracy, and timestamp---without duplicating the actual point cloud or image data. This lightweight representation allows rapid spatial queries across large collections of sessions without loading the underlying datasets.
+To enable interoperability between sessions captured by different sensors and at different times, the metadata of each session is serialised as an \gls{RDF} graph using the GEOMAPI framework~\cite{bassier_geomapi_2024}. The graph stores the geospatial metadata of each resource (position, orientation, bounding box, coordinate system, accuracy, timestamp, \dots) without duplicating the actual point cloud or image data. This lightweight representation allows rapid spatial queries across large collections of sessions without loading the underlying datasets.
 
 % Paragraph purpose: explain reference data preprocessing
 The reference data used for the alignment can consist of any combination of previously captured sessions: \gls{TLS} point clouds, \gls{iMMS} data, geolocated imagery, and \gls{BIM} models. Each reference resource is preprocessed as follows. Point clouds are converted to PCD format and a downsampled voxel octree together with \gls{FPFH} geometric features is extracted and stored in the RDF graph. Images have their \gls{ORB} features extracted during the \gls{SfM} processing and these features are stored per image in the graph. BIM geometries are sampled to point clouds and \gls{SUPER4PCS} features are extracted. In all cases, only the metadata and features are stored in the graph; the raw data remains at its original location.
@@ -123,10 +136,10 @@ For each new XR measurement session, the captured images and meshes are sent to 
 \label{sec:4_global}
 
 % Paragraph purpose: explain the purpose and mechanism of the global alignment
-The first step of the alignment process is a coarse global positioning that restricts the search space for the subsequent fine alignment. Due to the potentially large volume of reference data accumulated over time, it is computationally infeasible to match every new session against all available reference resources.
+Due to the potentially large volume of reference data accumulated over time, it is computationally infeasible to match every new session against all available reference resources. This is why the first step of the alignment process is a coarse global positioning that restricts the search space for the subsequent fine alignment. 
 
 % Paragraph purpose: explain the positioning mechanism
-The global position is obtained from the HTML Geolocation API, which estimates the device's location based on available Wi-Fi, radio, and \gls{GNSS} signals~\cite{vermandere_two-step_2022}. In indoor environments, the resulting position estimate $[\mathbf{p}_s \pm \sigma_g]$ has an accuracy of approximately 20\,m, which is sufficient to narrow down the available reference data to the correct building or floor, but not to achieve the metric-level accuracy required for data integration.
+The global position of the new session is obtained from the HTML Geolocation \gls{API}, which estimates the device's location based on available Wi-Fi, radio, and \gls{GNSS} signals~\cite{vermandere_two-step_2022}. In indoor environments, the resulting position estimate $[\mathbf{p}_s \pm \sigma_g]$ has an accuracy of approximately 20\,m, which is sufficient to narrow down the available reference data to the correct building, but not to achieve the metric-level accuracy required for data integration.
 
 % Paragraph purpose: explain the reference data sub-selection
 Given the coarse position estimate, relevant subsets of the reference point clouds and images are extracted. For images, the Euclidean distance between the focal point of each session image and each reference image is evaluated, retaining only reference images within a threshold distance $t_d$ augmented by the positioning uncertainty $\sigma_g$. For point clouds, any reference cloud whose bounding box intersects with the session's bounding box expanded by $\sigma_g$ is retained:
@@ -257,46 +270,30 @@ The final updated dataset consists of three parts: the original reference points
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Experiments}
 \label{sec:4_experiments}
-
-The alignment and updating methodology is evaluated on three test cases that span different environments and temporal conditions. The experiments assess both the alignment accuracy and the effectiveness of the dataset combination.
-
+ 
+The alignment and updating methodology is evaluated on the three real-world environments introduced in Section~\ref{sec:3_captured_scenes}: the laboratory rooms, the prefab living lab, and the Bruges renovation. Together these sites provide 45 measurement sessions spanning four sensor modalities and multiple capture epochs (Table~\ref{tab:3_captured_scenes_metrics}). This section first evaluates the alignment accuracy across all three sites (Section~\ref{sec:4_alignment_experiments}), then assesses the dataset combination procedure on a dedicated updating test case (Section~\ref{sec:4_combination_experiments}).
+ 
 % ── 4.4.1 ────────────────────────────────────────────────────────────────────
 \subsection{Alignment Experiments}
 \label{sec:4_alignment_experiments}
-
-% Paragraph purpose: introduce the alignment test cases
-Three periodic test cases were captured and processed, covering both operational facilities and buildings under construction~\cite{vermandere_two-step_2022}. In total, 45 sessions were documented using static TLS (Leica P30 and Leica BLK), the indoor mobile mapping system NavVis VLX, a CANON EOS 5D MARK II camera, the Microsoft HoloLens~2, and conventional smartphones.
-
-% Paragraph purpose: describe test case 1
-The first test case is a soil technology laboratory on the KU~Leuven campus in Ghent. It is an industrial-style laboratory space of approximately 10\,m $\times$ 30\,m containing working desks, machinery, and bulk materials. Between periodic captures taken several months apart, the laboratory was in active use and all movable objects were displaced. This test case evaluates the ability of the alignment to handle multi-temporal inputs of an operational environment where objects have changed position.
-
-% Paragraph purpose: describe test case 2
-The second test case is the construction of a prefab living lab on the campus. This project was periodically captured starting from early stake-out through to MEP installations. The structure is a three-storey building constructed from prefab elements. This test case evaluates the robustness of the alignment when both texture and geometry change drastically between captures, as is typical of construction site monitoring.
-
-% Paragraph purpose: describe test case 3
-The third test case is a renovation of a four-storey house in Bruges, including a full basement and attic. The refurbishment was periodically captured with both smartphones and the HoloLens~2, with Leica BLK data serving as baseline. This test case evaluates the alignment in an indoor construction site environment with significant clutter and temporary storage of materials.
-
-% Paragraph purpose: present alignment results
-The alignment was performed using the five methods described in Section~\ref{sec:4_local}, with the best-fit parameters determined empirically over all measurements. The global distance threshold $t_d$ was set to 10\,m. The feature correspondence function $\rho$ for image matches was set to 50 pixels, and for point cloud matches to 1.5 times the voxel size (0.05\,m).
-
-% Paragraph purpose: summarise quantitative results
-Across all three test cases, the average positional accuracy of the combined pose estimation is 0.06\,m, the average rotational accuracy is 0.34°, and the average confidence is approximately 50\%. These results are promising given the diversity of low- and high-end sensors used across the large number of sessions. The geometric alignment methods (FPFH and SUPER4PCS) achieve the highest individual confidences (averaging 75\%), while the image-based methods achieve lower individual confidences (averaging 25\%) but provide more candidate matches, increasing the overall robustness. The SUPER4PCS method yields the highest average confidence (81\%) and the lowest positional RMSE (0.07\,m), demonstrating the value of BIM-based alignment when a model is available.
-
-% Paragraph purpose: discuss method complementarity
-A key finding is that relying on both 2D and 3D alignment methods is essential for robust pose estimation. Individual methods are prone to failure in specific scenarios---for instance, FPFH matching struggles when the scene has undergone large geometric changes, while image-based methods fail when texture has changed dramatically---but the weighted pose voting mechanism mitigates these individual weaknesses. The computational time for the complete alignment averages 5 minutes per session, which is acceptable for a background optimisation process that does not need to complete before the XR device can be used.
-
+ 
+Each of the three sites poses distinct alignment challenges. The laboratory rooms test multi-temporal registration under object-level layout changes within a stable structural envelope. The living lab tests robustness when both geometry and surface appearance change drastically between epochs, as prefab elements are erected and finishes applied. The Bruges renovation tests indoor alignment in a cluttered residential environment with significant temporary storage of construction materials.
+ 
+The alignment was performed using the five methods described in Section~\ref{sec:4_local}, with parameters determined empirically across all sessions. The global distance threshold $t_d$ was set to 10\,m. The correspondence function $\rho$ was set to 50 pixels for image matches and to 1.5 times the voxel size (0.05\,m) for point cloud matches.
+ 
+Across all three sites, the combined pose estimation achieves an average positional accuracy of 0.06\,m, an average rotational accuracy of 0.34°, and an average confidence of approximately 50\%. Given the diversity of sensors ranging from the Leica P30 to the HoloLens~2, these results confirm that the alignment does not introduce error beyond the inherent limitations of the lowest-quality sensor. The geometric methods (FPFH and SUPER4PCS) yield the highest individual confidences (averaging 75\%), with SUPER4PCS achieving the best overall performance (81\% confidence, 0.07\,m positional RMSE) when a BIM reference is available. The image-based methods achieve lower individual confidences (averaging 25\%) but contribute a larger number of candidate matches, improving overall robustness.
+ 
+A key finding is that the complementary use of 2D and 3D alignment methods is essential. Individual methods fail: The FPFH matching degrades under large geometric changes, while image-based methods fail when texture has changed significantly. The weighted pose voting mechanism compensates for these individual weaknesses. The complete alignment averages 5 minutes per session, which is acceptable as a background process.
+ 
 % ── 4.4.2 ────────────────────────────────────────────────────────────────────
 \subsection{Combination Experiments}
 \label{sec:4_combination_experiments}
-
-% Paragraph purpose: describe the combination test case
-The dataset updating methodology is evaluated on a test case that combines two datasets of the same laboratory space (Lab 2, Asphalt), captured at different times and with different sensors~\cite{vermandere_automatic_2022, bassier_geomapi_2024}. The original dataset was captured by a high-end NavVis VLX mobile mapping system (743,618 points, 0.005\,m density, 0.005\,m accuracy), while the new dataset was captured using the Microsoft HoloLens~2 (13,107 points, 0.05\,m density, 0.05\,m accuracy). Between captures, significant changes occurred: some objects were removed, new objects appeared, and existing objects were repositioned.
-
-% Paragraph purpose: present combination results
-The convex hull filtering reduced the relevant portion of the original dataset by 95.5\%, demonstrating the effectiveness of the spatial sub-selection. During the removal phase, 36.2\% of the relevant reference points were not covered by the new dataset and were subjected to the visibility check. Of these, 56.6\% were determined to be visible (and therefore outdated), resulting in the removal of 15.7\% of the relevant reference points. In the addition phase, 26.4\% of the session points had no existing counterpart and were added to the combined dataset.
-
-% Paragraph purpose: summarise the composition of the updated dataset
-The final relevant portion of the combined dataset consists of 54.4\% preserved reference points, 13.4\% inconclusive occluded points retained from the reference, and 32.2\% newly added session points. The complete updating algorithm executed in 1.47 seconds on a standard notebook, demonstrating the computational efficiency of the approach. The resulting combined point cloud preserves the high accuracy of the original VLX data in regions that have not changed, while incorporating the HoloLens~2 observations in regions where updates have occurred.
+ 
+The dataset updating procedure is evaluated on a subset of the laboratory room data (Lab~2, Asphalt). Two captures of the same space are combined: the reference dataset acquired with the NavVis VLX (743,618 points, 0.005\,m density) and a new session acquired with the HoloLens~2 (13,107 points, 0.05\,m density). Between captures, objects were added, removed, and repositioned, creating the mixed-change scenario described in Section~\ref{sec:4_rw_updating}.
+ 
+The convex hull filtering reduced the relevant portion of the reference dataset by 95.5\%, confirming the effectiveness of the spatial sub-selection. During the removal phase, 36.2\% of the relevant reference points were not covered by the new session and were subjected to the visibility check. Of these, 56.6\% were determined to be visible and therefore outdated, resulting in the removal of 15.7\% of the relevant reference points. In the addition phase, 26.4\% of the session points had no existing counterpart and were added.
+ 
+The final combined dataset consists of 54.4\% preserved reference points, 13.4\% retained but inconclusive occluded points, and 32.2\% newly added session points. The complete updating algorithm executed in 1.47\,s on a standard notebook. The result preserves the high accuracy of the VLX data in unchanged regions while incorporating HoloLens~2 observations where updates have occurred.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Conclusion}
@@ -306,13 +303,10 @@ The final relevant portion of the combined dataset consists of 54.4\% preserved 
 This chapter presented a two-step alignment framework for positioning heterogeneous sensor data within pre-existing reference coordinate systems, together with a dataset updating mechanism for integrating new observations into existing point clouds. The alignment framework combines a coarse global positioning step based on available wireless signals with a fine registration step that leverages five complementary methods spanning both 2D image features and 3D geometric features. A weighted pose voting mechanism combines the individual estimates into a robust final pose with an associated confidence measure.
 
 % Paragraph purpose: highlight key findings
-The experiments across three test cases demonstrate that the combined use of 2D and 3D alignment methods is essential for robust indoor pose estimation, particularly in environments that undergo significant changes between measurement epochs. Individual methods are unreliable in isolation, but their complementary strengths---image-based methods providing many candidate matches and geometric methods providing high accuracy---yield a robust combined estimate. The average positional accuracy of 0.06\,m across diverse sensors and environments meets or exceeds the resolution of the lowest-quality sensors used, confirming that the alignment does not introduce additional error beyond the inherent sensor limitations.
+The experiments across three test cases demonstrate that the combined use of 2D and 3D alignment methods is essential for robust indoor pose estimation, particularly in environments that undergo significant changes between measurement epochs. Individual methods are unreliable in isolation, but their complementary strengths yield a robust combined estimate, we see that the image-based methods provide many candidate matches and geometric methods provide high accuracy. The average positional accuracy of 0.06\,m across diverse sensors and environments meets or exceeds the resolution of the lowest-quality sensors used, confirming that the alignment does not introduce additional error beyond the inherent sensor limitations.
 
 % Paragraph purpose: highlight the updating contribution
 The dataset updating methodology enables the incremental maintenance of digital facility documentation without requiring complete re-documentation. By distinguishing between outdated, occluded, and current observations, the method preserves high-quality reference data wherever possible while incorporating new observations only where necessary. This extends the effective lifespan of expensive baseline scans and keeps the digital representation aligned with the current state of the physical environment.
-
-% Paragraph purpose: connect to the broader pipeline
-Within the broader pipeline introduced in Chapter~\ref{ch:introduction}, this chapter establishes the aligned and up-to-date point cloud representation that serves as input for all subsequent stages. The scene segmentation, object detection, and completion methods presented in the following chapters all operate on the assumption that the input data is spatially consistent and represents the current state of the environment. The alignment and updating framework presented here ensures that this assumption is met, even when the input originates from heterogeneous sensors captured at different times.
 
 % Paragraph purpose: discuss limitations and future work
 Several limitations remain. The coarse global alignment depends on the availability of wireless positioning signals, which may be unreliable in certain indoor environments. The visibility check in the updating procedure relies on the quality of the session mesh normals, which may be noisy for low-end sensors. Future work could explore the use of virtual imagery generated from BIM or point cloud models to provide additional reference data for the image-based alignment methods, and the integration of more robust change detection algorithms that can distinguish between temporary and permanent scene modifications.

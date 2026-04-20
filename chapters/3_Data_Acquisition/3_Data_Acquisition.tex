@@ -9,9 +9,9 @@
 \newglossaryentry{LOA}{name={LOA}, description={Level of Accuracy}}
 \newglossaryentry{SLAM}{name={SLAM}, description={Simultaneous Localisation and Mapping}}
 \newglossaryentry{TSDF}{name={TSDF}, description={Truncated Signed Distance Field}}
+\newglossaryentry{OBB}{name={OBB}, description = {Oriented Bounding Box}}
 
 % ─────────────────────────────────────────────────────────────────────────────
-\todo{Add a section about evaluation metrics?}
 \section{Introduction}
 \label{sec:3_intro}
 
@@ -34,7 +34,6 @@ Publicly available datasets remain an essential resource for benchmarking, train
 
 The following sections therefore review the most relevant public datasets according to these two levels of representation.
 % ─────────────────────────────────────────────────────────────────────────────
-\todo{Should I add more datasets in a related work section?}
 \subsection{Scene-Level Datasets}
 \label{sec:3_scene_datasets}
 
@@ -224,7 +223,7 @@ In total, 45 measurement sessions were recorded across the three sites using the
 
 \begin{table}[htbp]
     \centering
-    \caption[Captured scenes dataset metrics]{Dataset-level metrics for the three captured environments, aggregated per sensor across all sessions of that sensor within each scene. Image counts refer to per-session imagery (TLS panoramic frames, iMMS keyframes, DSLR photogrammetry sets, or XR RGB captures); point counts refer to the total raw points captured across all sessions of the corresponding sensor.}
+    \caption[Captured scenes dataset metrics]{Dataset-level metrics for the three captured environments, aggregated per sensor across all sessions of that sensor within each scene.}
     \label{tab:3_captured_scenes_metrics}
     \resizebox{\textwidth}{!}{%
     \begin{tabular}{l l c c c c}
@@ -275,72 +274,202 @@ In summary, the real-world dataset provides a heterogeneous collection of indoor
 
 \subsection{Introduction}
 
-While the real-world captures described in the previous section provide heterogeneous multi-sensory data for alignment evaluation, they cannot provide the ground-truth geometry required for quantitative evaluation of scene and object completion. The surfaces that completion methods are expected to reconstruct are precisely those that remain unobserved in real scans, and therefore cannot be measured directly. For this reason, quantitative evaluation requires a synthetic data generation strategy in which the complete geometry of the scene is known, while the observed input remains partial and sensor-dependent.
+The real-world captures described in the previous section provide heterogeneous multi-sensory data for alignment evaluation, but they do not contain complete geometric ground truth for quantitative assessment of scene and object completion. Surfaces that are occluded during acquisition are, by definition, absent from the captured data. As a result, real scans cannot directly support supervised evaluation of reconstruction performance.
 
-To address this requirement, this thesis introduces a synthetic data creation framework that combines procedurally generated indoor scenes with a virtualised scanning process. The methodological aim is not merely to create artificial scenes, but to generate scan data that reproduces the structural characteristics of real acquisition: partial visibility, occlusion patterns, varying point densities, sensor noise, and differences between capture modalities. The resulting framework enables the construction of paired datasets in which each partial scan is accompanied by complete ground-truth geometry at both scene and object level. This is essential for evaluating detection, completion, and dynamification in a controlled and reproducible manner.
-
-The framework is built around two complementary components. First, a virtual scanning methodology simulates how different sensing technologies observe a scene from a particular viewpoint, thereby producing realistic partial measurements rather than idealised full geometry. Second, a procedural scene generation methodology produces diverse indoor layouts with controllable object arrangements, making it possible to vary room structure, furniture composition, and temporal changes across repeated captures. Together, these components form the basis of the V-Scan dataset introduced in Section~\ref{sec:3_vscan}.
+To address this limitation, a synthetic data generation framework was developed to produce partial scans together with complete reference geometry under controlled conditions that approximate real indoor scanning scenarios. The framework consists of two main components: (i) a virtual acquisition module that simulates the behaviour of real scanning devices (Section~\ref{sec:3_virtual_scanner}), and (ii) a procedural scene generation module that creates diverse furnished indoor environments (Section~\ref{sec:3_room_generator}). These components are combined to generate the V-Scan dataset (Section~\ref{sec:3_vscan}).
 
 \subsection{Related Work}
 \label{sec:3_synthetic_related}
 
-Synthetic data generation for 3D vision builds on several strands of prior work, including real-world indoor scan datasets, synthetic scene and object repositories, virtual sensing frameworks, and procedural scene generation methods.
+Synthetic datasets are widely used in 3D computer vision to overcome the cost, scale, and annotation limitations of real-world data collection. At the scene level, datasets such as \textit{SUNCG}~\cite{song_semantic_2016}, \textit{SceneNet RGB-D}~\cite{mccormac_scenenet_nodate}, \textit{InteriorNet}~\cite{li_interiornet_2018}, and \textit{Replica}~\cite{straub_replica_2019} provide large collections of indoor environments with rendered imagery, semantic labels, and complete scene geometry. These resources have been widely adopted for tasks such as semantic segmentation, navigation, and view synthesis. However, they generally provide complete environments directly and do not explicitly model the partial, sensor-dependent observations encountered during real scanning.
 
-Scene-level datasets such as \textit{SUNCG}~\cite{song_semantic_2016}, \textit{SceneNet RGB-D}~\cite{mccormac_scenenet_nodate}, \textit{InteriorNet}~\cite{li_interiornet_2018}, and \textit{Replica}~\cite{straub_replica_2019} offer procedurally generated or reconstructed indoor environments with photorealistic rendering and ground-truth geometry. At the object level, repositories such as \textit{ShapeNet}~\cite{chang_shapenet_2015}, \textit{ModelNet}~\cite{wu_3d_2015}, and \textit{Amazon Berkeley Objects}~\cite{collins_abo_2022} provide extensive collections of CAD models and scanned objects for classification, reconstruction, and shape analysis. While these datasets provide clean geometry, they typically represent complete scenes or complete objects directly, rather than simulating the partial and sensor-dependent observations from which reconstruction pipelines must operate.
+At the object level, repositories such as \textit{ShapeNet}~\cite{chang_shapenet_2015}, \textit{ModelNet}~\cite{wu_3d_2015}, and \textit{Amazon Berkeley Objects}~\cite{collins_abo_2022} contain extensive collections of CAD models and scanned object instances. These datasets are valuable for classification, retrieval, reconstruction, and geometric learning. Nevertheless, they primarily represent complete objects in isolation and do not capture the contextual occlusions and incomplete observations typical of indoor scenes.
 
-To bridge this gap, several works have explored virtual scanning and LiDAR simulation. Early approaches such as the laser scanner simulator of Blume~et~al.~\cite{blume_simulating_2006} focused on efficient range simulation for robotics applications. More recent systems such as the virtual scanner of Popovas~et~al.~\cite{popovas_virtual_2021} and \textit{HELIOS++}~\cite{winiwarter_virtual_2022} simulate viewpoint-dependent sensing and measurement behaviour with high realism. These frameworks demonstrate the importance of modelling the acquisition process itself rather than relying solely on idealised geometry. However, they are generally designed for surveying, robotics, or training applications, and do not explicitly support the generation of object-level ground truth, scene-object decomposition, or completion-oriented supervision within furnished indoor environments.
+To address the gap between ideal geometry and measured data, several studies have explored virtual scanning and LiDAR simulation. Early work such as the laser scanner simulator of Blume~et~al.~\cite{blume_simulating_2006} focused on efficient range sensing simulation for robotics applications. More recent systems, including the virtual scanner of Popovas~et~al.~\cite{popovas_virtual_2021} and \textit{HELIOS++}~\cite{winiwarter_virtual_2022}, incorporate viewpoint-dependent visibility, sampling behaviour, and sensor noise with high realism. These methods demonstrate the importance of modelling the acquisition process itself rather than relying only on clean reference geometry. However, they are mainly targeted at surveying, robotics, or training scenarios, and do not explicitly provide object-level ground truth, scene decomposition, or completion-oriented supervision for furnished indoor environments.
 
-Another relevant line of work concerns procedural scene generation. Rather than manually constructing environments one by one, procedural and generative methods make it possible to produce large numbers of diverse indoor scenes in a scalable and reproducible manner. \textit{Infinigen Indoors}~\cite{raistrick_infinigen_nodate} generates photorealistic indoor scenes using a constraint-based procedural framework with large asset libraries. \textit{RoomPilot}~\cite{chen_roompilot_2025} translates textual descriptions or floor plans into structured indoor layouts through a domain-specific scene representation, while \textit{DiffuScene}~\cite{tang_diffuscene_2024} uses diffusion-based generation to synthesise plausible indoor object arrangements. These approaches highlight the increasing realism and controllability of synthetic indoor scene generation, but they are not primarily designed to create benchmark data for viewpoint-dependent scanning, object isolation, and completion evaluation.
+A related research direction concerns procedural scene generation. Rather than manually designing environments, procedural approaches allow scalable and reproducible creation of diverse indoor scenes. \textit{Infinigen Indoors}~\cite{raistrick_infinigen_nodate} generates photorealistic indoor spaces using constraint-based procedural rules and large asset libraries. \textit{RoomPilot}~\cite{chen_roompilot_2025} produces structured layouts from textual descriptions or floor plans, while \textit{DiffuScene}~\cite{tang_diffuscene_2024} applies diffusion models to synthesise plausible furniture arrangements. These works demonstrate increasing realism and controllability in synthetic scene creation, but they are not primarily intended for benchmark generation focused on viewpoint-dependent scanning, object isolation, and completion evaluation.
 
-The synthetic framework proposed in this thesis builds on these strands of work while addressing a more specific methodological need: the creation of furnished indoor scenes that can be virtually scanned under different sensing conditions, while preserving complete ground truth at both scene and object level. In contrast to existing indoor scan datasets, it provides access to the geometry hidden by occlusion. In contrast to generic synthetic scene repositories, it explicitly models the sensing process that gives rise to partial point clouds. And in contrast to existing virtual scanning frameworks, it is designed not only to simulate acquisition, but also to support object isolation, empty-scene reference generation, and controlled variation in sensor type, viewpoint, and scene configuration. These properties are essential for constructing the V-Scan dataset used throughout the remainder of this thesis.
+The framework proposed in this thesis combines elements from these research directions. It integrates procedural indoor scene generation with configurable virtual scanning in order to produce partial scene observations together with complete scene- and object-level ground truth. This combination enables controlled benchmarking of scene completion, object completion, and detection methods under realistic sensing conditions.
 
 \subsection{Virtual Scanner}
 \label{sec:3_virtual_scanner}
 
-The first methodological component of the framework is a virtual scanner that emulates the acquisition process of real sensing devices within a synthetic 3D environment. Its purpose is to transform complete virtual geometry into partial observations that exhibit the same types of incompleteness encountered in practice. In other words, rather than using synthetic scenes directly as learning or evaluation inputs, the framework passes them through a simulated measurement process so that the resulting data resembles actual scan output.
+A virtual scanner was developed to simulate common indoor acquisition devices within a 3D environment. For each scan position, the system generates a coloured point cloud together with a panoramic image, approximating the outputs of terrestrial laser scanners and mobile depth-sensing devices. In addition to standard scene capture, the framework supports automated object extraction, empty-scene rescanning, and configurable scan variations for dataset generation. The full pipeline is illustrated in Figure~\ref{fig:3_VScan_Method}.
 
+\begin{figure}[h]
+  \centering
+  \medskip
+  \includegraphics[width=1\textwidth]{Vscan_method}
+  \caption[V-Scan Method]{Overview of the V-Scan method.}
+  \label{fig:3_VScan_Method}
+\end{figure}
 
+\subsubsection{Scanner Configuration}
 
-The scanner is designed around the observation that different sensing technologies vary not only in accuracy, but also in sampling density, spatial coverage, field of view, and noise behaviour. These factors strongly influence downstream tasks such as alignment, detection, and completion. The virtual scanner therefore models each device through a set of acquisition parameters controlling angular sampling, maximum range, vertical field of view, and measurement uncertainty. By varying these parameters, the framework reproduces the behaviour of high-end terrestrial laser scanners, mobile mapping systems, and commodity-level sensors such as smartphone LiDAR or \gls{XR} devices.
+The scanner behaviour is controlled through a set of parameters describing the sensing characteristics of the simulated device:
 
-From a methodological perspective, the key principle is that partiality should emerge naturally from visibility constraints rather than being imposed artificially. The scan is therefore generated from a fixed viewpoint by evaluating which surfaces are visible along a spherical sampling pattern. This produces realistic self-occlusions, blind zones, and distance-dependent sparsity. Measurement uncertainty is then introduced through a noise model that combines a range-independent component, representing intrinsic sensor noise, with a range-dependent component, reflecting the degradation of accuracy with increasing distance. In this way, the synthetic point cloud captures not only the geometry that is observed, but also the imperfections with which it is observed.
+\begin{itemize}
+    \item \textbf{Scan density}: the angular spacing between consecutive rays, expressed as the point spacing in mm at 10\,m distance. This parameter controls the total number of rays cast and thus the density of the resulting point cloud.
+    \item \textbf{Scan range}: the maximum distance at which surfaces are detected, in metres.
+    \item \textbf{Vertical scan range}: the total angular extent of the vertical field of view, in degrees. A value less than 360° simulates the blind spots typically found at the zenith and nadir of terrestrial laser scanners.
+    \item \textbf{System noise}: $\sigma_{\text{sys}}$ the standard deviation of the range-independent measurement noise, in mm. This component models the intrinsic noise floor of the sensor electronics.
+    \item \textbf{Distance noise}: $\sigma_{\text{dist}}$ the standard deviation of the range-dependent measurement noise, in mm per 10\,m. This component models the increase in measurement uncertainty with distance.
+\end{itemize}
 
-In addition to geometry, the scanner also produces appearance information through a co-located panoramic image. This mirrors the acquisition principle of real terrestrial scanning systems, where colour is often derived from panoramic imagery rather than measured directly by the range sensor. The combination of point cloud and panoramic image is particularly important for this thesis, as later stages rely on both geometric and visual cues.
+To replicate the characteristics of real scanning devices, a set of scanner type presets was created based on manufacturer specifications. Table~\ref{tab:scanner_presets} summarises the parameters of the simulated scanner types available in the framework.
 
-A further methodological requirement is the ability to evaluate object-level completion separately from scene-level completion. For this reason, the scanning process is coupled to object annotations within the synthetic environment. This makes it possible to extract, for each object, both the partial observation produced by the scan and the corresponding complete ground-truth geometry. The same scene can thus be analysed at multiple levels: as a furnished partial scan, as an empty structural scene, and as a collection of partially observed objects with known complete shapes.
+\begin{table}[h]
+    \centering
+    \caption[Virtual scanner presets]{Scanner type presets used in the virtual scanning framework, based on manufacturer specifications of real devices.}
+    \label{tab:scanner_presets}
+    \begin{tabular}{l c c c c c}
+        \toprule
+        \textbf{Scanner Type} & \textbf{Density} & \textbf{Range} & \textbf{Vert.\ Range} & \textbf{Sys.\ Noise} & \textbf{Dist.\ Noise} \\
+         & (mm/10m) & (m) & (°) & (mm) & (mm/10m) \\
+        \midrule
+        Leica P30          & 12.5 & 100 & 290 & 1.0 & 1.0 \\
+        Leica BLK360 Dense & 6.0  & 60  & 300 & 4.0 & 7.0 \\
+        Leica BLK360 Fast  & 12.5 & 60  & 300 & 4.0 & 7.0 \\
+        Matterport Pro2    & 25.0 & 9   & 260 & 3.0 & 5.0 \\
+        Matterport Pro3    & 20.0 & 30  & 280 & 2.0 & 3.0 \\
+        iPhone LiDAR       & 50.0 & 5   & 180 & 10.0 & 10.0 \\
+        HoloLens 2         & 80.0 & 4   & 120 & 10.0 & 15.0 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Geometric Scanning}
+
+The acquisition process is simulated by casting rays from the scanner origin into the scene according to a spherical sampling pattern. For an angular spacing $\delta$, the number of horizontal and vertical samples is given by:
+
+\begin{equation}
+n_{\text{horiz}} = \left\lceil \frac{2\pi}{\delta} \right\rceil,
+\qquad
+n_{\text{vert}} = \left\lceil \frac{\pi}{\delta} \right\rceil
+\end{equation}
+
+Rays outside the selected vertical field of view are discarded to reproduce blind regions typically present above and below terrestrial scanners.
+
+Whenever a ray intersects a surface within range, a point is recorded together with its position, surface normal, and texture coordinates. Optional Gaussian noise is added to the measured range:
+
+\begin{equation}
+d' = d + \mathcal{N}\left(0,\sigma_{\text{sys}} + \sigma_{\text{dist}} d \right)
+\end{equation}
+
+where $d$ is the true distance, $\sigma_{\text{sys}}$ is the constant noise term, and $\sigma_{\text{dist}}$ controls distance-dependent uncertainty. After acquisition, points can be filtered to a predefined scan volume to retain only observations inside the target scene region.
+
+\subsubsection{Image Capture and Colour Assignment}
+
+Colour information is captured through a spherical image render at the sensor location. The camera renders an equirectangular panoramic image, which serves both as the panoramic image output and as the source for point cloud colouring.
+ 
+Each scanned point is assigned a colour by sampling the panoramic image at its corresponding \gls{UV} coordinates derived from the angles of the cast rays.
+
+\subsubsection{Object Isolation}
+
+Each object instance in the scene is associated with an oriented bounding box \gls{OBB}. This is used to isolate the scanned points that fall within the OBB to obtain partial object observations. For every object, the framework stores:
+
+\begin{itemize}
+    \item the isolated partial point cloud,
+    \item the complete reference mesh,
+    \item the oriented bounding box parameters.
+\end{itemize}
+
+The bounding box parameters can be used to align the reference mesh to the partial point cloud.
+
+\subsubsection{Scan Variations}
+
+To support robustness analysis, additional scans can be generated after the main acquisition by modifying selected scene or sensor conditions. Three variation types are supported: (i) changes in furniture layout while preserving the room structure, (ii) changes in scanner preset to simulate different sensing devices, and (iii) changes in scanner position within the room. Each variation is exported as an additional scan together with its corresponding acquisition parameters, enabling controlled comparison of reconstruction performance under changing conditions.
+
+\subsubsection{Export Format}
+
+Point clouds are exported in an ASCII format containing position, normal, and colour attributes. Complete object meshes are stored in PLY format, while metadata such as bounding boxes, room parameters, scan settings, and variation parameters are stored as JSON files. 
 
 \subsection{Procedural Room Layout Generator}
 \label{sec:3_room_generator}
 
-The second methodological component is a procedural room layout generator that creates furnished indoor environments with controlled variability. Its role is to ensure that the synthetic dataset does not overfit to a small number of manually modelled scenes, but instead spans a broader range of room sizes, object constellations, and occlusion patterns.
+A suitable dataset for quantitative evaluation requires a large number of diverse indoor scenes with sufficient variation in geometry, object arrangement, and occlusion patterns. Constructing such scenes manually one by one would be highly time-consuming and difficult to scale. To address this, a procedural scene generation system was developed to automatically create indoor environments from a predefined library of structural and furniture elements. for each scene, the room and furniture generation are separated, this enables the creation of multiple temporal variants of the same room geometry with different object layouts. To ensure reproducibility, each random sampling in the generation process is deterministic based on a single seed that is saved along with the data. 
 
-The room generation strategy follows a modular logic. Each scene is composed of a structural envelope---floor, walls, ceiling, and openings---combined with an interior arrangement of furniture and equipment. This separation between structure and contents is deliberate. It reflects the conceptual distinction used throughout the thesis between background scene elements and foreground objects, and it enables systematic variation of one while holding the other constant. In particular, furniture can be regenerated within the same room shell to create multi-temporal variants of the same environment, thereby mimicking real spaces whose structure remains stable while their contents change over time.
+\subsubsection{Prefab Selection}
 
-Furniture placement is designed to balance diversity with plausibility. Objects are not inserted arbitrarily, but according to simple spatial rules that distinguish wall-related elements from free-standing ones and prevent impossible overlaps. This yields scenes that remain procedurally diverse while preserving the basic spatial coherence of indoor environments. The resulting layouts contain both isolated and densely clustered objects, which is important because completion quality depends strongly on the degree and type of occlusion present in the scene.
+The basis for the room generation is a collection of modular components along with all the generation parameters and a list of potential furniture that fits the theme. The generations parameters include: The size of the grid, the density of the furniture and the probability of certain elements appearing in the room.
 
-A further methodological requirement is reproducibility. All generation decisions are therefore controlled by a random seed, allowing the exact same scene to be recreated when needed. This is particularly useful for ablation studies and controlled experiments, since it allows individual factors such as scanner type, scanner position, or object arrangement to be varied independently without introducing uncontrolled changes elsewhere in the scene.
+\subsubsection{Room Structure Generation}
+
+The room structure is generated on a grid-based system. The floor dimensions are randomly sampled within configurable bounds, and the floor, walls, and ceiling are assembled from modular tiles placed on the grid. During wall generation, each wall segment has a configurable probability of being replaced by a door or window element, introducing structural variation across generated rooms. The room is then retextured using a random color and pattern to introduce more variety.
+
+\subsubsection{Furniture Placement}
+
+Furniture placement is divided into wall-mounted and free-standing categories. Wall-mounted items are positioned against available wall surfaces, while free-standing objects are placed within the room interior using rejection sampling.
+
+Candidate placements are sampled at random positions and orientations, then accepted only if there \gls{OBB}s do not intersect previously placed objects. The total number of objects is controlled by a density parameter proportional to room area.
 
 \subsection{Scan Management and Dataset Generation}
 \label{sec:3_scan_management}
 
-The synthetic framework is ultimately intended as a dataset-generation methodology rather than a collection of isolated tools. For that reason, scene generation and virtual scanning are integrated into a structured pipeline that produces complete benchmark entries in a consistent and repeatable way.
+The virtual scanner and procedural room generator are coordinated by a \texttt{ScanManager} that orchestrates the automated generation of complete dataset entries. For each generated room, the scan manager executes the following sequence:
+ 
+\begin{enumerate}
+    \item \textbf{Room generation}: A new room is procedurally generated, and all detectable objects are identified within the scan volume.
+    \item \textbf{Full scene scan}: The scene is scanned with objects present, producing the main point cloud and panoramic image. Ground-truth meshes and bounding boxes are exported for all detected objects.
+    \item \textbf{Object isolation}: Each detected object's points are isolated from the full scan, producing partial point clouds per object. Optionally, per-object occlusion voxel grids are computed.
+    \item \textbf{Empty scene scan}: All detected objects are deactivated, and the scene is scanned again to produce the ground-truth empty scene point cloud.
+    \item \textbf{Scan variations}: Additional scans are generated with configurable variations, including changes in furniture layout (by regenerating only the furniture while keeping the room structure), changes in scanner type (by switching to a different scanner preset), and changes in scanner position (by randomising the scanner location within the room volume).
+\end{enumerate}
+ 
+Each variation is stored alongside the main scan, together with its scan parameters, enabling controlled experiments on the impact of individual factors such as scanner type, scanner position, and temporal object changes. The variation system supports an arbitrary number of variation passes per room, with each pass independently configurable.
 
-For each synthetic room, the methodology begins by generating a furnished scene and identifying the objects of interest within it. A primary scan is then simulated to produce the partial observation of the furnished environment. From this same scene state, object-level partial observations and corresponding complete object geometries are derived. Next, the foreground objects are removed and the scene is scanned again, producing a complete structural reference of the empty room. This dual acquisition strategy is essential: it allows scene completion methods to be evaluated against an object-free structural ground truth, while object completion methods can be evaluated against their own isolated complete meshes.
-
-To support controlled experimentation, additional scan variants are generated by changing one or more acquisition variables while keeping the underlying scene either fixed or partially modified. These variations include changes in sensor type, scanner position, and furniture configuration. Methodologically, this allows the dataset to serve not just as a benchmark for static reconstruction, but also as a testbed for robustness: one can study how methods behave under different sensing qualities, different viewpoints, or temporal changes in object placement.
-
-This design makes the synthetic dataset particularly suitable for the broader goals of the thesis. The same generated environment can be used to evaluate alignment under cross-sensor variation, detection under cluttered configurations, scene completion under structural occlusion, and object completion under partial visibility. In this sense, the framework functions as a unifying experimental substrate across multiple chapters rather than as a standalone data-generation exercise.
 
 \subsection{The V-Scan Dataset}
 \label{sec:3_vscan}
 
-The V-Scan dataset is the concrete outcome of the synthetic methodology described above and serves as the main benchmark for the quantitative evaluation of scene and object completion in this thesis. Its design is guided by a specific methodological objective: to provide, within a single dataset, the forms of ground truth and controlled variation that are unavailable in real-world capture campaigns.
+Using the framework above, the V-Scan dataset was created as the main benchmark for scene and object completion in this thesis. The dataset combines properties not jointly available in existing resources: partial scene scans with complete geometric ground truth, multi-sensory outputs, temporal variations, and per-object annotations (Figure~\ref{fig:3_VScan_Dataset}).
 
-Unlike conventional synthetic datasets that provide only complete scene models or only isolated object shapes, V-Scan represents each scene simultaneously as: a furnished partial scan, an empty structural reference, and a set of object-level partial observations paired with complete object meshes. This multi-level representation is critical for the evaluation framework adopted in this thesis, since the different pipeline stages operate on different targets and require different forms of supervision and benchmarking.
+\subsubsection{Dataset Composition}
 
-The dataset also incorporates variation across scanner types and scene states. As a result, it does not represent a single idealised scan per room, but a family of related observations generated under controlled changes in sensing conditions and object layout. This makes it possible to assess not only absolute reconstruction quality, but also sensitivity to data quality, viewpoint, and temporal modification. The dataset therefore supports a broader methodological agenda: evaluating whether the proposed pipeline remains effective across the kinds of variation that real digital-twin workflows inevitably encounter.
+The V-Scan dataset contains 200 scene folders generated from 5 unique procedural room presets, each scanned with multiple scanner type presets and variation passes. Table~\ref{tab:vscan_summary} summarises the key statistics of the dataset.
 
-For each scene entry, the dataset provides the partial scene scan, the associated image data, the structural ground truth of the empty room, object-level partial scans, complete object meshes, and the annotations required for detection and localisation. Taken together, these outputs enable quantitative comparison at scene level, object level, and detection level within a single unified benchmark. In doing so, V-Scan provides the experimental foundation required to evaluate the central claim of this thesis: that incomplete reality-capture data can be transformed into structured, geometrically complete, and manipulable scene representations.
+\begin{table}[h]
+    \centering
+    \caption[V-Scan dataset summary]{Summary statistics of the V-Scan dataset.}
+    \label{tab:vscan_summary}
+    \begin{tabular}{l r}
+        \toprule
+        \textbf{Metric} & \textbf{Value} \\
+        \midrule
+        Total scene folders & 200 \\
+        Unique scene names & 5 \\
+        Total objects & 3,100 \\
+        Average objects per scene & 15.5 \\
+        Scanner types used & 7 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Per-Scene Outputs}
+ 
+For each scene folder, the following outputs are available:
+ 
+\begin{itemize}
+    \item \textbf{Main scan}: coloured point cloud of the furnished scene with the main scanner type.
+    \item \textbf{Panoramic image}: equirectangular panoramic image from the scanner position.
+    \item \textbf{Scan parameters}: JSON file recording the scanner type configuration used.
+    \item \textbf{Room parameters}: JSON file recording the procedural generation parameters.
+    \item \textbf{Object bounding boxes}: JSON file containing oriented bounding boxes for all detected objects.
+    \item \textbf{Per-object data}: for each object, the isolated partial point cloud, the ground-truth complete mesh (PLY), and the individual bounding box.
+    \item \textbf{Empty scene scan}: coloured point cloud and panoramic image of the scene with all objects removed.
+    \item \textbf{Scan variations}: additional point clouds and panoramic images for each configured variation, along with variation parameters.
+\end{itemize}
+ 
+This comprehensive set of outputs enables evaluation at multiple levels: scene-level completion quality can be assessed by comparing the reconstructed empty scene against the ground-truth empty scan, object-level completion quality can be assessed by comparing completed objects against the ground-truth meshes, and detection quality can be assessed by comparing detected bounding boxes against the ground-truth annotations.
+
+\begin{figure}[h]
+  \centering
+  \medskip
+  \includegraphics[width=1\textwidth]{Vscan_data}
+  \caption[V-Scan Dataset]{Example scenes from the V-Scan dataset.}
+  \label{fig:3_VScan}
+\end{figure}
+
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Dataset Comparison and Overview}
