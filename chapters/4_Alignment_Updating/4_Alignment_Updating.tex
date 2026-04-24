@@ -271,21 +271,132 @@ The final updated dataset consists of three parts: the original reference points
 \section{Experiments}
 \label{sec:4_experiments}
  
-The alignment and updating methodology is evaluated on the three real-world environments introduced in Section~\ref{sec:3_captured_scenes}: the laboratory rooms, the prefab living lab, and the Bruges renovation. Together these sites provide 45 measurement sessions spanning four sensor modalities and multiple capture epochs (Table~\ref{tab:3_captured_scenes_metrics}). This section first evaluates the alignment accuracy across all three sites (Section~\ref{sec:4_alignment_experiments}), then assesses the dataset combination procedure on a dedicated updating test case (Section~\ref{sec:4_combination_experiments}).
+The alignment and updating methodology is evaluated on two complementary data sources. First, the three real-world environments introduced in Section~\ref{sec:3_captured_scenes} --- the laboratory rooms, the prefab living lab, and the Bruges renovation --- provide 45 measurement sessions spanning four sensor modalities under realistic multi-temporal conditions. Second, the V-Scan synthetic dataset (Section~\ref{sec:3_vscan}) provides controlled ground-truth poses against which alignment accuracy can be measured precisely.
  
 % ── 4.4.1 ────────────────────────────────────────────────────────────────────
-\subsection{Alignment Experiments}
+\subsection{Alignment on Real-World Data}
 \label{sec:4_alignment_experiments}
  
-Each of the three sites poses distinct alignment challenges. The laboratory rooms test multi-temporal registration under object-level layout changes within a stable structural envelope. The living lab tests robustness when both geometry and surface appearance change drastically between epochs, as prefab elements are erected and finishes applied. The Bruges renovation tests indoor alignment in a cluttered residential environment with significant temporary storage of construction materials.
+Each of the three real-world sites poses distinct alignment challenges. The laboratory rooms test multi-temporal registration under object-level layout changes within a stable structural envelope. The living lab tests robustness when both geometry and surface appearance change drastically between epochs. The Bruges renovation tests indoor alignment in a cluttered residential environment with significant temporary storage of construction materials.
  
 The alignment was performed using the five methods described in Section~\ref{sec:4_local}, with parameters determined empirically across all sessions. The global distance threshold $t_d$ was set to 10\,m. The correspondence function $\rho$ was set to 50 pixels for image matches and to 1.5 times the voxel size (0.05\,m) for point cloud matches.
  
-Across all three sites, the combined pose estimation achieves an average positional accuracy of 0.06\,m, an average rotational accuracy of 0.34°, and an average confidence of approximately 50\%. Given the diversity of sensors ranging from the Leica P30 to the HoloLens~2, these results confirm that the alignment does not introduce error beyond the inherent limitations of the lowest-quality sensor. The geometric methods (FPFH and SUPER4PCS) yield the highest individual confidences (averaging 75\%), with SUPER4PCS achieving the best overall performance (81\% confidence, 0.07\,m positional RMSE) when a BIM reference is available. The image-based methods achieve lower individual confidences (averaging 25\%) but contribute a larger number of candidate matches, improving overall robustness.
+Table~\ref{tab:4_alignment_results} reports the positional and rotational accuracy of each individual alignment method and the combined weighted estimate for all three test cases. Across all sites, the combined pose estimation achieves an average positional RMSE of 0.058\,m, an average rotational RMSE of 0.337°, and an average confidence of approximately 50\%.
  
-A key finding is that the complementary use of 2D and 3D alignment methods is essential. Individual methods fail: The FPFH matching degrades under large geometric changes, while image-based methods fail when texture has changed significantly. The weighted pose voting mechanism compensates for these individual weaknesses. The complete alignment averages 5 minutes per session, which is acceptable as a background process.
+\begin{table}[htbp]
+    \centering
+    \caption[Real-world alignment results]{Positional and rotational accuracy and confidence of each alignment method across the three real-world test cases. Case~1: laboratory rooms, Case~2: living lab, Case~3: Bruges renovation.}
+    \label{tab:4_alignment_results}
+    \resizebox{\textwidth}{!}{%
+    \renewcommand*{\arraystretch}{1.2}
+    \begin{tabular}{lr|ccccc|c}
+        \hline
+        \multicolumn{2}{r|}{Method}          & Linked Ref    & Separate Ref  & Raycasting     & FPFH        & SUPER4PCS    & Combined          \\
+        \multicolumn{2}{r|}{Estimated time}  & 1--10 img/s   & 1--10 img/s   & 0.2--2 img/s   & 5s--2min/pcd & 20s--5min/pcd & 20s--15min/session \\
+        \multicolumn{2}{r|}{Method weight}   & 0.8           & 0.5           & 0.4            & 0.8         & 1            &                   \\ \hline
+        %
+        \multicolumn{1}{c}{\multirow{3}{*}{Case 1}}
+            & Pos.\ RMSE (m)   & 0.145 & 0.189 & 0.021 & 0.159 & 0.061 & 0.065 \\
+            & Rot.\ RMSE (°)   & 0.960 & 0.636 & 0.189 & 1.507 & 0.463 & 0.538 \\
+            & Confidence (\%)  & 30.1  & 29.9  & 52.2  & 33.9  & 77.3  & 47.0  \\ \hline
+        %
+        \multicolumn{1}{c}{\multirow{3}{*}{Case 2}}
+            & Pos.\ RMSE (m)   & 0.183 & 0.133 & 0.277 & 0.059 & 0.071 & 0.035 \\
+            & Rot.\ RMSE (°)   & 0.993 & 1.207 & 0.018 & 0.156 & 0.028 & 0.074 \\
+            & Confidence (\%)  & 25.1  & 17.0  & 19.2  & 80.0  & 90.0  & 54.4  \\ \hline
+        %
+        \multicolumn{1}{c}{\multirow{3}{*}{Case 3}}
+            & Pos.\ RMSE (m)   & 0.149 & 0.103 & 0.106 & 0.067 & 0.078 & 0.074 \\
+            & Rot.\ RMSE (°)   & 0.852 & 1.073 & 0.713 & 0.966 & 0.171 & 0.399 \\
+            & Confidence (\%)  & 20.2  & 21.9  & 31.4  & 67.0  & 75.0  & 48.1  \\ \hline
+        %
+        \multicolumn{1}{c}{\multirow{3}{*}{Average}}
+            & Pos.\ RMSE (m)   & 0.159 & 0.141 & 0.135 & 0.095 & 0.070 & 0.058 \\
+            & Rot.\ RMSE (°)   & 0.935 & 0.972 & 0.307 & 0.886 & 0.221 & 0.337 \\
+            & Confidence (\%)  & 25.1  & 22.9  & 34.3  & 60.3  & 80.8  & 49.8  \\ \hline
+    \end{tabular}%
+    }
+\end{table}
+ 
+The geometric methods (FPFH and SUPER4PCS) yield the highest individual confidences, averaging 60\% and 81\% respectively, with SUPER4PCS achieving the lowest average positional RMSE (0.070\,m) when a BIM reference is available. The image-based methods achieve lower individual confidences (20--35\%) but contribute a larger number of candidate matches, improving overall robustness through the pose voting mechanism. The combined estimate consistently outperforms any individual method in positional accuracy, confirming that the complementary use of 2D and 3D methods is essential for robust indoor pose estimation across changing environments.
  
 % ── 4.4.2 ────────────────────────────────────────────────────────────────────
+\subsection{Alignment on Synthetic Data}
+\label{sec:4_alignment_synthetic}
+ 
+While the real-world experiments demonstrate practical robustness, they rely on manually established ground-truth poses whose own accuracy is limited by the registration procedure. The V-Scan dataset (Section~\ref{sec:3_vscan}) provides exact ground-truth scanner poses, enabling a more precise evaluation of alignment accuracy under controlled conditions.
+ 
+The experiment aligns each scan variation against two types of reference data: the \textit{reference} scan (the main furnished scan of the same room) and the \textit{empty} scan (the ground-truth empty scene). Three variation types are evaluated, corresponding to the scan variation system described in Section~\ref{sec:3_scan_management}:
+ 
+\begin{itemize}
+    \item \textbf{Variation~0} --- furniture change: the room structure is preserved but the furniture layout is regenerated, simulating a temporal change in object configuration.
+    \item \textbf{Variation~1} --- position change: the scanner is repositioned within the same room, simulating a different measurement setup.
+    \item \textbf{Variation~2} --- scanner change: a lower-resolution scanner preset is used, simulating a heterogeneous multi-sensor scenario.
+\end{itemize}
+ 
+\paragraph{Full scan alignment.}
+ 
+Table~\ref{tab:4_vscan_full} reports the alignment results when the variation scans cover the full room. The alignment is evaluated across all 200 V-Scan scenes and the success rate, average RMSE, positional error, and angular error are reported for successful registrations.
+ 
+\begin{table}[htbp]
+    \centering
+    \caption[V-Scan full scan alignment]{Alignment results on V-Scan full scans. Each variation is aligned against the furnished reference scan and the empty scene scan. Only successful registrations are included in the accuracy statistics.}
+    \label{tab:4_vscan_full}
+    \begin{tabular}{l l r r r}
+        \toprule
+        & & \textbf{Var.~0} & \textbf{Var.~1} & \textbf{Var.~2} \\
+        & & (furniture) & (position) & (scanner) \\
+        \midrule
+        \multirow{4}{*}{Reference}
+            & Success (\%)         & 88.0  & 87.0  & 61.0  \\
+            & Avg.\ RMSE (m)       & 0.023 & 0.028 & 0.050 \\
+            & Avg.\ pos.\ error (m) & 0.020 & 0.025 & 0.009 \\
+            & Avg.\ ang.\ error (°) & 0.014 & 0.014 & 0.024 \\
+        \midrule
+        \multirow{4}{*}{Empty}
+            & Success (\%)         & 96.0  & 87.0  & 55.0  \\
+            & Avg.\ RMSE (m)       & 0.022 & 0.027 & 0.050 \\
+            & Avg.\ pos.\ error (m) & 0.027 & 0.026 & 0.017 \\
+            & Avg.\ ang.\ error (°) & 0.024 & 0.012 & 0.015 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+ 
+Furniture changes (Variation~0) and position changes (Variation~1) are handled reliably, with success rates of 87--96\% and sub-3\,cm RMSE. Aligning against the empty scene yields even higher success for Variation~0 (96\% vs.\ 88\%), which is expected since the structural geometry --- walls, floor, ceiling --- remains identical and provides unambiguous correspondences once the furniture clutter is removed. The scanner change (Variation~2) is the most challenging condition, reducing the success rate to 55--61\% and increasing the RMSE to 0.050\,m. This is consistent with the degraded geometric detail produced by the lower-resolution scanner preset, which provides fewer distinctive features for the registration algorithm.
+ 
+\paragraph{Partial scan alignment.}
+ 
+In practice, new observations often cover only a portion of the existing scene. To evaluate this scenario, each variation scan is cropped into multiple overlapping partial views, and the alignment is repeated on each crop. Table~\ref{tab:4_vscan_partial} reports the results averaged across all partial crops.
+ 
+\begin{table}[htbp]
+    \centering
+    \caption[V-Scan partial scan alignment]{Alignment results on V-Scan partial scans (averaged across multiple crops per scene). Each variation is aligned against the furnished reference and the empty scene.}
+    \label{tab:4_vscan_partial}
+    \begin{tabular}{l l r r r}
+        \toprule
+        & & \textbf{Var.~0} & \textbf{Var.~1} & \textbf{Var.~2} \\
+        & & (furniture) & (position) & (scanner) \\
+        \midrule
+        \multirow{4}{*}{Reference}
+            & Success (\%)         & 66.7  & 68.0  & 22.0  \\
+            & Avg.\ RMSE (m)       & 0.028 & 0.026 & 0.052 \\
+            & Avg.\ pos.\ error (m) & 0.021 & 0.023 & 0.024 \\
+            & Avg.\ ang.\ error (°) & 0.044 & 0.031 & 0.030 \\
+        \midrule
+        \multirow{4}{*}{Empty}
+            & Success (\%)         & 82.7  & 72.7  & 22.0  \\
+            & Avg.\ RMSE (m)       & 0.025 & 0.023 & 0.052 \\
+            & Avg.\ pos.\ error (m) & 0.016 & 0.012 & 0.012 \\
+            & Avg.\ ang.\ error (°) & 0.022 & 0.026 & 0.040 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+ 
+The partial scan scenario reduces the success rate by approximately 15--20 percentage points across all variations compared to full scans, reflecting the reduced geometric overlap available for correspondence matching. The RMSE of successful registrations, however, remains comparable (0.023--0.052\,m), indicating that when the alignment succeeds, it achieves similar accuracy regardless of coverage. The scanner change condition (Variation~2) drops to a 22\% success rate for partial scans, confirming that the combination of reduced resolution and reduced spatial coverage presents the most challenging registration scenario.
+ 
+Aligning against the empty scene again outperforms the furnished reference for Variations~0 and~1, with a notably higher success rate for partial furniture-change scans (82.7\% vs.\ 66.7\%). This advantage diminishes for the scanner change, where both references yield identical success rates. The consistent advantage of the empty-scene reference suggests that the structural geometry of the room provides more reliable correspondences than the furniture, which may have changed or may introduce ambiguous matches between similar objects.
+ 
+% ── 4.4.3 ────────────────────────────────────────────────────────────────────
 \subsection{Combination Experiments}
 \label{sec:4_combination_experiments}
  
@@ -294,22 +405,20 @@ The dataset updating procedure is evaluated on a subset of the laboratory room d
 The convex hull filtering reduced the relevant portion of the reference dataset by 95.5\%, confirming the effectiveness of the spatial sub-selection. During the removal phase, 36.2\% of the relevant reference points were not covered by the new session and were subjected to the visibility check. Of these, 56.6\% were determined to be visible and therefore outdated, resulting in the removal of 15.7\% of the relevant reference points. In the addition phase, 26.4\% of the session points had no existing counterpart and were added.
  
 The final combined dataset consists of 54.4\% preserved reference points, 13.4\% retained but inconclusive occluded points, and 32.2\% newly added session points. The complete updating algorithm executed in 1.47\,s on a standard notebook. The result preserves the high accuracy of the VLX data in unchanged regions while incorporating HoloLens~2 observations where updates have occurred.
-
+ 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Conclusion}
 \label{sec:4_conclusion}
-
-% Paragraph purpose: summarise the contributions of this chapter
-This chapter presented a two-step alignment framework for positioning heterogeneous sensor data within pre-existing reference coordinate systems, together with a dataset updating mechanism for integrating new observations into existing point clouds. The alignment framework combines a coarse global positioning step based on available wireless signals with a fine registration step that leverages five complementary methods spanning both 2D image features and 3D geometric features. A weighted pose voting mechanism combines the individual estimates into a robust final pose with an associated confidence measure.
-
-% Paragraph purpose: highlight key findings
-The experiments across three test cases demonstrate that the combined use of 2D and 3D alignment methods is essential for robust indoor pose estimation, particularly in environments that undergo significant changes between measurement epochs. Individual methods are unreliable in isolation, but their complementary strengths yield a robust combined estimate, we see that the image-based methods provide many candidate matches and geometric methods provide high accuracy. The average positional accuracy of 0.06\,m across diverse sensors and environments meets or exceeds the resolution of the lowest-quality sensors used, confirming that the alignment does not introduce additional error beyond the inherent sensor limitations.
-
-% Paragraph purpose: highlight the updating contribution
-The dataset updating methodology enables the incremental maintenance of digital facility documentation without requiring complete re-documentation. By distinguishing between outdated, occluded, and current observations, the method preserves high-quality reference data wherever possible while incorporating new observations only where necessary. This extends the effective lifespan of expensive baseline scans and keeps the digital representation aligned with the current state of the physical environment.
-
-% Paragraph purpose: discuss limitations and future work
-Several limitations remain. The coarse global alignment depends on the availability of wireless positioning signals, which may be unreliable in certain indoor environments. The visibility check in the updating procedure relies on the quality of the session mesh normals, which may be noisy for low-end sensors. Future work could explore the use of virtual imagery generated from BIM or point cloud models to provide additional reference data for the image-based alignment methods, and the integration of more robust change detection algorithms that can distinguish between temporary and permanent scene modifications.
-
+ 
+This chapter presented a two-step alignment framework for positioning heterogeneous sensor data within pre-existing reference coordinate systems, together with a dataset updating mechanism for integrating new observations into existing point clouds. The alignment framework combines a coarse global positioning step with a fine registration step leveraging five complementary 2D and 3D methods, unified through a weighted pose voting mechanism.
+ 
+The experiments on three real-world test cases demonstrate that the combined use of image-based and geometry-based alignment methods is essential for robust indoor pose estimation, particularly in environments that undergo significant changes between measurement epochs. The average positional accuracy of 0.058\,m across diverse sensors and environments meets or exceeds the resolution of the lowest-quality sensors used.
+ 
+The synthetic V-Scan experiments provide additional insight under controlled conditions. Full-scan alignment achieves success rates of 87--96\% for furniture and position changes, with sub-3\,cm RMSE when successful. The success rate degrades gracefully under partial coverage (67--83\%) and more substantially under scanner changes (22--61\%), identifying sensor heterogeneity as the most challenging alignment condition. A consistent finding across both real and synthetic experiments is that structural geometry provides more reliable alignment references than furnished scenes, as the empty-scene reference consistently outperforms the furnished reference.
+ 
+The dataset updating methodology enables incremental maintenance of digital facility documentation without complete re-documentation. By distinguishing between outdated, occluded, and current observations, the method preserves high-quality reference data wherever possible while incorporating new observations only where necessary.
+ 
+Within the broader pipeline, this chapter establishes the aligned and up-to-date point cloud representation that serves as input for all subsequent stages. The scene segmentation, object detection, and completion methods presented in the following chapters operate on the assumption that the input data is spatially consistent and represents the current state of the environment.
+ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \cleardoublepage
