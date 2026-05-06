@@ -92,9 +92,9 @@ Several works have explored the combination of 2D and 3D alignment methods. Liu 
 \subsection{Dataset Updating}
 \label{sec:4_rw_updating}
 
-Beyond alignment, combining multi-temporal datasets into a single consistent representation remains an open challenge. The simplest case is coverage improvement in a static environment: Lachat~et~al.~\cite{lachat_assessment_2016} supplement TLS data with close-range photogrammetry, while Bolkas~et~al.~\cite{bolkas_fusing_2020} fuse drone and ground-level point clouds using a grid-based occlusion infilling strategy. Alteirac~et~al.~\cite{alteirac_combining_2021} combine simultaneous multi-sensor captures. These methods assume the scene is unchanged between acquisitions.
+Beyond alignment, combining multi-temporal datasets into a single consistent representation remains an open challenge. The simplest case is coverage improvement in a static environment: Lachat~et~al.~\cite{lachat_combination_2016} supplement TLS data with close-range photogrammetry, while Bolkas~et~al.~\cite{bolkas_creating_2020} fuse drone and ground-level point clouds using a grid-based occlusion infilling strategy. Alteirac~et~al.~\cite{alteirac_registration_2021} combine simultaneous multi-sensor captures. These methods assume the scene is unchanged between acquisitions.
 
-When the environment does change, the discrepancies must first be detected. Cloud-to-cloud distance computation is the dominant approach~\cite{mukupa_review_2017}, with voxel-based~\cite{xu_voxel_2021} and learning-based~\cite{meyer_change_2022} variants improving robustness. However, most change detection methods focus on identifying differences between exactly two epochs rather than on integrating the new observations into the existing dataset.
+When the environment does change, the discrepancies must first be detected. Cloud-to-cloud distance computation is the dominant approach~\cite{mukupa_review_2017}, with voxel-based~\cite{hirt_change_2021} and learning-based~\cite{meyer_change_2022} variants improving robustness. However, most change detection methods focus on identifying differences between exactly two epochs rather than on integrating the new observations into the existing dataset.
 
 The key difficulty in actual updating is distinguishing unchanged regions, where the higher-quality original data should be preserved, from genuinely changed regions, where the new data must replace the old, and from regions that the new sensor simply did not observe. Partovi~et~al.~\cite{partovi_automatic_2021} focus on filling occlusions with photogrammetric data but do not handle temporal changes.
 
@@ -178,8 +178,16 @@ The second 3D alignment method targets the \gls{BIM} model using the \gls{SUPER4
 \subsubsection{2D Alignment}
 \label{sec:4_2d_alignment}
 
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=1\textwidth]{2D_Alignment}
+  \caption[2D Alignment]{Example of 2D alignment.}
+  \label{fig:2D_Alignment}
+\end{figure}
+
 % Paragraph purpose: introduce the three image-based alignment variants
-Three image-based alignment methods are employed, each addressing a different configuration of available reference imagery. All methods are based on \gls{ORB} feature matching between session and reference images.
+Three image-based alignment methods are employed, each addressing a different configuration of available reference imagery as illustrated in Figure~\ref{fig:2D_Alignment}. All methods are based on \gls{ORB} feature matching between session and reference images.
 
 % Paragraph purpose: explain the two overlapping references method
 \paragraph{Two overlapping references.}
@@ -223,8 +231,16 @@ The result of the pose voting is both a position and orientation estimate for th
 % Paragraph purpose: motivate the need for point cloud updating
 Once the newly captured session is aligned to the reference coordinate system, the new observations can be used to update the existing reference point cloud. The goal is to extend the lifespan of the high-quality reference data by replacing only the portions that have changed, while preserving the more accurate existing data wherever possible. This requires determining, at the point level, which observations in the reference dataset are still current and which have become outdated~\cite{vermandere_automatic_2022, bassier_geomapi_2024}.
 
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=1\textwidth]{Updating_method}
+  \caption[Updating Method]{Example of the updating method.}
+  \label{fig:Updating_Method}
+\end{figure}
+
 % Paragraph purpose: introduce the two-phase updating process
-The updating process consists of two sequential phases: the removal of out-of-date points from the reference dataset, and the addition of new points from the session dataset.
+The updating process consists of three sequential phases: the removal of out-of-date points from the reference dataset, a visibility check, and the addition of new points from the session dataset as illustrated in Figure~\ref{fig:Updating_Method}.
 
 % ── 4.3.4.1 ──────────────────────────────────────────────────────────────────
 \subsubsection{Out-of-Date Point Removal}
@@ -242,7 +258,11 @@ P' = \left \{ p_i \Big| \forall p_i \in P, q_j \in Q : \argmin_{q_j}\|p_i-q_j\| 
 where $t_d$ is a distance threshold. Points for which no nearby session observation exists are considered uncovered and form the subset $P'$.
 
 % Paragraph purpose: explain the visibility check
-However, not all uncovered points are necessarily outdated. Some may simply have been occluded during the new session---for instance, a point on a wall that was hidden behind furniture during the XR capture. To distinguish between genuinely outdated points and occluded ones, a visibility check is performed. For each uncovered point $p_i \in P'$, the normals of the $n$ closest faces in the session mesh are evaluated. If the majority of these normals face away from $p_i$, the point is considered occluded (not visible to the new sensor) and is retained in the reference dataset. Otherwise, it is flagged as visible and removed:
+\subsubsection{Visibility Check}
+\label{sec:4_visibility}
+\todo{continuiteits probleempje, Ik heb mijn visibility code geupdate met een occlusion grid ipv mesh raycasting, maar occlusion grid berekiening zit pas in het volgende hoofdstuk? gebruik ik hier verder gewoon mijn oude methode en neger ik mijn nieuwere (betere) oplossing? of verwijs ik naar het volgende hoofdstuk?}
+
+However, not all uncovered points are necessarily outdated. Some may simply have been occluded during the new session. For instance, a point on a wall that was hidden behind new furniture during the XR capture at a later stage. To distinguish between genuinely outdated points and occluded ones, a visibility check is performed. For each uncovered point $p_i \in P'$, the normals of the $n$ closest faces in the session mesh are evaluated. If the majority of these normals face away from $p_i$, the point is considered occluded (not visible to the new sensor) and is retained in the reference dataset. Otherwise, it is flagged as visible and removed:
 \begin{equation}
 \label{eq:4_visibility}
 \begin{gathered}
@@ -251,7 +271,7 @@ Q_i' = \left\{q_j \Big| \forall q_j \in Q_i, p_i \in P': \overrightarrow{p_iq_j}
 P'' = \left \{ p_i \Big| \forall p_i \in P': \frac{|Q_i'|}{|Q_i|} \leq t_p\right\}
 \end{gathered}
 \end{equation}
-where $t_n$ is the normal alignment threshold and $t_p$ is the percentage threshold for the visibility decision. Points that pass both checks---uncovered and visible---are removed from the reference dataset.
+where $t_n$ is the normal alignment threshold and $t_p$ is the percentage threshold for the visibility decision. Points that are both uncovered and visible are removed from the reference dataset.
 
 % ── 4.3.4.2 ──────────────────────────────────────────────────────────────────
 \subsubsection{New Point Introduction}
@@ -282,7 +302,8 @@ Each of the three real-world sites poses distinct alignment challenges. The labo
 The alignment was performed using the five methods described in Section~\ref{sec:4_local}, with parameters determined empirically across all sessions. The global distance threshold $t_d$ was set to 10\,m. The correspondence function $\rho$ was set to 50 pixels for image matches and to 1.5 times the voxel size (0.05\,m) for point cloud matches.
  
 Table~\ref{tab:4_alignment_results} reports the positional and rotational accuracy of each individual alignment method and the combined weighted estimate for all three test cases. Across all sites, the combined pose estimation achieves an average positional RMSE of 0.058\,m, an average rotational RMSE of 0.337°, and an average confidence of approximately 50\%.
- 
+
+\todo{Voor experimenten die al in papars staan, vat ik ze wat samen, of neem ik ze helemaal over?}
 \begin{table}[htbp]
     \centering
     \caption[Real-world alignment results]{Positional and rotational accuracy and confidence of each alignment method across the three real-world test cases. Case~1: laboratory rooms, Case~2: living lab, Case~3: Bruges renovation.}
@@ -330,8 +351,8 @@ The experiment aligns each scan variation against two types of reference data: t
  
 \begin{itemize}
     \item \textbf{Variation~0} --- furniture change: the room structure is preserved but the furniture layout is regenerated, simulating a temporal change in object configuration.
-    \item \textbf{Variation~1} --- position change: the scanner is repositioned within the same room, simulating a different measurement setup.
-    \item \textbf{Variation~2} --- scanner change: a lower-resolution scanner preset is used, simulating a heterogeneous multi-sensor scenario.
+    \item \textbf{Variation~1} --- position change: the scanner is repositioned within the refurnished room, simulating a different measurement setup.
+    \item \textbf{Variation~2} --- scanner change: a lower-resolution scanner preset is used along with a new scanner position, simulating a heterogeneous multi-sensor scenario.
 \end{itemize}
  
 \paragraph{Full scan alignment.}
@@ -399,26 +420,67 @@ Aligning against the empty scene again outperforms the furnished reference for V
 % ── 4.4.3 ────────────────────────────────────────────────────────────────────
 \subsection{Combination Experiments}
 \label{sec:4_combination_experiments}
- 
-The dataset updating procedure is evaluated on a subset of the laboratory room data (Lab~2, Asphalt). Two captures of the same space are combined: the reference dataset acquired with the NavVis VLX (743,618 points, 0.005\,m density) and a new session acquired with the HoloLens~2 (13,107 points, 0.05\,m density). Between captures, objects were added, removed, and repositioned, creating the mixed-change scenario described in Section~\ref{sec:4_rw_updating}.
- 
+
+The dataset updating procedure is evaluated in two settings: a real-world multi-sensor scenario that tests the method under practical conditions, and a controlled synthetic scenario on the V-Scan dataset that enables quantitative assessment of coverage improvement against known ground truth.
+
+\subsubsection{Real-World Updating}
+
+The real-world evaluation uses a subset of the laboratory room data (Lab~2, Asphalt). Two captures of the same space are combined: the reference dataset acquired with the NavVis VLX (743,618 points, 0.005\,m density) and a new session acquired with the HoloLens~2 (13,107 points, 0.05\,m density). Between captures, objects were added, removed, and repositioned, creating the mixed-change scenario described in Section~\ref{sec:4_rw_updating}.
+
 The convex hull filtering reduced the relevant portion of the reference dataset by 95.5\%, confirming the effectiveness of the spatial sub-selection. During the removal phase, 36.2\% of the relevant reference points were not covered by the new session and were subjected to the visibility check. Of these, 56.6\% were determined to be visible and therefore outdated, resulting in the removal of 15.7\% of the relevant reference points. In the addition phase, 26.4\% of the session points had no existing counterpart and were added.
- 
+
 The final combined dataset consists of 54.4\% preserved reference points, 13.4\% retained but inconclusive occluded points, and 32.2\% newly added session points. The complete updating algorithm executed in 1.47\,s on a standard notebook. The result preserves the high accuracy of the VLX data in unchanged regions while incorporating HoloLens~2 observations where updates have occurred.
- 
+
+\subsubsection{Synthetic Updating}
+
+The V-Scan dataset enables a more controlled evaluation because the ground-truth empty scene is available for each room, providing an objective reference against which coverage can be measured. For each of the five V-Scan environment types, the main furnished scan is combined with a furniture-and-position-change variation (Variation~1) using the updating procedure. The reference and variation scans are both subsampled to a 5\,cm voxel resolution with a distance threshold of 5\,cm. Coverage is measured as the percentage of the ground-truth empty scene that is represented within the distance threshold by either the variation scan alone or the combined pipeline output.
+
+Table~\ref{tab:4_vscan_combination} reports the results per environment type. Across all environments, the updating procedure preserves on average 92\% of the reference points and replaces approximately 8\% with observations from the variation scan. The replaced points correspond to regions where the furniture configuration changed between the two scans. The coverage of the empty scene improves from 89\% for the variation scan alone to over 97\% after the combination, yielding an average coverage gain of 8.4 percentage points.
+
+\begin{table}[htbp]
+    \centering
+    \caption[V-Scan combination results]{Updating results on V-Scan scenes per environment type. Coverage is measured against the ground-truth empty scene. All scans are subsampled to 5\,cm voxel size with a 5\,cm distance threshold.}
+    \label{tab:4_vscan_combination}
+    \setlength{\tabcolsep}{6pt}
+    \begin{tabular}{l c c c c c}
+        \toprule
+        \textbf{Environment}
+            & \textbf{Points Kept}
+            & \textbf{Points Updated}
+            & \textbf{Var.\ Coverage}
+            & \textbf{Pipeline Cov.}
+            & \textbf{Coverage Gain} \\
+        & (\%) & (\%) & of Empty (\%) & of Empty (\%) & (\%) \\
+        \midrule
+        Industrial   & 89.47 & 10.53 & 83.34 & 96.23 & $+$12.90 \\
+        Office       & 90.71 &  9.29 & 87.19 & 96.70 & $+$9.51  \\
+        Bedroom      & 93.61 &  6.39 & 93.81 & 98.52 & $+$4.70  \\
+        Dining Room  & 92.25 &  7.75 & 88.27 & 97.57 & $+$9.29  \\
+        Living Room  & 94.31 &  5.69 & 92.72 & 98.38 & $+$5.66  \\
+        \midrule
+        \textbf{Average} & \textbf{92.07} & \textbf{7.93} & \textbf{89.07} & \textbf{97.48} & \textbf{$+$8.41} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The results reveal a clear relationship between scene complexity and updating behaviour. The industrial environment, which contains the densest furniture arrangement, shows the highest proportion of updated points (10.5\%) and the largest coverage gain (+12.9 pp), reflecting the greater number of regions where furniture occlusions differ between the two scans. Conversely, the bedroom and living room environments, which contain fewer and more sparsely distributed objects, show lower update rates (5.7--6.4\%) and smaller coverage gains (+4.7--5.7 pp), as fewer regions are affected by the furniture change.
+
+The fact that the combined coverage consistently exceeds 96\% of the empty scene confirms that the updating procedure effectively recovers structural surfaces that were occluded by different objects in each individual scan. The remaining 2.5\% of uncovered empty-scene geometry corresponds to regions that are occluded in both scans, such as floor areas beneath large furniture items that were not displaced between variations, or wall surfaces behind objects that remained in place.
+
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Conclusion}
 \label{sec:4_conclusion}
- 
+
 This chapter presented a two-step alignment framework for positioning heterogeneous sensor data within pre-existing reference coordinate systems, together with a dataset updating mechanism for integrating new observations into existing point clouds. The alignment framework combines a coarse global positioning step with a fine registration step leveraging five complementary 2D and 3D methods, unified through a weighted pose voting mechanism.
  
-The experiments on three real-world test cases demonstrate that the combined use of image-based and geometry-based alignment methods is essential for robust indoor pose estimation, particularly in environments that undergo significant changes between measurement epochs. The average positional accuracy of 0.058\,m across diverse sensors and environments meets or exceeds the resolution of the lowest-quality sensors used.
+The experiments on three real-world test cases demonstrate that the combined use of image-based and geometry-based alignment methods is essential for robust indoor pose estimation, particularly in environments that undergo significant changes between measurement epochs. The average positional accuracy of 0.058\,m across diverse sensors and environments meets or exceeds the resolution of the lowest-quality sensors used. No individual method is reliable across all conditions, but the weighted voting mechanism compensates for their respective weaknesses, with geometric methods providing high accuracy and image-based methods providing broad candidate coverage.
  
-The synthetic V-Scan experiments provide additional insight under controlled conditions. Full-scan alignment achieves success rates of 87--96\% for furniture and position changes, with sub-3\,cm RMSE when successful. The success rate degrades gracefully under partial coverage (67--83\%) and more substantially under scanner changes (22--61\%), identifying sensor heterogeneity as the most challenging alignment condition. A consistent finding across both real and synthetic experiments is that structural geometry provides more reliable alignment references than furnished scenes, as the empty-scene reference consistently outperforms the furnished reference.
+The synthetic V-Scan experiments provide additional insight under controlled conditions with exact ground-truth poses. Full-scan alignment achieves success rates of 87--96\% for furniture and position changes, with sub-3\,cm RMSE when successful. The success rate degrades gracefully under partial coverage (67--83\%) and more substantially under scanner changes (22--61\%), identifying sensor heterogeneity combined with reduced spatial overlap as the most challenging alignment condition. A consistent finding across both real and synthetic experiments is that structural geometry provides more reliable alignment correspondences than furnished scenes, as the empty-scene reference consistently outperforms the furnished reference.
  
-The dataset updating methodology enables incremental maintenance of digital facility documentation without complete re-documentation. By distinguishing between outdated, occluded, and current observations, the method preserves high-quality reference data wherever possible while incorporating new observations only where necessary.
+The dataset updating methodology enables incremental maintenance of digital facility documentation without complete re-documentation. The real-world experiment confirms that the two-phase removal and addition procedure correctly distinguishes between outdated, occluded, and current observations, preserving high-quality reference data wherever possible while incorporating new observations only where necessary. The synthetic evaluation on the V-Scan dataset quantifies the practical benefit of this approach: combining two scans with different furniture configurations recovers on average 97.5\% of the ground-truth empty-scene geometry, compared to 89\% from a single scan alone. The coverage gain is largest in densely furnished environments (+12.9 percentage points for industrial scenes) and smallest in sparsely furnished rooms (+4.7 percentage points for bedrooms), reflecting the greater diversity of occlusion patterns when more objects are present.
  
-Within the broader pipeline, this chapter establishes the aligned and up-to-date point cloud representation that serves as input for all subsequent stages. The scene segmentation, object detection, and completion methods presented in the following chapters operate on the assumption that the input data is spatially consistent and represents the current state of the environment.
+Within the broader pipeline, this chapter establishes the aligned and up-to-date point cloud representation that serves as input for all subsequent stages. The scene segmentation, object detection, and completion methods presented in the following chapters operate on the assumption that the input data is spatially consistent and represents the current state of the environment. The alignment and updating framework presented here ensures that this assumption is met, even when the input originates from heterogeneous sensors captured at different times.
+ 
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \cleardoublepage

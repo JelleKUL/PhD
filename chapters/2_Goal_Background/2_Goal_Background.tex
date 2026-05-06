@@ -73,13 +73,22 @@ A clear understanding of scene dynamification requires an overview of the main w
 Explicit representations store geometry directly as discrete entities such as points, surfaces or volumetric elements. They are generally intuitive to interpret and well suited for visualization, rendering and geometric processing. Implicit representations encode geometry indirectly through functions defined over 3D space, where surfaces are recovered from quantities such as occupancy, density or distance values. They are particularly useful for reconstruction, shape completion and learning-based modelling. Each representation type offers distinct advantages and limitations depending on the intended application.
 
 % ── Explicit ────────────────────────────────────────────────────────────────
+\todo{Include images per representation, not just one for all}
 \subsection{Explicit Representations}
 \label{sec:bg_explicit}
 
-Explicit representations can be visualised directly in any 3D software, without the need for any extra processing. This makes them practical for rendering, editing and many downstream applications (Figure~\ref{fig:2_Explicit_Reps}).
+Explicit representations can be visualised directly in any 3D software, without the need for any extra processing. This makes them practical for rendering, editing and many downstream applications.
 
+
+
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{Pointcloud}
+  \caption[Pointcloud representation]{Example of a point cloud representation.}
+  \label{fig:Pointcloud}
+\end{figure}
 \paragraph{Point clouds.}
-
 A point cloud is a collection of sampled 3D points,
 \[
 P = \{\mathbf{p}_i\}_{i=1}^{N},
@@ -97,6 +106,13 @@ A distinction is commonly made between \textit{structured} and \textit{unstructu
 
 However, point clouds do not contain explicit surface connectivity. In other words, neighbouring points are not directly linked to form surfaces. This makes tasks such as rendering, mesh generation or watertight reconstruction more difficult. Their quality also depends strongly on the sensing device used, ranging from highly accurate terrestrial laser scanners to noisier mobile and \gls{XR}-based systems~\cite{bassier_standalone_2016, vermandere_two-step_2022, de_geyter_automated_2022}.
 
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{Mesh}
+  \caption[Mesh representation]{Example of a mesh representation.}
+  \label{fig:Mesh}
+\end{figure}
 \paragraph{Meshes.}
 
 A mesh represents a surface using connected vertices, edges and faces. In practice, most meshes consist of triangles, making them efficient to process and render. A mesh can be written as
@@ -128,6 +144,13 @@ where $u_i$ and $v_i$ denote the horizontal and vertical coordinates within the 
 
 Mesh representations from indoor scans are often reconstructed using a meshing algorithm. Since this process is not perfect, the results contain defects such as holes, incorrect connections or non-manifold geometry. Extra repair steps are therefore commonly required before further use~\cite{geyter_point_2022, attene_lightweight_2010}.
 
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{Splat}
+  \caption[3D Gaussian splatting]{Example of a 3D Gaussian splatting representation.}
+  \label{fig:Splat}
+\end{figure}
 \paragraph{3D Gaussian splatting.}
 
 A representation that has seen a recent resurgence is 3D Gaussian splatting~\cite{kerbl_3d_2023}, in which the scene is represented as a set of anisotropic 3D Gaussians,
@@ -144,20 +167,27 @@ This representation has gained considerable attention for its ability to achieve
 
 However, Gaussian splatting is currently more suitable for visualization than for editing. Reliable object-level manipulation, topology-aware reconstruction and geometry completion remain active research topics~\cite{ardelean_gen3dsr_2025, yin_sai3d_2023}. Furthermore, the lack of an explicit, watertight surface definition makes completion and UV-based texture operations difficult to apply. For these reasons, 3D Gaussian splatting is not adopted as an intermediate or output representation in this thesis.
 
-\begin{figure}[h]
-  \centering
-  \medskip
-  \includegraphics[width=1\textwidth]{Explicit_Reps}
-  \caption[Explicit representations]{Overview of explicit representations: point clouds, meshes, voxel grids and 3D Gaussian splatting.}
-  \label{fig:2_Explicit_Reps}
-\end{figure}
+%\begin{figure}[h]
+%  \centering
+%  \medskip
+%  \includegraphics[width=1\textwidth]{Explicit_Reps}
+%  \caption[Explicit representations]{Overview of explicit representations: point clouds, meshes, voxel grids and 3D Gaussian splatting.}
+%  \label{fig:2_Explicit_Reps}
+%\end{figure}
 
 % ── Implicit ────────────────────────────────────────────────────────────────
 \subsection{Implicit Representations}
 \label{sec:bg_implicit}
 
-Implicit representations do not store surfaces directly. Instead, geometry is described through functions evaluated in space. The surface is then recovered from these functions. Such methods are often more flexible than explicit representations and are widely used in reconstruction and generative modelling (Figure~\ref{fig:2_Implicit_Reps}).
+Implicit representations do not store surfaces directly. Instead, geometry is described through functions evaluated in space. The surface is then recovered from these functions. Such methods are often more flexible than explicit representations and are widely used in reconstruction and generative modelling.
 
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{SDF}
+  \caption[Signed Distance Function]{Example of a Signed Distance Function representation.}
+  \label{fig:SDF}
+\end{figure}
 \paragraph{Signed Distance Functions.}
 
 A \gls{SDF} assigns to every point in space a value equal to its signed distance to the nearest surface. By convention, values are negative inside an object, positive outside, and zero exactly on the surface:
@@ -176,6 +206,13 @@ When sampled on a regular voxel grid, SDFs are well suited for learning-based co
 
 For the dynamification step, SDFs can be extended to \gls{CSDF}s by additionally storing per-voxel colour information, enabling joint geometry and appearance manipulation~\cite{oechsle_texture_2019}.
 
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{Parametric}
+  \caption[Parametric representation]{Example of a parametric representation.}
+  \label{fig:Parametric}
+\end{figure}
 \paragraph{Parametric and semantic models.}
 
 Parametric and semantic models describe geometry through structured object definitions rather than purely through sampled surfaces. Instead of storing only points or triangles, these representations encode objects by parameters, construction logic and semantic relationships. They are widely used in design, engineering and manufacturing workflows because they support efficient editing, querying and procedural modification.
@@ -186,6 +223,13 @@ Computer-Aided Design (CAD) models are the most common example of parametric mod
 
 This structured representation supports efficient querying, clash detection, scheduling, simulation and modification. However, CAD and BIM models typically describe intended or designed geometry rather than captured as-built conditions, and therefore often lack the geometric irregularities, clutter and visual realism present in real environments.
 
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{NERF}
+  \caption[NeRF representation]{Example of a NeRF representation.}
+  \label{fig:NERF}
+\end{figure}
 \paragraph{Neural implicit representations.}
 
 Neural implicit methods use neural networks to represent geometry or appearance as continuous functions over space. Instead of storing explicit vertices, faces or points, a neural network with parameters $\theta$ learns a mapping
@@ -202,13 +246,13 @@ where $\sigma$ denotes volumetric density and $\mathbf{c}=(r,g,b)$ the view-depe
 
 These methods can produce highly realistic novel-view synthesis results and compactly encode complex scenes. However, the scene structure is stored inside the network parameters $\theta$ rather than as directly editable objects, making object-level interaction, deterministic updates and geometric editing more difficult~\cite{weber_nerfiller_2023}. Recent work aims to decompose such models into separate objects~\cite{ardelean_gen3dsr_2025}, but robust interactive editing remains an open challenge. Neural implicit methods are therefore considered useful supporting tools, but not final output formats for the dynamic scene representations targeted in this thesis.
 
-\begin{figure}[h]
-  \centering
-  \medskip
-  \includegraphics[width=1\textwidth]{Implicit_Reps}
-  \caption[Implicit representations]{Overview of implicit representations: signed distance functions, unsigned distance functions and neural radiance fields.}
-  \label{fig:2_Implicit_Reps}
-\end{figure}
+%\begin{figure}[h]
+%  \centering
+%  \medskip
+%  \includegraphics[width=1\textwidth]{Implicit_Reps}
+%  \caption[Implicit representations]{Overview of implicit representations: signed distance functions, unsigned distance functions and neural radiance fields.}
+%  \label{fig:2_Implicit_Reps}
+%\end{figure}
 
 % ── Spatial data structures ────────────────────────────────────────────────
 \subsection{Spatial Data Structures}
@@ -216,6 +260,13 @@ These methods can produce highly realistic novel-view synthesis results and comp
 
 Beyond geometric representations themselves, efficient processing of 3D data also depends on the underlying data structures used to store, index and query spatial information. Large-scale scenes often contain millions of points or volumetric samples, making direct linear access computationally inefficient. Spatial data structures therefore play a central role in neighbourhood search, collision queries, ray traversal, completion and hierarchical reconstruction.
 
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{Voxel}
+  \caption[Voxel grid representation]{Example of a voxel grid representation.}
+  \label{fig:Voxel}
+\end{figure}
 \paragraph{Voxel grids.}
 
 Voxel grids divide 3D space into small cubic cells, analogous to how pixels divide a 2D image. A voxel grid can be written as
@@ -238,6 +289,13 @@ where $f$ is an SDF or UDF evaluated at the voxel centre. Surfaces are then reco
 
 The main limitation of dense voxel grids is memory consumption. If the resolution doubles along each axis, the total number of voxels increases by a factor of eight. As a result, voxel grids are often used as intermediate representations or replaced by sparse hierarchical structures.
 
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{Octree}
+  \caption[Octree representation]{Example of an octree representation.}
+  \label{fig:Octree}
+\end{figure}
 \paragraph{Octrees.}
 
 An octree is a hierarchical spatial partitioning structure that recursively subdivides 3D space into eight equally sized cubic children. Starting from a root node representing the full domain, subdivision continues only in regions requiring additional detail. This adaptive refinement greatly reduces memory usage compared with dense voxel grids when large empty regions are present.
@@ -285,7 +343,7 @@ Having established the representational landscape, this section formalises what 
 
 The pipeline takes as input heterogeneous, multi-source data captured from real indoor environments. No single scan captures a scene in its entirety, so the input is inherently incomplete. Two primary modalities are considered (\ref{fig:Pointcloud_Pano}).
 
-\begin{figure}[h]
+\begin{figure}[htbp]
   \centering
   \medskip
   \includegraphics[width=1\textwidth]{Pointcloud_Pano}
@@ -303,7 +361,15 @@ Panoramic images or localised pinhole camera images provide complementary appear
 \subsection{Output Requirements}
 \label{sec:bg_outputs}
 
-The output of the pipeline is a \gls{DRM}: a complete and editable representation of the indoor environment. This representation must satisfy the following requirements.
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=1\textwidth]{DRM_Requirements}
+  \caption[DRM Requirements]{Example of DRM requirements.}
+  \label{fig:DRM_Requirements}
+\end{figure}
+
+The output of the pipeline is a \gls{DRM}: a complete and editable representation of the indoor environment. This representation must satisfy the following requirements as seen in Figure~\ref{fig:DRM_Requirements}.
 
 \paragraph{Geometric completeness.}
 
@@ -427,7 +493,7 @@ where $f(\cdot)$ denotes the feature extraction function. A cosine similarity of
 
 Table~\ref{tab:metrics_overview} summarises the evaluation metrics and indicates the pipeline stages in which each is applied.
 
-\begin{table}[h]
+\begin{table}[htbp]
     \centering
     \caption[Evaluation metrics overview]{Overview of evaluation metrics used in this thesis. Arrows indicate the direction of improvement: $\uparrow$~higher is better, $\downarrow$~lower is better.}
     \label{tab:metrics_overview}
@@ -465,4 +531,5 @@ Finally, the evaluation metrics defined in Section~\ref{sec:bg_metrics} provide 
 With this conceptual, representational and evaluative basis in place, the following chapters address the individual stages of the proposed methodology, beginning with the acquisition and generation of the datasets on which the pipeline operates.
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\cleardoublepage
 \cleardoublepage
