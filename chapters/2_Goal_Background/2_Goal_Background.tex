@@ -10,53 +10,24 @@
 \newglossaryentry{CAD}{name={CAD}, description={Computer-Aided Design — a digital representation of a physical object used in engineering and manufacturing}}
 \newglossaryentry{CI/SFB}{name={CI/SFB}, description={Classification and Information System for Building Elements — a standardized code for categorizing building elements}}
 
-% ── Bib keys first introduced in this chapter ────────────────────────────────
-% kerbl_3d_2023              → Kerbl et al. 2023, 3D Gaussian Splatting
-% mildenhall_nerf_2020       → Mildenhall et al. 2020, NeRF
-% attene_lightweight_2010    → Attene 2010, lightweight mesh repair
-% heckbert_survey_1986       → Heckbert 1986, survey of texture mapping
-% hart_sphere_1996           → Hart 1996, sphere tracing / ray marching
-% lorensen_marching_1998     → Lorensen & Cline 1998, Marching Cubes
-% oechsle_texture_2019       → Oechsle et al. 2019, Texture Fields
-% rao_patchcomplete_2022     → Rao et al. 2022, PatchComplete
-% chu_diffcomplete_2023      → Chu et al. 2023, DiffComplete
-% yan_shapeformer_2023       → Yan et al. 2023, ShapeFormer
-% zhou_3d_2021               → Zhou et al. 2021, Point-Voxel Diffusion
-% qi_pointnet_2016           → Qi et al. 2016, PointNet
-% qi_deep_2019               → Qi et al. 2019, VoteNet
-% sipiran_approximate_2014   → Sipiran et al. 2014, Approximate Symmetry Detection
-% wei_approximate_2022       → Wei et al. 2022, CoACD convex decomposition
-% suvorov_resolution-robust_2022 → Suvorov et al. 2022, LaMa inpainting
-% siddiqui_retrievalfuse_2021 → Siddiqui et al. 2021, RetrievalFuse
-% korman_latent_2018         → Korman & Litman 2018, Latent RANSAC
-% yin_sai3d_2023             → Yin et al. 2023, SAI3D Gaussian segmentation
-% dai_scancomplete_2018      → Dai et al. 2018, ScanComplete
-% dai_spsg_2020              → Dai et al. 2020, SPSG
-% chen_circle_2021           → Chen et al. 2021, CIRCLE
-% dai_scannet_2017           → Dai et al. 2017, ScanNet
-% chang_matterport3d_2017    → Chang et al. 2017, Matterport3D
-% hart_sphere_1996           → Hart 1996, sphere tracing / ray marching
-% vermandere_adaptive_2026   → Vermandere et al. 2026, Adaptive Scaling with Geometric and Visual Continuity
-% ─────────────────────────────────────────────────────────────────────────────
-
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
 \label{sec:bg_intro}
 
 % explain the outline of the chapter
-This chapter establishes the conceptual and terminological foundation for the remainder of the thesis by defining the scope and requirements of the dynamification process and positioning it relative to existing representations. Section~\ref{sec:bg_sota_dynamification} surveys existing work most directly related to scene dynamification as a unified problem. Section~\ref{sec:bg_representations} reviews the main categories of 3D representation and discusses their suitability as inputs and outputs of the proposed pipeline. Section~\ref{sec:bg_drm_requirements} formalises the input and output requirements of a \gls{DRM}, connecting them to the occlusion typology and design decisions established in Chapter~\ref{ch:introduction}. Section~\ref{sec:bg_metrics} defines the evaluation metrics used throughout this thesis to assess reconstruction quality across all pipeline stages. Section~\ref{sec:bg_conclusion} summarises the representational choices made for this thesis and the assumptions that follow from them.
+This chapter establishes the conceptual and terminological foundation for the remainder of the thesis by defining the requirements of the dynamification process and positioning it relative to existing representations. Section~\ref{sec:bg_sota_dynamification} surveys existing work most directly related to scene dynamification as a unified problem. Section~\ref{sec:bg_representations} reviews the main categories of 3D representation and discusses their suitability as inputs and outputs of the proposed pipeline. Section~\ref{sec:bg_drm_requirements} formalises the input and output requirements of a \gls{DRM}, connecting them to the occlusion typology and design decisions established in Chapter~\ref{ch:introduction}. Section~\ref{sec:bg_metrics} defines the evaluation metrics used throughout this thesis to assess reconstruction quality across all pipeline stages. Section~\ref{sec:bg_conclusion} summarises the representational choices made for this thesis and the assumptions that follow from them.
 
 
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Existing Approaches to Scene Dynamification}
 \label{sec:bg_sota_dynamification}
-
-Although the individual components of the proposed pipeline(object detection~\cite{qi_deep_2019}, completion~\cite{mittal_autosdf_2022, chibane_implicit_2020} and inpainting~\cite{suvorov_resolution-robust_2022, vermandere_semantic_2024}) have been studied extensively in isolation, the specific problem of transforming a partial scan into a fully dynamic and editable scene representation has received comparatively little attention~\cite{ardelean_gen3dsr_2025}.
+\todo{Meer citaties van de bestaande werken}
+Although the individual components of the proposed pipeline(object detection~\cite{qi_deep_2019,xu_back_2022, cheng_aic3dod_nodate}, completion~\cite{mittal_autosdf_2022, chibane_implicit_2020,ren_xcube_2023,team_sam_2025} and inpainting~\cite{suvorov_resolution-robust_2022, vermandere_semantic_2024}) have been studied extensively in isolation, the specific problem of transforming a partial scan into a fully dynamic and editable scene representation has received comparatively little attention~\cite{ardelean_gen3dsr_2025}.
 
 The closest relevant body of work includes methods for indoor scene understanding that decompose a scan into structural and object components. Li~et~al.~\cite{li_hybrid_2024} segment indoor point clouds into planar structural elements and detected objects, reconstruct the structural geometry via plane fitting~\cite{korman_latent_2018}, and replace detected objects with matched CAD models retrieved from a database~\cite{siddiqui_retrievalfuse_2021}. This approach produces a lightweight and semantically structured scene, but is limited to objects that have a close match in a predefined database and does not address the visual completeness of the reconstruction.
 
-Methods based on neural implicit representations, such as NeRFiller~\cite{weber_nerfiller_2023} and related scene completion approaches~\cite{dai_spsg_2020, chen_circle_2021}, use generative 2D inpainting to complete missing regions within neural radiance field representations. While these approaches can produce visually plausible completions, the resulting representations are not decomposed at the object level and do not support object-level manipulation or explicit geometric editing~\cite{roldao_3d_2022}.
+Methods based on neural implicit representations, such as NeRFiller~\cite{weber_nerfiller_2023} and related scene completion approaches~\cite{dai_spsg_2020, chen_circle_2021}, use generative 2D inpainting to complete missing regions within neural radiance field (\gls{NeRF}) representations. While these approaches can produce visually plausible completions, the resulting representations are not decomposed at the object level and do not support object-level manipulation or explicit geometric editing~\cite{roldao_3d_2022}.
 
 Gen3DSR~\cite{ardelean_gen3dsr_2025} reconstructs a dynamic 3D scene from a single RGB image by separating objects from the scene using 2D segmentation masks and completing each independently using depth estimation and generative models. This is conceptually the closest existing approach to the pipeline proposed here, but it relies on a single image as input, limiting geometric accuracy, and does not address the alignment, updating or part-aware scaling stages that are central to this work.
 
@@ -77,9 +48,7 @@ Explicit representations store geometry directly as discrete entities such as po
 \subsection{Explicit Representations}
 \label{sec:bg_explicit}
 
-Explicit representations can be visualised directly in any 3D software, without the need for any extra processing. This makes them practical for rendering, editing and many downstream applications.
-
-
+Explicit representations can be visualised directly in most 3D software, without the need for any extra processing. This makes them practical for rendering, editing and many downstream applications.
 
 \begin{figure}[htbp]
   \centering
@@ -88,6 +57,7 @@ Explicit representations can be visualised directly in any 3D software, without 
   \caption[Pointcloud representation]{Example of a point cloud representation.}
   \label{fig:Pointcloud}
 \end{figure}
+
 \paragraph{Point clouds.}
 A point cloud is a collection of sampled 3D points,
 \[
@@ -102,7 +72,7 @@ with $(x_i, y_i, z_i) \in \mathbb{R}^{3}$ denoting the measured 3D position, $(n
 
 Point clouds are the natural output of laser scanners, depth cameras and mobile sensing devices, and form the main raw input used throughout this thesis. Their main advantage is that they closely reflect real physical measurements. They are simple to acquire, scalable to large scenes and can capture fine geometric detail when densely sampled.
 
-A distinction is commonly made between \textit{structured} and \textit{unstructured} point clouds. Structured point clouds preserve the original sensor topology, meaning that points are arranged on a regular 2D grid corresponding to image pixels or scan angles. This neighbourhood structure enables efficient operations such as normal estimation, segmentation and projection-based processing. Depth images and many RGB-D camera outputs are typical examples of structured point clouds. Unstructured point clouds, by contrast, store points only as an unordered set of spatial samples without an inherent neighbourhood relationship. They are the dominant output of terrestrial laser scanners and merged multi-scan datasets, but require spatial indexing methods such as k-d trees or octrees \todo{where explain?} to recover local neighbourhoods for processing.
+A distinction is commonly made between \textit{structured} and \textit{unstructured} point clouds. Structured point clouds preserve the original sensor topology, meaning that points are arranged on a regular 2D grid corresponding to image pixels or scan angles. This neighbourhood structure enables efficient operations such as normal estimation, segmentation and projection-based processing. Depth images and many RGB-D camera outputs are typical examples of structured point clouds. Unstructured point clouds, by contrast, store points only as an unordered set of spatial samples without an inherent neighbourhood relationship. They are the dominant output of terrestrial laser scanners and merged multi-scan datasets, but require spatial indexing methods such as k-d trees or octrees (see section \ref{sec:bg_datastructures}) to recover local neighbourhoods for processing.
 
 However, point clouds do not contain explicit surface connectivity. In other words, neighbouring points are not directly linked to form surfaces. This makes tasks such as rendering, mesh generation or watertight reconstruction more difficult. Their quality also depends strongly on the sensing device used, ranging from highly accurate terrestrial laser scanners to noisier mobile and \gls{XR}-based systems~\cite{bassier_standalone_2016, vermandere_two-step_2022, de_geyter_automated_2022}.
 
@@ -163,9 +133,9 @@ G_i = (\boldsymbol{\mu}_i,\Sigma_i,\alpha_i,\mathbf{s}_i).
 \]
 Here, $\boldsymbol{\mu}_i \in \mathbb{R}^{3}$ denotes the centre position, $\Sigma_i \in \mathbb{R}^{3 \times 3}$ the covariance matrix controlling orientation and spatial extent, $\alpha_i \in [0,1]$ the opacity, and $\mathbf{s}_i$ the spherical harmonic coefficients encoding view-dependent colour.
 
-This representation has gained considerable attention for its ability to achieve real-time novel view synthesis at high visual fidelity. Each Gaussian combines approximate geometry and appearance in a compact form.
+With the rise of computing power and new machine learning models, this representation has gained considerable attention for its ability to achieve real-time novel view synthesis at high visual fidelity trained from a set of input views. Each Gaussian combines approximate geometry and appearance in a compact form.
 
-However, Gaussian splatting is currently more suitable for visualization than for editing. Reliable object-level manipulation, topology-aware reconstruction and geometry completion remain active research topics~\cite{ardelean_gen3dsr_2025, yin_sai3d_2023}. Furthermore, the lack of an explicit, watertight surface definition makes completion and UV-based texture operations difficult to apply. For these reasons, 3D Gaussian splatting is not adopted as an intermediate or output representation in this thesis.
+However, Gaussian splatting is currently more suitable for visualization than for editing. Reliable object-level manipulation, topology-aware reconstruction and geometry completion remain active research topics~\cite{ardelean_gen3dsr_2025, yin_sai3d_2023}. Furthermore, the lack of an explicit, watertight surface definition makes completion and UV-based texture operations difficult to apply. For these reasons, 3D Gaussian splatting is not adopted as an intermediate or output representation in this thesis. \todo{actually, I'm not quite sure yet, now the final output is marched 3D textures}
 
 %\begin{figure}[h]
 %  \centering
@@ -190,7 +160,7 @@ Implicit representations do not store surfaces directly. Instead, geometry is de
 \end{figure}
 \paragraph{Signed Distance Functions.}
 
-A \gls{SDF} assigns to every point in space a value equal to its signed distance to the nearest surface. By convention, values are negative inside an object, positive outside, and zero exactly on the surface:
+A \gls{SDF} describes a function that defines the signed distance from any given point in space to the nearest surface. By convention, values are negative inside an object, positive outside, and zero exactly on the surface:
 
 \begin{gather}
 f(\mathbf{x}) < 0 \quad \text{inside the object}. \\
@@ -204,7 +174,7 @@ The surface can therefore be recovered as the zero level set of the function, gi
 
 When sampled on a regular voxel grid, SDFs are well suited for learning-based completion methods and have been widely used for object reconstruction~\cite{mittal_autosdf_2022, ren_xcube_2023, cheng_sdfusion_2023, rao_patchcomplete_2022, chu_diffcomplete_2023, yan_shapeformer_2023}. However, standard SDFs assume a closed watertight surface, which is often not available in raw scan data. \gls{UDF}s avoid this limitation by storing only unsigned distance values, making them applicable to open or incomplete meshes~\cite{vermandere_geometry_2025}.
 
-For the dynamification step, SDFs can be extended to \gls{CSDF}s by additionally storing per-voxel colour information, enabling joint geometry and appearance manipulation~\cite{oechsle_texture_2019}.
+For the dynamification step, SDFs can be extended to \gls{CSDF}s by additionally storing per-voxel colour information, enabling joint geometry and appearance manipulation~\cite{oechsle_texture_2019,vermandere_adaptive_2026}.
 
 \begin{figure}[htbp]
   \centering
@@ -213,15 +183,16 @@ For the dynamification step, SDFs can be extended to \gls{CSDF}s by additionally
   \caption[Parametric representation]{Example of a parametric representation.}
   \label{fig:Parametric}
 \end{figure}
+
 \paragraph{Parametric and semantic models.}
 
 Parametric and semantic models describe geometry through structured object definitions rather than purely through sampled surfaces. Instead of storing only points or triangles, these representations encode objects by parameters, construction logic and semantic relationships. They are widely used in design, engineering and manufacturing workflows because they support efficient editing, querying and procedural modification.
 
-Computer-Aided Design (CAD) models are the most common example of parametric modelling. CAD systems typically represent objects using boundary representations, constructive solid geometry, extrusion profiles or feature-based modelling operations. For example, a table leg may be defined by a profile sketch and extrusion height rather than by a fixed triangle mesh. This allows dimensions to be changed while preserving design intent. CAD models are therefore highly suitable for manufacturing, tolerance control and geometric editing, but often contain limited semantic context about how objects function within a larger environment.
+Computer-Aided Design (\gls{CAD}) models are the most common example of parametric modelling. \gls{CAD} systems typically represent objects using boundary representations, constructive solid geometry, extrusion profiles or feature-based modelling operations. For example, a table leg may be defined by a profile sketch and extrusion height rather than by a fixed triangle mesh. This allows dimensions to be changed while preserving design intent. \gls{CAD} models are therefore highly suitable for manufacturing, tolerance control and geometric editing, but often contain limited semantic context about how objects function within a larger environment.
 
 \gls{BIM} extends this principle to the building scale by representing environments as structured collections of semantically meaningful parametric objects. Each element is described by its type, dimensions and relationships to other elements, rather than only by explicit surface geometry.
 
-This structured representation supports efficient querying, clash detection, scheduling, simulation and modification. However, CAD and BIM models typically describe intended or designed geometry rather than captured as-built conditions, and therefore often lack the geometric irregularities, clutter and visual realism present in real environments.
+This structured representation supports efficient querying, clash detection, scheduling, simulation and modification. However, \gls{CAD} and \gls{BIM} models typically describe intended or designed geometry rather than captured as-built conditions, and therefore often lack the geometric irregularities, clutter and visual realism present in real environments.
 
 \begin{figure}[htbp]
   \centering
@@ -230,6 +201,7 @@ This structured representation supports efficient querying, clash detection, sch
   \caption[NeRF representation]{Example of a NeRF representation.}
   \label{fig:NERF}
 \end{figure}
+
 \paragraph{Neural implicit representations.}
 
 Neural implicit methods use neural networks to represent geometry or appearance as continuous functions over space. Instead of storing explicit vertices, faces or points, a neural network with parameters $\theta$ learns a mapping
@@ -280,7 +252,7 @@ Voxel grids can function as an \textit{explicit} representation when they direct
 g_{ijk} \in \{0,1\}
 \]
 may indicate whether a voxel is empty or occupied. In this form, the geometry is represented explicitly as filled volume elements.
-
+\todo{herhaling van SDF's? waar zet ik dit best?}
 They can also function as a discretised container for \textit{implicit} representations. Instead of storing occupancy, each voxel may store a sampled scalar field such as a signed or unsigned distance value,
 \[
 g_{ijk} = f(x_i,y_j,z_k),
@@ -319,15 +291,12 @@ according to whether points lie below or above a splitting plane.
 
 k-d trees are especially effective for nearest-neighbour and radius-search queries, making them a standard acceleration structure for unstructured point clouds. Operations such as normal estimation, registration, clustering and segmentation frequently rely on repeated local neighbourhood searches, for which k-d trees provide substantial speed improvements over brute-force methods.
 
-\paragraph{Role in this thesis.}
-
-The thesis primarily uses unstructured point clouds as input data, for which k-d trees and octrees provide efficient neighbourhood and occupancy queries during alignment, segmentation and occlusion analysis. Dense or sparse voxel grids are used as intermediate structures in completion stages, where their regular layout is advantageous for volumetric reasoning and learning-based inference. Spatial data structures therefore complement geometric representations by enabling scalable processing of large indoor datasets.
 
 % ── 2.2.3 ────────────────────────────────────────────────────────────────────
 \subsection{Representations Used in This Thesis}
 \label{sec:bg_rep_choice}
 
-Given the above considerations, the pipeline operates primarily with coloured point clouds and textured meshes as the main data types, with SDFs and UDFs as intermediate representations in completion stages. Point clouds are the natural output of the sensing devices used and serve as input to detection and completion modules~\cite{qi_pointnet_2016}. Textured meshes are the output of the scene completion stage, providing a compact, renderable and editable surface representation~\cite{vermandere_semantic_2024}. SDFs are used internally within object completion networks, bridging the gap between irregular scan data and the fixed-size inputs required by learning-based models~\cite{mittal_autosdf_2022, chibane_implicit_2020}.
+Given the above considerations, the pipeline operates primarily with coloured point clouds and textured meshes as the main data types, with SDFs and UDFs as intermediate representations in completion stages. Octrees and k-dtrees are used for optimising neighbourhood and occupancy queries during processing. Point clouds are the natural output of the sensing devices used and serve as input to detection and completion modules~\cite{qi_pointnet_2016}. Textured meshes are the output of the scene completion stage, providing a compact, renderable and editable surface representation~\cite{vermandere_semantic_2024}. SDFs are used internally within object completion networks, bridging the gap between irregular scan data and the fixed-size inputs required by learning-based models~\cite{mittal_autosdf_2022, chibane_implicit_2020}.
 
 BIM and neural representations are excluded from the pipeline output: BIM lacks the visual fidelity and geometric detail of captured data~\cite{bassier_processing_2020}, and NeRFs do not support the deterministic object-level editing required for dynamification~\cite{weber_nerfiller_2023}. Gaussian splatting is likewise excluded due to the absence of mature tools for geometric editing and completion~\cite{kerbl_3d_2023}.
 
@@ -341,7 +310,7 @@ Having established the representational landscape, this section formalises what 
 \subsection{Inputs}
 \label{sec:bg_inputs}
 
-The pipeline takes as input heterogeneous, multi-source data captured from real indoor environments. No single scan captures a scene in its entirety, so the input is inherently incomplete. Two primary modalities are considered (\ref{fig:Pointcloud_Pano}).
+The pipeline takes as input heterogeneous, multi-source data captured from real indoor environments. Two primary modalities are considered (\ref{fig:Pointcloud_Pano}).
 
 \begin{figure}[htbp]
   \centering
