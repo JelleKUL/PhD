@@ -9,19 +9,15 @@
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
 \label{sec:5_intro}
- 
-% Paragraph purpose: state directly what this chapter does
-This chapter explains the next step in the pipeline in preparation of the parallel environment and object completion stages. This is done by analysing the scene in two complementary ways. First, the individual objects in the scene are separated from the surrounding structural environment. Second, the occluded regions of both the full scene and the individual objects are identified.
- 
-% Paragraph purpose: explain the object separation challenge specific to this chapter
-Separating the objects from the scene requires detecting and localising them in the point cloud, and then isolating their geometry from the structural elements. A specific challenge arises from the fact that object completion methods typically assume properly bounded and aligned partial observations~\cite{vermandere_guided_2025, mittal_autosdf_2022}, while standard 3D object detectors can only fit bounding boxes to the points that are actually present~\cite{qi_deep_2019}. For partially scanned objects this produces bounding boxes that are too small or incorrectly oriented. A bounding box refinement step is therefore needed, using geometric cues such as object symmetry and the physical constraints imposed by adjacent walls and floors.
- 
-% Paragraph purpose: explain the occlusion detection challenge specific to this chapter
-The occlusion detection serves to determine what empty parts of the scene are genuinely empty regions versus regions that simply were not visible to the scanner. The detection is performed at two levels: at the scene level, to classify the full room volume, and at the object level, to classify the volume within each detected bounding box. The resulting occlusion grids directly inform the subsequent completion stages.
- 
-% Paragraph purpose: chapter roadmap
-The remainder of this chapter is organised as follows. Section~\ref{sec:5_related} reviews the related work on 3D object detection, symmetry detection, plane segmentation and occlusion reasoning. Section~\ref{sec:5_methodology} presents the methodology, covering the object isolation pipeline and the voxelised occlusion detection. Section~\ref{sec:5_experiments} describes the experimental evaluation. Section~\ref{sec:5_conclusion} concludes the chapter.
 
+% Paragraph purpose: situate the chapter and state its two contributions
+This chapter prepares the aligned point cloud from Chapter~\ref{ch:4} for the parallel scene and object completion stages through two complementary analyses: object isolation and occlusion detection.
+
+% Paragraph purpose: explain the object isolation challenge and solution
+Object isolation decomposes the scene into individual foreground objects and structural background elements. As noted in Section~\ref{sec:1_problem}, standard detectors fit bounding boxes only to visible geometry~\cite{qi_deep_2019}, so partially scanned objects yield boxes that are too small or misoriented. Since object completion methods require properly bounded and aligned partial observations~\cite{vermandere_guided_2025, mittal_autosdf_2022}, a refinement step is applied that uses detected symmetry axes and physical constraints from adjacent scene planes to correct the bounding box orientation and extent prior to completion.
+
+% Paragraph purpose: explain the occlusion detection approach and its role
+Occlusion detection then determines which regions of the scene were hidden from the scanner rather than genuinely empty, a distinction that is critical for guiding the completion stages without hallucinating geometry in observed empty space. This is performed at two levels simultaneously: a scene-level grid classifying the full room volume, and per-object grids classifying the volume within each refined bounding box. The resulting occlusion grids directly supply the spatial priors required by the scene completion in Chapter~\ref{ch:6} and the object completion in Chapter~\ref{ch:7}.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Related Work}

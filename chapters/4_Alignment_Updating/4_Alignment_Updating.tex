@@ -20,26 +20,11 @@
 \section{Introduction}
 \label{sec:4_intro}
 
-% Paragraph purpose: motivate the need for alignment and updating in the context of the full pipeline
-This chapter addresses the first stage of the \gls{DRM} pipeline: the alignment of newly captured data with pre-existing reference datasets, and the incremental updating of those datasets with new observations.
+% Paragraph purpose: situate the chapter in the pipeline and frame the core technical problem
+This chapter addresses the first stage of the \gls{DRM} pipeline: aligning newly captured data with pre-existing reference datasets and incrementally updating those datasets with new observations. As established in Chapter~\ref{ch:introduction}, the absence of \gls{GNSS} in indoor environments means that the pose of a newly captured session cannot be determined directly, but must instead be estimated relative to existing reference data~\cite{vermandere_two-step_2022}. This is compounded by temporal change: objects may have moved or been replaced since the reference was acquired, causing feature-based registration methods that assume a static scene to fail~\cite{vermandere_two-step_2022}, while full re-documentation with high-end equipment remains impractical~\cite{bassier_standalone_2016, bassier_geomapi_2024}.
 
-% Paragraph purpose: explain why incremental updating is necessary
-Indoor environments are not static. Furniture is rearranged, equipment is replaced, and layouts evolve through daily use. Complete re-documentation of a facility each time a change occurs is prohibitively expensive and time-consuming. High-end terrestrial laser scanning campaigns, while producing the most accurate data, require significant setup time, post-processing effort, and specialised equipment~\cite{bassier_standalone_2016, geyter_point_2022}. As a result, detailed scan data quickly becomes outdated as a representation of the current state of the environment. A more practical approach is to capture only the changed portions of the environment using faster, more accessible sensing devices, and to integrate these observations into the existing high-quality dataset~\cite{bassier_geomapi_2024}.
-
-% Paragraph purpose: introduce the indoor localisation challenge
-However, integrating newly captured data requires solving a fundamental localisation problem. In outdoor environments, \gls{GNSS} provides a straightforward means of geo-referencing captured data. In indoor environments, satellite signals are unavailable or severely degraded, making direct geo-referencing impractical~\cite{vermandere_two-step_2022}. Instead, the position and orientation of the capturing device must be determined relative to pre-existing reference data. This is particularly challenging when the capturing device is a low-cost sensor such as a head-mounted \gls{XR} device or a smartphone, which produces data of significantly lower resolution and accuracy compared to the reference datasets~\cite{geyter_point_2022}.
-
-% Paragraph purpose: introduce the temporal change challenge
-A second difficulty arises from the temporal changes between data captures. Reference data may have been captured weeks, months, or even years before the new observations. During this interval, objects may have been moved, added, or removed, and even the appearance of permanent structures may have changed due to lighting conditions, weathering, or surface treatment. Registration methods that assume a static scene may therefore fail when applied across temporal gaps, as the features they rely on may no longer be present in the new observation~\cite{vermandere_two-step_2022}.
-
-% Paragraph purpose: outline the chapter structure and contributions
-This chapter presents a two-step alignment framework that addresses both challenges, together with a dataset updating mechanism that integrates new observations into existing point clouds. The alignment framework combines a coarse global positioning step with a fine registration step that leverages both 2D image features and 3D geometric features to compute a robust pose estimate. The updating mechanism determines which points in the existing dataset are still current and which should be replaced by new observations. 
-
-
-%The methods presented in this chapter are based on two publications: the two-step alignment of mixed reality devices to existing building data~\cite{vermandere_two-step_2022} and the automatic alignment and completion of point cloud environments using XR data~\cite{vermandere_automatic_2022}, with the dataset management infrastructure provided by the GEOMAPI framework~\cite{bassier_geomapi_2024}.
-
-% Paragraph purpose: provide the chapter roadmap
-The remainder of this chapter is organised as follows. Section~\ref{sec:4_related} reviews the related work on indoor localisation and data alignment. Section~\ref{sec:4_methodology} presents the methodology, covering the global alignment, local pose estimation, and dataset updating procedures. Section~\ref{sec:4_experiments} describes the experimental setup and results. Section~\ref{sec:4_conclusion} concludes the chapter.
+% Paragraph purpose: introduce the proposed solution
+To address both challenges, this chapter presents a two-step alignment framework combined with a dataset updating mechanism. The alignment combines a coarse global positioning step with a fine multi-modal registration step that jointly leverages 2D image features and 3D geometric descriptors to produce a robust pose estimate. The updating procedure then determines which points in the existing dataset remain current and which should be replaced by the new observations.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Related Work}

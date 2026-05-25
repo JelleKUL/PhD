@@ -2,20 +2,182 @@
 
 \chapter{Valorisation} \label{ch:Valorisation}
 
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
+\label{sec:val_intro}
 
-\section{Proof-of-concept applications}
-In this section, two tools developed up to the proof-of-concept stage are presented.
+% Paragraph purpose: state the core value proposition
+In this chapter, the valorisation potential of the methods and workflows developed in this dissertation is explored. The core value proposition of this work lies in the acceleration of the digitisation of reality. As established throughout this thesis, the bottleneck in many industries is no longer data capture, since affordable sensors ranging from smartphones to XR headsets are now widely available~\cite{vermandere_two-step_2022}. Instead, the bottleneck is the conversion of partial, unstructured observations into complete, manipulable, and design-ready digital assets that can enter operational workflows~\cite{vermandere_geometry_2025}. The Dynamic Reality Model (DRM) pipeline developed in this thesis, from data alignment (Chapter~\ref{ch:4_Alignment}) through object and scene completion (Chapters~\ref{ch:6_Scene_Completion} and~\ref{ch:7_Object_Completion}) to scene dynamification (Chapter~\ref{ch:8_Dynamification}), directly targets this conversion bottleneck. By automating the transformation of partial scans into complete, interactive 3D environments, the pipeline reduces the manual effort that currently dominates the cost of scan-to-model workflows.
 
-\subsection{Digital upcycling}
+% Paragraph purpose: outline the chapter
+The remainder of this chapter is organised as follows. Section~\ref{sec:val_repos} provides an overview of the open-source software repositories developed during this research. Section~\ref{sec:val_dataset} discusses the public V-Scan dataset as a research output. Section~\ref{sec:val_market} analyses the valorisation potential and market position, including target markets, potential applications, added value, and intellectual property considerations. Section~\ref{sec:val_dissemination} summarises the dissemination activities. Finally, Section~\ref{sec:val_conclusion} concludes the chapter.
 
-\subsection{Furniture Removal}
 
-\section{Valorization potential and market position}
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Open-Source Software Repositories}
+\label{sec:val_repos}
 
-\subsection{Time savings analysis}
+% Paragraph purpose: explain the rationale behind open-sourcing
+Throughout this PhD, the proposed pipeline was implemented as a set of reusable software packages and made publicly available on GitHub\footnote{\url{https://github.com/JelleKUL}} under the MIT license. This open approach ensures the reproducibility of the experimental results reported in this thesis, lowers the barrier for other researchers and practitioners to build upon the work, and establishes prior art for the methods developed, which strengthens the intellectual property position discussed in Section~\ref{sec:val_ip}. Three core repositories form the backbone of this software ecosystem.
 
-\section{Conclusion}  
+% Paragraph purpose: describe the Geomapi ecosystem
+The first is the \textbf{Geomapi} library\footnote{\url{https://github.com/KU-Leuven-Geomatics/geomapi}}~\cite{bassier_geomapi_2024}, developed jointly with the KU~Leuven Geomatics group, and its C\# companion \textbf{GeoSharpi}\footnote{\url{https://github.com/JelleKUL/GeoSharpi}}. Geomapi provides a comprehensive Python toolkit for processing geospatial data using semantic web technologies, handling the storage, querying, and linking of multi-sensor and multi-temporal datasets. GeoSharpi implements the same framework in C\# for deployment on XR devices such as the HoloLens~2 and Android smartphones. Together, these tools provide the data capture and standardisation layer that underpins the two-step alignment methodology presented in Chapter~\ref{ch:4_Alignment} and published in~\cite{vermandere_two-step_2022}.
+
+% Paragraph purpose: describe the VirtualScanner
+The second is the \textbf{VirtualScanner}\footnote{\url{https://github.com/JelleKUL/VirtualScanner}}~\cite{vermandere_synthetic_2026}, which implements the procedural scanning pipeline described in Chapter~\ref{ch:3_Data_Acquisition}. As discussed extensively in that chapter, this tool generates synthetic partial scans of indoor environments by simulating TLS and MMS acquisition processes. Beyond producing the V-Scan dataset used for evaluation in this thesis, the VirtualScanner enables the procedural generation of new datasets with custom room layouts, object configurations, and scanner parameters. This capability is particularly valuable for training and benchmarking future completion models on domain-specific object categories that are not covered by existing public datasets.
+
+% Paragraph purpose: describe the DRM pipeline
+The third and central repository is the \textbf{DRM pipeline}\footnote{\url{https://github.com/JelleKUL/DRM}}, which integrates the full scene dynamification workflow presented in this thesis. The DRM repository is designed as a modular orchestrator: it connects the individual processing steps (alignment, segmentation, completion, dynamification) while allowing each step to use the latest external models. Concretely, the pipeline integrates state-of-the-art external repositories such as VoteNet~\cite{qi_deep_2019} for 3D object detection, SAM~3D~\cite{sam3d_2025} for segmentation, and Hunyuan3D for image-based object completion, among others. This modular design means that as new and improved models are released by the broader research community, they can be incorporated into the pipeline without requiring a redesign of the overall architecture.
+
+% Paragraph purpose: address documentation, maintenance, infrastructure
+All three repositories include documentation in the form of README files and example notebooks. The infrastructure requirements are minimal for the Python-based Geomapi and VirtualScanner tools, which run on standard hardware, while the GPU-intensive completion and segmentation modules within the DRM pipeline require a CUDA-compatible graphics card. The MIT license imposes no restrictions on commercial use, modification, or redistribution, ensuring that derivative products can be built freely.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Public Dataset: V-Scan}
+\label{sec:val_dataset}
+
+% Paragraph purpose: describe V-Scan concisely and its value
+A key output of this research is the \textit{V-Scan} dataset~\cite{vermandere_synthetic_2026}, described in detail in Chapter~\ref{ch:3_Data_Acquisition}. V-Scan provides what existing public datasets lack: partial scans paired with ground truth completions and explicit occlusion information, both at the individual object level and at the full scene level. This makes it possible to quantitatively evaluate completion methods across the entire pipeline, from object detection through geometry and texture completion to full scene reconstruction. The dataset is publicly available through the VirtualScanner repository, and researchers can use the generation tool to produce additional data for new object categories or scanning configurations.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Valorisation Potential and Market Position}
+\label{sec:val_market}
+
+% Paragraph purpose: frame the market context
+The scene completion technology developed in this thesis has broad applicability across industries that share the same bottleneck: converting partial, sensor-captured observations into complete, manipulable digital models. This section identifies the target markets and end users, discusses potential applications enabled by the pipeline, analyses the added value and differentiation, and addresses the intellectual property position.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Target Markets and End Users}
+\label{sec:val_markets}
+
+% Paragraph purpose: present the target markets
+Two primary market domains have been identified where the scene completion technology creates value, as summarised in Table~\ref{tab:val_markets}.
+
+\begin{table}[h]
+    \centering
+    \caption{Target markets for the scene completion technology, with projected market size by 2030 and compound annual growth rate (CAGR).}
+    \label{tab:val_markets}
+    \begin{tabular}{l r r}
+        \toprule
+        \textbf{Market} & \textbf{TAM by 2030} & \textbf{CAGR} \\
+        \midrule
+        AEC/Arts digital twins~\cite{marketsandmarkets_digital_twin_2025} & \texteuro149.8B & 47.9\% \\
+        AR/VR~\cite{vmr_ar_vr_training} & \texteuro21.7B & 30.2\% \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+% Paragraph purpose: AEC/Arts
+\paragraph{Architecture, Engineering, Construction, and Arts (AECO).} Within the digital twin market for the built environment, the conversion from point clouds to usable 3D models remains labour-intensive. Surveyors and engineers capture structures faster than ever using modern laser scanning equipment, but the subsequent modelling step is still largely manual~\cite{geyter_point_2022}. The DRM pipeline can accelerate this process by automatically recovering missing geometry and producing structured, object-level representations that are closer to interactive, design-ready models. A specific niche within this market is the circular economy segment, where digital models of reclaimed building components are needed to enable their reuse in renovation projects. End users in the AECO market include surveying and engineering firms, architectural practices specialising in renovation and adaptive reuse, facility managers, and circular material suppliers and platforms.
+
+% Paragraph purpose: AR/VR
+\paragraph{Augmented and Virtual Reality.} Compelling AR/VR experiences require complete 3D environments rather than the partial, artifact-laden reconstructions that current scanning technologies produce. The scene completion and dynamification capabilities of the DRM pipeline produce the kind of interactive, manipulable environments that AR/VR applications demand. Use cases range from virtual property tours and interior design visualisation to gamification of scanned real-world environments and immersive training scenarios. End users include real estate agencies, interior design studios, game and simulation developers, and XR platform providers.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Potential Applications}
+\label{sec:val_applications}
+
+% Paragraph purpose: introduce the section
+Building on the market needs identified above, two potential applications of the DRM pipeline are outlined. These applications have not been developed as part of this PhD but illustrate concrete directions in which the technology can create value.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsubsection{Room Digitisation}
+\label{sec:val_room}
+
+% Paragraph purpose: introduce the application context
+The most direct application of the DRM pipeline is the complete digitisation of indoor rooms from partial scans. Once a room has been captured, the pipeline would produce a dynamic 3D environment in which individual objects are separated from the structural elements, both are geometrically and texturally completed, and objects can be independently moved, removed, or scaled. This capability enables several downstream use cases.
+
+% Paragraph purpose: describe the reorganisation use case
+\paragraph{Reorganisation and renovation planning.} A completed and dynamic room model would allow stakeholders to virtually rearrange furniture, test alternative layouts, or plan renovations before committing to physical changes. The scene dynamification module (Chapter~\ref{ch:8_Dynamification}) enables part-aware scaling of completed objects, so that, for example, a bookshelf can be scaled to fit a different wall opening while preserving its structural proportions. The scene completion module (Chapter~\ref{ch:6_Scene_Completion}) ensures that the surfaces behind removed objects are properly reconstructed, providing a visually consistent empty room that can serve as the canvas for new arrangements. This use case is relevant for interior designers, architects, and facility managers who need to evaluate spatial configurations without conducting physical trials.
+
+% Paragraph purpose: describe defurnishing for real estate
+\paragraph{Real estate and defurnishing.} In the real estate sector, virtually defurnished rooms are valuable for property listings and virtual tours. Existing defurnishing approaches operate primarily on 2D panoramic images~\cite{slavcheva_empty_2024, gkitsas_panodr_2021}, removing furniture through image inpainting but without producing a consistent 3D representation. More recent work combines panoramic and mesh-based defurnishing~\cite{dolhasz_defurnishing_2025}, but relies on hand-crafted plane extension heuristics. The DRM pipeline would naturally support defurnishing as a byproduct of its core functionality: the object detection module identifies furniture, and the scene completion module reconstructs the underlying surfaces. Because objects are maintained as separate entities, individual items can be selectively shown or hidden, enabling interactive virtual staging.
+
+% Paragraph purpose: describe gamification
+\paragraph{Gamification and immersive experiences.} The completed and dynamic scene representations produced by the pipeline are directly compatible with game engines such as Unity, which is used as the front-end throughout this thesis. This opens the possibility of gamifying scanned environments, for example by creating interactive experiences set in real buildings, educational simulations in historical interiors, or training scenarios in facility layouts.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsubsection{Digital Upcycling}
+\label{sec:val_upcycling}
+
+% Paragraph purpose: introduce the problem
+A second potential application addresses the reuse of building components in the circular economy. The European construction and demolition sector generates the largest waste stream in the EU by volume. While Belgium already achieves recycling rates of approximately 96\% for bulk construction materials~\cite{ovam_recycling_2024}, the reuse of higher-value components such as doors, window frames, facade elements, and interior fittings remains below 3\%~\cite{digital_deconstruction}. The fundamental barrier is not a lack of reusable components but the absence of accessible, design-ready digital models that enable architects and designers to integrate reclaimed elements into new projects. Suppliers of reclaimed materials, such as Rotor DC and BC Materials, and platforms such as Opalis and Madaster, currently rely on catalogue photographs and manual measurements, which are insufficient for integration into CAD/BIM design workflows.
+
+% Paragraph purpose: describe how the pipeline could address this
+The DRM pipeline could address this gap through the concept of a digital reuse passport. By combining the geometry and texture completion methods from~\cite{vermandere_geometry_2025} with the semantic UV mapping approach from~\cite{vermandere_semantic_2024}, a reclaimed building component could be captured using a standard smartphone and converted into a complete, textured 3D model. The object completion module would recover missing geometry caused by the partial nature of the capture, while the material-aware texture completion would ensure that the model faithfully represents the component's material properties. The scene dynamification module (Chapter~\ref{ch:8_Dynamification}) could further enable the completed model to be adaptively scaled to fit new spatial constraints, such as adjusting a reclaimed door to fit a different frame opening. The experimental results from Chapter~\ref{ch:7_Object_Completion} suggest that geometric accuracy within approximately $\pm$5~mm and material classification accuracy exceeding 90\% for primary material classes are achievable, although these results were obtained on standard indoor furniture rather than on reclaimed construction components specifically.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Added Value and Differentiation}
+\label{sec:val_added_value}
+
+% Paragraph purpose: describe what makes this different
+The DRM pipeline differentiates itself from existing scan-to-model solutions in three ways. First, it is \textit{end-to-end}: it takes a partial point cloud and associated imagery as input and produces a complete, dynamic 3D environment as output, whereas existing tools typically address only one step of this chain (e.g., scan registration, or object completion in isolation). Second, it is \textit{modular}: each stage can be replaced or upgraded independently, which means that as the research community releases improved models for object detection, completion, or segmentation, these can be integrated into the pipeline without redesigning the overall architecture. This ensures that the pipeline remains current with the state of the art over time, rather than being locked to a specific set of models. Third, it produces \textit{dynamic} output: completed objects are individually manipulable, scalable, and removable, rather than baked into a static reconstruction.
+
+% Paragraph purpose: time savings
+\paragraph{Time savings analysis.}
+A key element of the valorisation argument is the time savings the pipeline offers compared to current practice. In the workflow from scan to visually interactable 3D model, the manual modelling and scene preparation step represents the dominant cost, often exceeding the data capture time by an order of magnitude. Creating an interactable DRM manually, which involves isolating objects from the scan, completing their geometry and texture, reconstructing the underlying scene surfaces, and setting up the dynamic interactions, requires extensive manual effort per room. The DRM pipeline automates these steps, reducing the process to capture followed by automated processing and a manual quality control pass.
+
+\todo{Add quantitative time savings analysis. This section requires benchmarking data that is not yet available from the existing publications. The following estimates should be validated through timed experiments: Manual scan to interactable DRM: estimated 8--16 hours per room depending on complexity and number of objects. Pipeline-assisted DRM creation (capture + automated completion + manual QC): estimated target of 1--2 hours per room. Upcycling passport creation: current manual process (photograph, measure, catalogue entry) estimated at 30--45 minutes per component; pipeline target of 5--10 minutes per component.These estimates are based on informal observations during the research.}
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Intellectual Property and Freedom-to-Operate}
+\label{sec:val_ip}
+
+% Paragraph purpose: describe the IP position
+The intellectual property (IP) position of this research is structured around three pillars: background IP, prior art through publications, and freedom-to-operate (FTO) analysis.
+
+% Paragraph purpose: background IP
+\paragraph{Background IP.} The core software framework, Geomapi~\cite{bassier_geomapi_2024}, is released under the MIT license, which imposes no restrictions on commercial use, modification, or redistribution. This permissive licensing was confirmed with KU~Leuven Research \& Development (LRD) and ensures that derivative products can be built without licensing constraints from the background technology. The deep learning models used in the pipeline (e.g., AutoSDF~\cite{mittal_autosdf_2022}, SAM~\cite{kirillov_segment_2023}) are also available under permissive or research licenses. There is no need to own the underlying deep learning models, as the valorisation lies in the domain-specific adaptations and the integrated pipeline rather than in the base models themselves.
+
+% Paragraph purpose: prior art
+\paragraph{Prior art through publications.} The seven peer-reviewed publications produced during this PhD~\cite{vermandere_two-step_2022, vermandere_texture-based_2023, vermandere_semantic_2024, vermandere_geometry_2025, vermandere_guided_2025, vermandere_synthetic_2026, geyter_point_2022} establish prior art for the methods developed. This prior art protects against third-party patent claims on the core techniques and strengthens the position for future IP protection of domain-specific adaptations.
+
+% Paragraph purpose: FTO analysis
+\paragraph{Freedom-to-operate.} An FTO screening was conducted using Espacenet and Google Patents, covering the relevant CPC classifications (G06T for image processing, G01C for surveying, and G06N for machine learning). No blocking claims were identified for the core scene completion pipeline. The heterogeneous market structure of the envisaged applications further reduces dependency between valorisation routes, as the pipeline can be deployed as software modules, SaaS platforms, or consultancy services depending on the target market.
+
+% Paragraph purpose: foreground IP strategy
+\paragraph{Foreground IP strategy.} The foreground IP, consisting of domain-specific adaptations of the scene completion pipeline for each target market, will be managed in collaboration with LRD on a per-application basis. Protectable outputs include domain-specific adapters (e.g., the reuse-passport generation workflow), trained model weights for specific object categories, and proprietary datasets generated during future validation campaigns.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Dissemination}
+\label{sec:val_dissemination}
+
+% Paragraph purpose: publications
+The research presented in this thesis has been disseminated through multiple channels. Seven peer-reviewed publications have been produced, covering the key pipeline stages: XR-based data alignment and point cloud updating~\cite{vermandere_two-step_2022}, point cloud validation for BIM~\cite{geyter_point_2022}, texture-based mesh separation~\cite{vermandere_texture-based_2023}, semantic UV mapping for texture inpainting~\cite{vermandere_semantic_2024}, geometry and texture completion through material segmentation~\cite{vermandere_geometry_2025}, guided object completion with interactive voxel editing~\cite{vermandere_guided_2025}, and synthetic dataset generation~\cite{vermandere_synthetic_2026}. These publications appeared in Remote Sensing, ISPRS Annals, CGVC (Eurographics), and GRAPP (SciTePress) venues, and in Automation in Construction for the Geomapi framework~\cite{bassier_geomapi_2024}.
+
+% Paragraph purpose: conferences
+The work was presented at international conferences including the ISPRS Geospatial Week 2025, the 20th GRAPP Conference (Porto, 2025), and the CGVC 2024 conference. These presentations provided opportunities for feedback from the research community and for establishing contacts with potential industry partners.
+
+% Paragraph purpose: open-source and community
+The open-source repositories described in Section~\ref{sec:val_repos} represent a continuous form of dissemination. By making the code publicly available under the MIT license, the methods are accessible to any researcher or practitioner worldwide. The repositories have been used by master students at KU~Leuven for thesis projects and by researchers within the Geomatics group for related work on scan-to-BIM workflows.
+
+\todo{Add information about YouTube channel and content creation activities (90k+ subscribers, 7M+ views) as an additional dissemination channel, if this is to be included in the thesis.}
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusion}
+\label{sec:val_conclusion}
+
+% Paragraph purpose: summarise the chapter
+This chapter examined the valorisation potential of the Dynamic Reality Model pipeline developed in this thesis. The technology addresses a shared bottleneck across the AECO and AR/VR industries: the conversion of partial sensor observations into complete, manipulable, and design-ready digital assets.
+
+% Paragraph purpose: summarise the software and dataset outputs
+The open-source software repositories and the V-Scan dataset represent immediate research outputs that are already available to the community. The three core repositories (Geomapi/GeoSharpi, VirtualScanner, and DRM) are released under the MIT license and cover the full pipeline from data capture and standardisation through procedural dataset generation to end-to-end scene dynamification. The modular architecture of the DRM pipeline, which integrates state-of-the-art external models for detection, segmentation, and completion, ensures that the technology can evolve with the field rather than becoming outdated.
+
+% Paragraph purpose: summarise the applications
+Two potential applications were outlined to illustrate concrete valorisation directions. Room digitisation enables virtual reorganisation, renovation planning, defurnishing for real estate, and gamification of scanned environments. Digital upcycling addresses the circular economy opportunity in European construction by converting smartphone captures of reclaimed building components into complete 3D models for integration into design workflows.
+
+% Paragraph purpose: summarise the market and IP
+The target market analysis identifies the AECO digital twin market and the AR/VR market as the primary domains, with a combined projected size exceeding \texteuro170B by 2030. The IP and FTO analysis confirms a strong position: background IP under permissive licenses, prior art established through seven publications, and no blocking claims identified through patent screening.
+
+% Paragraph purpose: note remaining gaps
+Several gaps remain before the technology reaches full market readiness. The potential applications described in this chapter require further development and validation with end users in operational settings. The time savings analysis requires structured benchmarking experiments comparing manual DRM creation with pipeline-assisted workflows. The digital upcycling concept needs to be extended with BIM-compliant metadata and validated on the specific material classes encountered in reclaimed construction components. These represent natural directions for future research and development beyond the scope of this dissertation.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Keep the following \cleardoublepage at the end of this file, 

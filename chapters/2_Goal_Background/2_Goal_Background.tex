@@ -15,9 +15,7 @@
 \label{sec:bg_intro}
 
 % explain the outline of the chapter
-This chapter establishes the conceptual and terminological foundation for the remainder of the thesis by defining the requirements of the dynamification process and positioning it relative to existing representations. Section~\ref{sec:bg_sota_dynamification} surveys existing work most directly related to scene dynamification as a unified problem. Section~\ref{sec:bg_representations} reviews the main categories of 3D representation and discusses their suitability as inputs and outputs of the proposed pipeline. Section~\ref{sec:bg_drm_requirements} formalises the input and output requirements of a \gls{DRM}, connecting them to the occlusion typology and design decisions established in Chapter~\ref{ch:introduction}. Section~\ref{sec:bg_metrics} defines the evaluation metrics used throughout this thesis to assess reconstruction quality across all pipeline stages. Section~\ref{sec:bg_conclusion} summarises the representational choices made for this thesis and the assumptions that follow from them.
-
-
+This chapter establishes the conceptual and terminological foundation for the remainder of the thesis: it surveys existing approaches to scene dynamification (Section \ref{sec:bg_sota_dynamification}), reviews 3D scene representations and their suitability for the proposed pipeline (Section \ref{sec:bg_representations}), formalises the input and output requirements of a DRM (Section \ref{sec:bg_drm_requirements}), and defines the evaluation metrics used throughout (Section \ref{sec:bg_metrics}).
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Existing Approaches to Scene Dynamification}
@@ -362,6 +360,7 @@ To support realistic manipulation, completed objects must carry a notion of thei
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Evaluation Metrics}
 \label{sec:bg_metrics}
+\todo{This might be a little too long for the thesis, maybe explain in one section instead of subsections per metric}
 
 The output requirements formalised in the previous section demand geometric completeness, textural completeness, correct object detection and part-aware editability. Assessing whether a given method satisfies these requirements requires quantitative metrics that are appropriate for each output modality. Rather than introducing these metrics separately in each experimental chapter, this section defines them once in a unified framework. The metrics are organised by type: geometric metrics that assess spatial accuracy, overlap metrics that assess volumetric or categorical agreement, detection metrics that assess identification performance, and perceptual metrics that assess visual quality.
 
@@ -493,7 +492,7 @@ The review of prior approaches in Section~\ref{sec:bg_sota_dynamification} showe
  
 The representational overview in Section~\ref{sec:bg_representations} showed that the choice of representation strongly determines which operations are feasible throughout the pipeline. Explicit representations such as point clouds and meshes remain most suitable for acquisition, rendering and editing, while implicit representations such as signed and unsigned distance fields provide a flexible intermediate form for completion and learning-based inference. Spatial data structures such as voxel grids, octrees and k-d trees complement these representations by enabling scalable processing of large 3D datasets. On this basis, the thesis adopts unstructured coloured point clouds as primary input, textured meshes as the main output for reconstructed environments, and SDF- or UDF-based volumetric encodings as intermediate representations in completion stages. BIM, neural implicit and Gaussian splatting representations are excluded from the pipeline output due to their respective limitations in visual fidelity, deterministic editability or geometric maturity.
  
-The \gls{DRM} requirements formalised in Section~\ref{sec:bg_drm_requirements} define what the pipeline must produce: geometric and textural completeness, object-level decomposition, and part-aware editability. The distinction between primary, secondary and tertiary building elements --- introduced through the \gls{CI/SFB} classification --- determines how each element is routed through the pipeline: permanent structural elements are completed as part of the environment, while movable objects are reconstructed as individually manipulable entities.
+The \gls{DRM} requirements formalised in Section~\ref{sec:bg_drm_requirements} define what the pipeline must produce: geometric and textural completeness, object-level decomposition, and part-aware editability. The distinction between primary, secondary and tertiary building elements determines how each element is routed through the pipeline: permanent structural elements are completed as part of the environment, while movable objects are reconstructed as individually manipulable entities.
  
 Finally, the evaluation metrics defined in Section~\ref{sec:bg_metrics} provide a unified quantitative framework for the experimental chapters that follow. Geometric accuracy is assessed through the Chamfer Distance and volumetric IoU, detection quality through precision, recall and detection IoU, and visual quality through PSNR, SSIM, LPIPS and texture similarity. By defining these metrics here rather than in individual chapters, consistent evaluation criteria are established across all pipeline stages.
  

@@ -21,7 +21,7 @@ Each approach offers distinct advantages, but also exhibits inherent limitations
 \begin{figure}[h]
   \centering
   \medskip
-  \includegraphics[width=1\textwidth]{Scan_VS_BIM}
+  \includegraphics[width=1\textwidth]{Scan_VS_BIM.pdf}
   \caption[Scan vs. BIM]{Comparison between reality capture and Building Information Modelling approaches.}
   \label{fig:1_Scan_VS_BIM}
 \end{figure}
@@ -35,7 +35,7 @@ To address this limitation, this research introduces a novel representation, ref
 \begin{figure}[h]
   \centering
   \medskip
-  \includegraphics[width=1\textwidth]{DRM_Example}
+  \includegraphics[width=1\textwidth]{DRM_Example.pdf}
   \caption[DRM example]{Example of the proposed Dynamic Reality Model (DRM) representation. The DRM combines the geometric and visual fidelity of reality capture with the structured, editable nature of parametric models.}
   \label{fig:1_DRM_Example}
 \end{figure}
@@ -66,12 +66,9 @@ However, these approaches remain fundamentally limited in scope. They typically 
 \label{sec2:problem}
  
 %  define overall problem as multi-stage pipeline challenge
-Transforming partially scanned indoor environments into \gls{DRM}s remains an open challenge in current 3D reconstruction workflows. This challenge is inherently multi-stage: the input data must first be aligned and made up-to-date, then missing geometry must be recovered at both scene and object level, and finally the completed reconstruction must be transformed into a editable environment. Each stage introduces its own difficulties, and the stages are mutually dependent in ways that make isolated solutions insufficient.
+Transforming partially scanned indoor environments into \gls{DRM}s remains an open challenge in current 3D reconstruction workflows. This challenge is inherently multi-stage: the input data must first be aligned and made up-to-date, then missing geometry must be recovered at both scene and object level, and finally the completed reconstruction must be transformed into a editable environment. Each stage introduces its own difficulties, and the stages are mutually dependent in ways that make isolated solut ions insufficient.
  
 %  define alignment and updating challenge
-\paragraph{Alignment and updating.}
-Different sensing technologies produce data with varying levels of accuracy, density and noise, resulting in inconsistent representations of the same environment~\cite{geyter_point_2022}. Aligning these heterogeneous sources into a common coordinate frame is particularly difficult in indoor settings, where global positioning systems are generally unavailable~\cite{vermandere_two-step_2022}. Furthermore, in order to keep the digital twin up-to-date, frequent re-captures of the environment are necessary, which are expensive and time consuming.  This means that newer partial observations often contain different data~\cite{vermandere_automatic_2022, bassier_geomapi_2024}.
-
 \paragraph{Alignment and updating.}
 Keeping a digital representation up-to-date with reality requires repeated re-capture of the environment, which is costly and time-consuming when performed with high-quality survey-grade equipment. To reduce this burden, partial or lower-fidelity re-scans using lower-end devices are an attractive alternative~\cite{geyter_point_2022}. However, integrating these newer, partial observations into an existing reference dataset introduces a significant alignment challenge. The new data differs in accuracy, density and noise characteristics from the original scan, and aligning these heterogeneous sources into a common coordinate frame is particularly difficult in indoor settings, where global positioning systems are generally unavailable~\cite{vermandere_two-step_2022}. Furthermore deciding what parts of the scan have become outdated and should be replaced by the new data produces its own set of challenges~\cite{vermandere_automatic_2022, bassier_geomapi_2024}.
 
@@ -113,7 +110,7 @@ The research therefore aims not only to reconstruct missing geometry, but to est
 \begin{figure}[h!]
   \centering
   \medskip
-  \includegraphics[width=1\textwidth]{Main_Pipeline}
+  \includegraphics[width=1\textwidth]{Main_Pipeline.pdf}
   \caption[Main pipeline]{Overview of the proposed modular pipeline for transforming partial scans into Dynamic Reality Models.}
   \label{fig:1_Research_Aim}
 \end{figure}
@@ -172,7 +169,6 @@ Chapter \ref{ch:conclusion} concludes the thesis by summarizing the main contrib
 
 Chapter \ref{ch:Valorisation} explores the valorization potential of the research, highlighting applications in areas such as renovation, facility management and interactive environments, and discussing opportunities for real-world deployment.
 
-Through this structured approach, the thesis reflects the full transformation pipeline from partial scan data to dynamic and interactive scene representations.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Keep the following \cleardoublepage at the end of this file, 
