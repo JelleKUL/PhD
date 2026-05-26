@@ -9,6 +9,8 @@
 \newglossaryentry{UV}{name={UV}, description={UV coordinates — two-dimensional texture coordinates assigned to mesh vertices that define the mapping between the 3D surface and a 2D texture image}}
 \newglossaryentry{CAD}{name={CAD}, description={Computer-Aided Design — a digital representation of a physical object used in engineering and manufacturing}}
 \newglossaryentry{CI/SFB}{name={CI/SFB}, description={Classification and Information System for Building Elements — a standardized code for categorizing building elements}}
+\newglossaryentry{IoU}{name={IoU}, description={Intersection over Union}}
+\newglossaryentry{CD}{name={CD}, description={Chamfer Distance}}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
@@ -369,7 +371,7 @@ The output requirements formalised in the previous section demand geometric comp
 \label{sec:bg_metrics_geometric}
 
 \paragraph{Chamfer Distance.}
-The Chamfer Distance (CD) measures the average closest-point distance between two point sets and is the most widely used metric for evaluating 3D shape reconstruction quality. Given two point sets $P$ and $Q$, the Chamfer Distance is defined as:
+The Chamfer Distance \gls{CD} measures the average closest-point distance between two point sets and is the most widely used metric for evaluating 3D shape reconstruction quality. Given two point sets $P$ and $Q$, the Chamfer Distance is defined as:
 
 \begin{equation}
 \label{eq:chamfer}
@@ -385,7 +387,7 @@ In this thesis, the Chamfer Distance is used to evaluate the geometric accuracy 
 \label{sec:bg_metrics_overlap}
 
 \paragraph{Intersection over Union.}
-The Intersection over Union (IoU) measures the ratio of shared space to total occupied space between a prediction and a ground-truth reference. In its general form, given two spatial regions $A$ and $B$:
+The Intersection over Union \gls{IoU} measures the ratio of shared space to total occupied space between a prediction and a ground-truth reference. In its general form, given two spatial regions $A$ and $B$:
 
 \begin{equation}
 \label{eq:iou}
