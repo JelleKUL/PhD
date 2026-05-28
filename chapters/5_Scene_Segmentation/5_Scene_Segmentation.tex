@@ -62,7 +62,7 @@ In the context of scene de-occlusion from images, Zhan et al.~\cite{zhan_self-su
 
 The approach proposed in this chapter differs from the above works in that it performs occlusion detection through voxelised ray marching from the known scanner position(s), operating at two levels simultaneously: scene-level occlusion for the entire room, and object-level occlusion within each detected oriented bounding box.
 
-\todo{The related work on voxelised ray marching for occlusion detection from scanner perspectives in indoor scenes is relatively limited in the existing papers. Additional literature on volumetric occlusion reasoning and visibility analysis may be needed to strengthen this section.}
+\todo{add more works about voxelised raymarching for occlusion detection}
 
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ To define proper physical boundaries for later use in bounding box refinement, t
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.9\textwidth]{scene_isolation}
-  \caption[Plane-based structural segmentation]{Left: an indoor scene with detected structural planes highlighted. Right: the remaining foreground points after floor, wall and ceiling removal, ready for object detection.}
+  \caption[Plane-based structural segmentation]{Top: the original scene point cloud. Bottom: the detected surface planes (grey) and the remaining points after plane removal (coloured).}
   \label{fig:5_plane_detection}
 \end{figure}
 
@@ -110,9 +110,9 @@ To define proper physical boundaries for later use in bounding box refinement, t
 \subsubsection{3D Object Detection}
 \label{sec:5_detection}
 
-Object detection is performed on the cleaned point cloud, from which the structural planes have already been removed. A VoteNet-style detector~\cite{qi_deep_2019} is used, operating directly on the point cloud rather than on images. The choice of a point cloud-based detector is motivated by the fact that point cloud observations typically exhibit fewer occlusions compared to image-only inputs, as a single scan captures the full 360-degree environment from the scanner position. The scene is first sampled to a uniform resolution of 5\,cm, providing a suitable balance between geometric detail and execution speed~\cite{vermandere_guided_2025}.
+Object detection is performed on the cleaned point cloud, from which the structural planes have already been removed. A VoteNet-style detector~\cite{qi_deep_2019} is used, operating directly on the point cloud rather than on images. This is because the aligned and completed point clouds have fewer occlusions compared to image-only inputs. The scene is first sampled to a uniform resolution of 5\,cm, providing a suitable balance between geometric detail and execution speed~\cite{vermandere_guided_2025}.
 
-The VoteNet voting mechanism, described in Section~\ref{sec:5_rw_detection}, produces axis-aligned bounding box proposals for each detected object. To mitigate over-detection, which is a common tendency in indoor scenes where furniture is closely spaced, overlapping bounding boxes are merged when their IoU exceeds 80\%~\cite{vermandere_guided_2025}. By performing the detection on the cleaned point cloud rather than the full scene, the detector can focus on the actual foreground objects without being distracted by the dominant structural surfaces that could otherwise generate spurious detections or absorb votes intended for nearby objects.
+The VoteNet voting mechanism, described in Section~\ref{sec:5_rw_detection}, produces up-axis-aligned bounding box proposals for each detected object. To mitigate over-detection, which is a common tendency in indoor scenes where furniture is closely spaced, overlapping bounding boxes are merged when their IoU exceeds 80\%~\cite{vermandere_guided_2025}. By performing the detection on the cleaned point cloud rather than the full scene, the detector can focus on the actual foreground objects without being distracted by the dominant structural surfaces that could otherwise generate spurious detections or absorb votes intended for nearby objects.
 
 After detection, the objects are isolated from the scene. Rather than removing only the visible surface points, all points within the full bounding box volume are removed to ensure clean separation between object geometry and the surrounding environment. This process results in an incomplete scene with large rectangular holes that can be reconstructed in a later stage by the scene completion pipeline (Chapter~\ref{ch:6_Scene_Completion}).
 
@@ -129,9 +129,9 @@ After detection, the objects are isolated from the scene. Rather than removing o
 \subsubsection{Symmetry Detection}
 \label{sec:5_symmetry_detection}
 
-The bounding boxes produced by the object detector are axis-aligned and fitted only to the visible points of each object. For proper completion, the bounding box must be oriented according to the object's principal axes and expanded to approximate the full spatial extent of the complete object, including its occluded portions. The first step toward this refinement is detecting the symmetry axes of each partial object.
+The bounding boxes produced by the object detector are up-axis-aligned and fitted only to the visible points of each object. For proper completion, the bounding box must be oriented according to the object's principal axes and expanded to approximate the full spatial extent of the complete object, including its occluded portions. To exploit the symmetry typically present in manufactured indoor objects, the first step toward this refinement is detecting the symmetry axes of each partial object.
 
-To exploit the symmetry typically present in manufactured indoor objects, approximate symmetry detection~\cite{sipiran_approximate_2014} is applied to the partial point cloud of each isolated object. As described in Section~\ref{sec:5_rw_symmetry}, the algorithm generates candidate symmetry planes through a vote-based matching of heat-diffusion surface descriptors. The detected symmetry planes provide two pieces of information that are essential for the subsequent bounding box refinement. First, the normal of the symmetry plane indicates one of the object's principal axes, which will be used as the ``right'' vector in the oriented bounding box construction. Second, the position of the symmetry plane provides an estimate of the object's geometric centre along that axis, enabling the bounding box to be centred symmetrically around the detected plane rather than being fitted only to the observed portion.
+Approximate symmetry detection~\cite{sipiran_approximate_2014} is applied to the partial point cloud of each isolated object. As described in Section~\ref{sec:5_rw_symmetry}, the algorithm generates candidate symmetry planes through a vote-based matching of heat-diffusion surface descriptors. The detected symmetry planes provide two pieces of information that are essential for the subsequent bounding box refinement. First, the normal of the symmetry plane indicates one of the object's principal axes, which will be used as the ``right'' vector in the oriented bounding box construction. Second, the position of the symmetry plane provides an estimate of the object's geometric centre along that axis, enabling the bounding box to be centred symmetrically around the detected plane rather than being fitted only to the observed portion.
 
 %\begin{figure}[ht]
 %  \centering
@@ -153,8 +153,6 @@ The oriented bounding box is constructed by combining the symmetry axis with the
 
 \paragraph{Boundary limiting.}
 Once the orientation is established, the scene planes are used to constrain the spatial extent of the bounding box. The bounding box boundaries are limited so that they do not extend through detected walls, floors or ceilings, preventing the bounding box from including regions that are physically impossible for the object to occupy. The symmetry axis is further used to centre the bounding box: when a clear symmetry plane is found, the bounding box is made symmetric about this plane, effectively predicting the spatial extent of the unobserved portion based on the observed portion. When an object exhibits multiple symmetry axes, the alignment can be further refined~\cite{vermandere_guided_2025}.
-
-This refinement step is particularly important for objects positioned against walls or in corners, where the scene planes provide strong geometric constraints. For freestanding objects, the refinement relies more heavily on the symmetry detection, which may be less reliable when only a small portion of the object is observed.
 
 %\begin{figure}[ht]
 %  \centering
@@ -178,17 +176,15 @@ The occlusion detection is performed through voxelised ray marching from the kno
 \subsubsection{Voxelised Ray Marching}
 \label{sec:5_raymarching}
 
-The core operation is a discrete ray traversal through a voxel grid. Given the scanner position $\mathbf{o}$ and the set of scanned points $P = \{\mathbf{p}_i\}_{i=1}^{N}$, rays are traced from $\mathbf{o}$ through the voxel grid along the direction of each scanned point. The discrete traversal is performed using a 3D variant of the Bresenham line algorithm, which efficiently identifies all voxels intersected by each ray. For each ray, voxels along the path are classified into three categories:
+The core operation is a discrete ray traversal through a voxel grid. Given the scanner position $\mathbf{o}$ and the set of scanned points $P = \{\mathbf{p}_i\}_{i=1}^{N}$, All voxels that contain one or more points $\mathbf{p}_i$ are marked as \textbf{occupied}. Then rays are traced from $\mathbf{o}$ through every unoccupied voxel in the voxel grid starting from the most outer voxels. The discrete traversal is performed using a 3D variant of the Bresenham line algorithm, which efficiently identifies all voxels intersected by each ray. For each ray, the \textbf{occupied} voxels and unmarked voxels along the path are classified into three categories:
 
 \begin{enumerate}
-    \item \textbf{Observed empty}: voxels that the ray passes through before hitting a surface. These voxels are confirmed to contain no geometry.
+    \item \textbf{Observed empty}: voxels that the ray passes through before passing an occupied voxel. These voxels are confirmed to contain no geometry.
     \item \textbf{Occupied}: voxels that contain scanned points. These voxels are confirmed to contain geometry.
     \item \textbf{Occluded}: voxels that lie behind an occupied voxel along the ray direction. These voxels could not be observed by the scanner and may or may not contain geometry.
 \end{enumerate}
 
-Voxels that are not traversed by any ray remain in an unknown state and are also treated as potentially occluded. When multiple scanner positions are available, the voxel classification is accumulated across all positions: a voxel that is occluded from one scanner position but observed empty from another is classified as empty, since at least one observation confirms the absence of geometry.
-
-The voxel resolution directly controls the trade-off between spatial precision and computational cost. A finer resolution produces more accurate occlusion maps but requires more memory and processing time.
+When multiple scanner positions are available, the voxel classification is accumulated across all positions: a voxel that is occluded from one scanner position but observed empty from another is classified as empty, since at least one observation confirms the absence of geometry.
 
 %\begin{figure}[ht]
 %  \centering
@@ -203,14 +199,14 @@ The voxel resolution directly controls the trade-off between spatial precision a
 \subsubsection{Scene-Level Occlusion}
 \label{sec:5_scene_occlusion}
 
-At the scene level, the voxel grid spans the entire room volume. The ray marching is performed using all scanned points (before object removal) from all available scanner positions. The resulting occlusion grid classifies every voxel in the room as observed empty, occupied, or occluded. This grid is used by the scene completion stage (Chapter~\ref{ch:6_Scene_Completion}) to constrain reconstruction to regions classified as occluded, preventing the generation of geometry in voxels that have been confirmed as empty by direct observation.
+At the scene level, the voxel grid spans the entire room volume. The ray marching is performed using all scanned points (before object removal) from all available scanner positions. This grid is used by the scene completion stage (Chapter~\ref{ch:6_Scene_Completion}) to constrain reconstruction to regions classified as occluded, preventing the generation of geometry in voxels that have been confirmed as empty by direct observation.
 
 
 % ── 5.3.2.3 ──────────────────────────────────────────────────────────────────
 \subsubsection{Object-Level Occlusion}
 \label{sec:5_object_occlusion}
 
-At the object level, the voxel grid is defined within each object's \gls{OBB}. The use of oriented bounding boxes is important: because the bounding box is aligned with the object's principal axes rather than the world axes, the resulting voxel grid provides a more efficient and meaningful discretisation of the object's volume.
+At the object level, the voxel grid is defined within each object's refined \gls{OBB}. The use of oriented bounding boxes is important: because the bounding box is aligned with the object's principal axes rather than the world axes, the resulting voxel grid provides a more efficient and meaningful discretisation of the object's volume.
 
 For each detected object, rays are traced from the scanner position(s) through the object-level voxel grid. The classification follows the same three-category scheme as the scene level, but is restricted to the volume enclosed by the oriented bounding box. The resulting per-object occlusion grid provides an initial estimate of which voxels need to be completed by the generative model in Chapter~\ref{ch:7_Object_Completion}. Additionally, when combined with the symmetry detection from the bounding box refinement step, the occluded voxels on one side of the symmetry plane can be initialised with mirrored values from the observed side, providing a geometric prior for the completion network~\cite{vermandere_guided_2025}.
 
@@ -223,18 +219,11 @@ For each detected object, rays are traced from the scanner position(s) through t
 \todo{Insert dual-level occlusion grid visualisation figure.}
 
 
-% ── 5.3.3 ────────────────────────────────────────────────────────────────────
-\subsection{Computational Cost}
-\label{sec:5_runtime}
-
-The full object isolation and occlusion detection pipeline processes a typical V-Scan scene in approximately \todo{insert total runtime} on a standard desktop workstation. The plane segmentation completes in \todo{insert plane time}, object detection in \todo{insert detection time}, symmetry detection in \todo{insert symmetry time per object} per object, and the dual-level ray marching in \todo{insert ray marching time}. The ray marching step is the most computationally intensive component, as it scales with both the number of scanned points and the voxel grid resolution.
-
-
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Experiments}
 \label{sec:5_experiments}
 
-The experimental evaluation is divided into three parts, corresponding to the three main components of the methodology: object detection, symmetry detection, and occlusion characterisation. The object detection and occlusion experiments are conducted on the V-Scan synthetic dataset (Section~\ref{sec:3_vscan}), which provides both partial scans and complete ground-truth geometry including ground-truth bounding boxes. The symmetry detection is evaluated independently on partial scans from the ShapeNet dataset~\cite{chang_shapenet_2015}.
+The experimental evaluation is divided into three parts, corresponding to the three main components of the methodology: object detection, symmetry detection, and occlusion characterisation. All experiments are conducted on the V-Scan synthetic dataset (Section~\ref{sec:3_vscan}), which provides both partial scans and complete ground-truth geometry including ground-truth bounding boxes. The symmetry detection is additionally evaluated on partial scans from the ShapeNet dataset~\cite{chang_shapenet_2015}. For qualitative analysis, objects from the Matterport3D dataset~\cite{chang_matterport3d_2017} are also used to demonstrate the applicability of the method to real-world scans.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -323,11 +312,8 @@ The effectiveness of the plane detection for bounding box refinement depends on 
 
 The symmetry detection component is evaluated independently on partial scans of single objects from the ShapeNet dataset~\cite{chang_shapenet_2015}. For each object, a partial scan is simulated by removing geometry beyond a randomly oriented clipping plane, mimicking the one-sided observations typical of indoor scanning.
 
-\subsubsection{Evaluation Protocol}
+For each model, up to three symmetry axes are detected and ranked by confidence score. The detected symmetry planes are compared against the ground-truth symmetry planes of the complete object. The evaluation metrics include the angular error between the detected and ground-truth symmetry plane normals, and the detection rate (the fraction of shapes for which the correct symmetry axis was found within a tolerance of $60^{\circ}$). Angular errors are averaged over detected axes only.
 
-For each model, up to three symmetry axes are detected and ranked by confidence score. The detected symmetry planes are compared against the ground-truth symmetry planes of the complete object. The evaluation metrics include the angular error between the detected and ground-truth symmetry plane normals, and the detection rate (the fraction of shapes for which the correct symmetry axis was found within a tolerance).
-
-\subsubsection{Results}
 
 Table~\ref{tab:5_symmetry_results} reports the symmetry detection results across seven object categories from the ShapeNet dataset.
 
@@ -354,34 +340,45 @@ Table~\ref{tab:5_symmetry_results} reports the symmetry detection results across
     }
 \end{table}
 
-\subsubsection{Analysis}
 
-The primary symmetry axis, which is most important for the bounding box refinement, is detected with high reliability on the chair category: a 94.0\% detection rate and a mean angular error of only $8.01^{\circ}$. This is encouraging because the primary axis is the one used to define the ``right'' vector of the oriented bounding box, and a small angular error translates to a well-aligned bounding box.
+The primary symmetry axis, which is the most important for the bounding box refinement since it defines the ``right'' vector of the oriented bounding box, is detected reliably across all seven categories. Five of the seven categories (bookshelf, cabinet, lamp, sofa and table) achieve a 100\% primary detection rate, while chairs and beds reach 90.0\% and 75.0\% respectively. The mean angular error of the primary axis is below $4^{\circ}$ for all categories except lamps ($10.49^{\circ}$), where the often rotationally symmetric or irregular geometry of lampshades and bases makes it harder to distinguish a single dominant symmetry plane. The bed category shows the lowest primary detection rate (75.0\%), which can be attributed to asymmetric headboard and footboard configurations that break the bilateral symmetry assumed by the algorithm. Despite this, the angular error of $2.59^{\circ}$ for the beds where the axis is found indicates that when the symmetry is present, it is detected with high precision.
 
-The secondary and tertiary axes are detected less reliably, with detection rates of 70.0\% and 78.0\% and substantially higher angular errors ($33.97^{\circ}$ and $30.48^{\circ}$). This is expected for partial observations: with an average visibility fraction of only 36.5\% of the full geometry, many of the geometric features that define the secondary and tertiary symmetry planes are simply not present in the partial scan. The higher detection rate of the tertiary axis (78.0\%) compared to the secondary (70.0\%) may be explained by the particular geometry of chairs, where the vertical symmetry is often more robust to partial observation than the front-back symmetry.
+The secondary and tertiary axes show higher angular errors across all categories, typically between $6^{\circ}$ and $20^{\circ}$, and somewhat lower detection rates. This is expected for partial observations with average visibility fractions between 28.5\% and 37.8\%: many of the geometric features that define the secondary and tertiary symmetry planes are simply not present in the partial scan. Notably, highly regular objects such as cabinets and tables maintain strong detection rates (100\% and 100\%) and low errors even for their secondary axes ($6.06^{\circ}$ and $2.80^{\circ}$), reflecting the strong geometric regularity of these box-like or symmetric shapes. Chairs show the lowest secondary detection rate (75.0\%) with the highest secondary error among the evaluated categories ($13.75^{\circ}$), consistent with the diversity of chair designs and the fact that front-back symmetry is less robust to partial observation than left-right symmetry.
 
-The symmetry detection scores also show a decrease from full to partial observations (0.355 to 0.297 mean confidence score for chairs), confirming that the confidence of the detected symmetries decreases when less geometry is available. Despite this reduction, the primary axis remains sufficiently reliable for the bounding box refinement, since even a moderate angular error can be partially compensated by the boundary limiting step that uses the scene planes.
-
-The evaluation is currently limited to the chair category. Since the bounding box refinement is applied to all detected indoor objects, results on additional categories (tables, cabinets, sofas) are needed to assess the generalisability of the symmetry detection across different object geometries.
+Overall, the results confirm that the symmetry detection is sufficiently reliable for the bounding box refinement across a representative range of indoor furniture categories. The primary axis, which is the one used for orientation estimation, is detected in at least 75\% of cases with angular errors typically well below $5^{\circ}$. Even where the primary detection rate is lower, the boundary limiting step using the scene planes can partially compensate for missing or inaccurate symmetry information.
 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=1\textwidth]{Symmetry_detection}
-  \caption[Symmetry detection examples]{Examples of detected symmetry planes on partial ShapeNet chair models. Left: the partial point cloud. Centre: the detected primary symmetry plane. Right: comparison with the ground-truth symmetry plane.}
+  \caption[Symmetry detection examples]{Examples of detected symmetry planes on partial ShapeNet models. Left: the partial point cloud. Centre: the detected primary symmetry plane. Right: comparison with the ground-truth symmetry plane.}
   \label{fig:5_symmetry_examples}
 \end{figure}
-\todo{Insert symmetry detection examples on partial objects showing detected vs ground-truth symmetry planes.}
-
+\todo{Insert symmetry detection examples on partial shapenet objects showing detected vs ground-truth symmetry planes these are from vscan.}
 
 % ─────────────────────────────────────────────────────────────────────────────
-\subsection{Occlusion Characterisation}
+\subsection{Bounding Box Refinement}
+\label{sec:5_exp_refinement}
+
+The bounding box refinement step is evaluated empirically on objects from the Matterport3D dataset~\cite{chang_matterport3d_2017} to assess the impact of the symmetry-guided orientation and plane-based boundary limiting under different spatial configurations. Figure~\ref{fig:5_bb_refinement_results} shows the results for a combination of free-standing objects with no adjacent walls and objects positioned against a wall.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\textwidth]{bb_refinement}
+  \caption[Bounding box refinement results]{Bounding box refinement results on Matterport3D objects under three spatial configurations. Column 1: The captured object in the scene. Column 2: the detected mesh and its boundingbox. Column 3: the refined oriented bounding box after symmetry-guided orientation and plane-based boundary limiting.}
+  \label{fig:5_bb_refinement_results}
+\end{figure}
+
+When the object is not positioned against a wall, the impact of the plane-based refinement is minimal, as the only relevant structural plane is the floor. Since the initial detection bounding boxes are aligned with the global axis and the floor is typically level, the bounding box aligns naturally with the floor plane. In this case, the refinement is driven primarily by the symmetry detection, which orients the bounding box according to the object's principal axis and centres it around the detected symmetry plane.
+
+For objects positioned against a wall, the additional structural plane provides a clear physical boundary that constrains the bounding box extent. This is particularly valuable when the wall does not align with the global orthogonal axes, a situation that frequently occurs in non-rectangular rooms or rooms with angled walls. In such cases, the axis-aligned bounding box produced by the detector is misoriented with respect to the object, and the detected wall plane provides the correct alignment. For example, a cupboard positioned against a non-axis-aligned wall benefits from the detected wall plane, which provides a clear depth limit for the bounding box that the axis-aligned detection cannot capture~\cite{vermandere_guided_2025}.
+
+The importance of proper alignment extends beyond the bounding box itself. As observed in~\cite{vermandere_guided_2025}, the orientation of the object within its bounding box has the greatest impact on the quality of the subsequent object completion results (Chapter~\ref{ch:7_Object_Completion}). When objects are not properly aligned, the completion network struggles to interpret the input and tends to produce distorted shapes. Even for objects with known boundaries, the network fails to complete the object meaningfully without proper orientation. This further underlines the importance of the symmetry-guided refinement for the overall pipeline, as misalignment at this stage propagates directly into degraded completion quality.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Occlusion Detection}
 \label{sec:5_exp_occlusion}
 
-The voxelised ray marching algorithm described in Section~\ref{sec:5_raymarching} produces the occlusion grids that serve as input to the downstream completion stages. Since the algorithm is a deterministic geometric operation (tracing rays from known scanner positions through a voxel grid), its correctness follows directly from the scanning geometry. The relevant question is therefore not whether the algorithm is accurate, but what the resulting occlusion characteristics look like across different scene types and how they affect the subsequent completion tasks. This section characterises the occlusion grids produced by the ray marching across the V-Scan dataset.
-
-\subsubsection{Results}
-
-Table~\ref{tab:5_occlusion_results} reports the per-class occlusion statistics across the V-Scan dataset. These statistics are computed from the scene-level occlusion grids produced by the ray marching algorithm.
+For the occlusion detection, the different characteristics are reported across different scene types in the V-scan dataset in Table~\ref{tab:5_occlusion_results} and illustrated in Figure~\ref{fig:5_scene_occlusion_examples} to see how they affect the subsequent completion tasks. These statistics are computed from the scene-level occlusion grids produced by the ray marching algorithm.
 
 \begin{table}[h]
     \centering
@@ -402,23 +399,27 @@ Table~\ref{tab:5_occlusion_results} reports the per-class occlusion statistics a
     }
 \end{table}
 
-\subsubsection{Analysis}
-
-The occlusion statistics reveal several patterns about the relationship between scene type and scanner visibility. The occupied percentage, which represents the fraction of the voxel grid containing scanned surface geometry, ranges from 18.70\% for the industrial scenes to 31.08\% for the bedrooms. The bedroom scenes have a higher occupied fraction because they are physically smaller rooms (lower total voxel count of 8,405 on average) with proportionally more furniture filling the volume.
-
-The occluded percentage shows substantial variation both across and within environment types. The dining room scenes exhibit the highest mean occlusion at 22.07\%, but also the highest standard deviation (26.01\%), indicating that the occlusion level depends strongly on the particular furniture arrangement in each scene. Scenes where chairs are clustered tightly around a central table create large shadow regions behind the furniture that are hidden from the scanner, while more open arrangements leave most of the room visible. Similarly, the industrial scenes show high variability (13.03\% standard deviation) due to the diverse configurations of shelving and equipment that can either block or expose large volumes depending on their placement relative to the scanner position.
-
-The office environments show the most consistent and lowest occlusion levels (7.97\% $\pm$ 5.97\%), which is likely explained by the more regular and open layout typical of office spaces, where desks and chairs are spaced apart rather than tightly clustered.
-
-These statistics have direct implications for the downstream completion stages. Scenes with higher occlusion percentages present more challenging completion problems, as a larger fraction of the environment must be reconstructed from the occlusion prior alone.
-
 \begin{figure}[ht]
   \centering
   \includegraphics[width=1\textwidth]{Scene_occlusion}
-  \caption[Occlusion detection examples]{Examples of the scene-level occlusion grid for different V-Scan environment types, showing the variation in occlusion patterns. Occupied voxels are shown in dark, occluded voxels in grey, and observed empty voxels in white.}
-  \label{fig:5_occlusion_examples}
+  \caption[Occlusion detection examples]{Examples of the scene-level occlusion grid for different V-Scan environment types, showing the variation in occlusion patterns. Occluded voxels are highlighted in red.}
+  \label{fig:5_scene_occlusion_examples}
 \end{figure}
-\todo{Insert occlusion grid visualisation figure for multiple environment types.}
+
+The occlusion statistics reveal several patterns about the relationship between scene type and scanner visibility. The occupied percentage, which represents the fraction of the voxel grid containing scanned surface geometry, ranges from 18.70\% for the industrial scenes to 31.08\% for the bedrooms. The bedroom scenes have a higher occupied fraction because they are physically smaller rooms (lower total voxel count of 8,405 on average) with proportionally bigger furniture filling the volume.
+
+The occluded percentage shows substantial variation both across and within environment types. The dining room scenes exhibit the highest mean occlusion at 22.07\%, but also the highest standard deviation (26.01\%), indicating that the occlusion level depends strongly on the particular furniture arrangement in each scene. Scenes where chairs are clustered tightly around a central table create large shadow regions behind the furniture that are hidden from the scanner, while more open arrangements leave most of the room visible. Similarly, the industrial scenes show high variability (13.03\% standard deviation) due to the diverse configurations of shelving and equipment that can either block or expose large volumes depending on their placement relative to the scanner position.
+
+These statistics have direct implications for the downstream completion stages. Scenes with higher occlusion percentages present more challenging completion problems, as a larger fraction of the environment must be reconstructed from the occlusion prior alone.
+
+On an object level, Figure~\ref{fig:5_object_occlusion_examples} illustrates the occlusion patterns for individual objects within the scenes. Thanks to the refined bounding boxes, the grids can be of a higher density and better aligned with the object geometry, providing a more accurate characterisation of which parts of the object are occluded.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\textwidth]{Object_occlusion}
+  \caption[Occlusion detection examples]{Examples of the object-level occlusion grid for different V-Scan environment types, showing the variation in occlusion patterns. Occluded voxels are highlighted in red.}
+  \label{fig:5_object_occlusion_examples}
+\end{figure}
 
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -431,7 +432,7 @@ The object isolation pipeline begins with an iterative RANSAC-based plane segmen
 
 The occlusion detection uses voxelised ray marching from the known scanner positions to classify the scene volume into observed empty, occupied and occluded regions at both scene level and object level. The occlusion characterisation on the V-Scan dataset showed that the fraction of occluded volume varies substantially across and within environment types, ranging from 7.97\% for office scenes to 22.07\% for dining rooms, with high intra-class variability reflecting the strong dependence on furniture arrangement and scanner placement.
 
-Several limitations should be noted. The moderate detection precision (0.310) means that false positives are common, and missed detections propagate into all subsequent stages. The domain gap between the training data and the synthetic evaluation data likely contributes to this, and fine-tuning the detector or using more recent architectures could improve these results. The symmetry-based bounding box refinement assumes that objects exhibit at least one axis of symmetry, which holds for most manufactured indoor furniture but may not apply to irregular objects. While the primary axis is detected reliably, the secondary and tertiary axes show substantially lower detection rates, limiting the refinement for objects that require multiple axes for proper alignment. The symmetry evaluation is currently limited to a single object category (chairs), and additional categories are needed to confirm generalisability. Finally, the voxel resolution in the occlusion detection introduces a trade-off between spatial precision and computational cost whose optimal setting depends on the scale and complexity of the scene.
+Several limitations should be noted. The moderate detection precision (0.310) means that false positives are common, and missed detections propagate into all subsequent stages. The domain gap between the training data and the synthetic evaluation data likely contributes to this, and fine-tuning the detector or using more recent architectures could improve these results. The symmetry-based bounding box refinement assumes that objects exhibit at least one axis of symmetry, which holds for most manufactured indoor furniture but may not apply to irregular objects. While the primary axis is detected reliably, the secondary and tertiary axes show substantially lower detection rates, limiting the refinement for objects that require multiple axes for proper alignment. Finally, the voxel resolution in the occlusion detection introduces a trade-off between spatial precision and computational cost whose optimal setting depends on the scale and complexity of the scene.
 
 Despite these limitations, the outputs of this chapter provide the structured inputs required for the parallel completion stages. The scene-level occlusion grid informs Chapter~\ref{ch:6_Scene_Completion} about where environmental reconstruction is needed, while the per-object occlusion grids and refined bounding boxes provide Chapter~\ref{ch:7_Object_Completion} with the spatial context and geometric priors necessary for plausible object reconstruction.
 

@@ -2,15 +2,18 @@
 \chapter{Scene Dynamification Background and Terminology}
 \label{ch:background}
 
-\newglossaryentry{SDF}{name={SDF}, description={Signed Distance Field — a scalar field that encodes the signed distance from any point in space to the nearest surface, with negative values inside and positive values outside the object}}
-\newglossaryentry{UDF}{name={UDF}, description={Unsigned Distance Field — a scalar field encoding the absolute (unsigned) distance from any point in space to the nearest surface, applicable to open or non-watertight geometry}}
-\newglossaryentry{CSDF}{name={CSDF}, description={Coloured Signed Distance Field — an extension of the SDF representation in which each voxel additionally stores per-voxel colour information, enabling joint geometry and appearance manipulation}}
-\newglossaryentry{NeRF}{name={NeRF}, description={Neural Radiance Field — a learned continuous function mapping 3D coordinates and viewing directions to colour and volume density, enabling novel view synthesis}}
-\newglossaryentry{UV}{name={UV}, description={UV coordinates — two-dimensional texture coordinates assigned to mesh vertices that define the mapping between the 3D surface and a 2D texture image}}
-\newglossaryentry{CAD}{name={CAD}, description={Computer-Aided Design — a digital representation of a physical object used in engineering and manufacturing}}
-\newglossaryentry{CI/SFB}{name={CI/SFB}, description={Classification and Information System for Building Elements — a standardized code for categorizing building elements}}
+\newglossaryentry{SDF}{name={SDF}, description={Signed Distance Field}}
+\newglossaryentry{UDF}{name={UDF}, description={Unsigned Distance Field}}
+\newglossaryentry{CSDF}{name={CSDF}, description={Coloured Signed Distance Field}}
+\newglossaryentry{NeRF}{name={NeRF}, description={Neural Radiance Field}}
+\newglossaryentry{UV}{name={UV}, description={UV coordinates}}
+\newglossaryentry{CAD}{name={CAD}, description={Computer-Aided Design}}
+\newglossaryentry{CI/SFB}{name={CI/SFB}, description={Classification and Information System for Building Elements}}
 \newglossaryentry{IoU}{name={IoU}, description={Intersection over Union}}
 \newglossaryentry{CD}{name={CD}, description={Chamfer Distance}}
+\newglossaryentry{PSNR}{name={PSNR}, description={Peak Signal-to-Noise Ratio}}
+\newglossaryentry{SSIM}{name={SSIM}, description={Structural Similarity Index Measure}}
+\newglossaryentry{LPIPS}{name={LPIPS}, description={Learned Perceptual Image Patch Similarity}}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
@@ -44,7 +47,7 @@ A clear understanding of scene dynamification requires an overview of the main w
 Explicit representations store geometry directly as discrete entities such as points, surfaces or volumetric elements. They are generally intuitive to interpret and well suited for visualization, rendering and geometric processing. Implicit representations encode geometry indirectly through functions defined over 3D space, where surfaces are recovered from quantities such as occupancy, density or distance values. They are particularly useful for reconstruction, shape completion and learning-based modelling. Each representation type offers distinct advantages and limitations depending on the intended application.
 
 % ── Explicit ────────────────────────────────────────────────────────────────
-\todo{Include images per representation, not just one for all}
+\todo{Layout and replace images with my special chair}
 \subsection{Explicit Representations}
 \label{sec:bg_explicit}
 
@@ -239,6 +242,7 @@ Beyond geometric representations themselves, efficient processing of 3D data als
   \caption[Voxel grid representation]{Example of a voxel grid representation.}
   \label{fig:Voxel}
 \end{figure}
+
 \paragraph{Voxel grids.}
 
 Voxel grids divide 3D space into small cubic cells, analogous to how pixels divide a 2D image. A voxel grid can be written as
@@ -252,7 +256,6 @@ Voxel grids can function as an \textit{explicit} representation when they direct
 g_{ijk} \in \{0,1\}
 \]
 may indicate whether a voxel is empty or occupied. In this form, the geometry is represented explicitly as filled volume elements.
-\todo{herhaling van SDF's? waar zet ik dit best?}
 They can also function as a discretised container for \textit{implicit} representations. Instead of storing occupancy, each voxel may store a sampled scalar field such as a signed or unsigned distance value,
 \[
 g_{ijk} = f(x_i,y_j,z_k),
@@ -268,6 +271,7 @@ The main limitation of dense voxel grids is memory consumption. If the resolutio
   \caption[Octree representation]{Example of an octree representation.}
   \label{fig:Octree}
 \end{figure}
+
 \paragraph{Octrees.}
 
 An octree is a hierarchical spatial partitioning structure that recursively subdivides 3D space into eight equally sized cubic children. Starting from a root node representing the full domain, subdivision continues only in regions requiring additional detail. This adaptive refinement greatly reduces memory usage compared with dense voxel grids when large empty regions are present.
@@ -371,7 +375,7 @@ The output requirements formalised in the previous section demand geometric comp
 \label{sec:bg_metrics_geometric}
 
 \paragraph{Chamfer Distance.}
-The Chamfer Distance \gls{CD} measures the average closest-point distance between two point sets and is the most widely used metric for evaluating 3D shape reconstruction quality. Given two point sets $P$ and $Q$, the Chamfer Distance is defined as:
+The Chamfer Distance (\gls{CD}) measures the average closest-point distance between two point sets and is the most widely used metric for evaluating 3D shape reconstruction quality. Given two point sets $P$ and $Q$, the Chamfer Distance is defined as:
 
 \begin{equation}
 \label{eq:chamfer}
@@ -387,21 +391,21 @@ In this thesis, the Chamfer Distance is used to evaluate the geometric accuracy 
 \label{sec:bg_metrics_overlap}
 
 \paragraph{Intersection over Union.}
-The Intersection over Union \gls{IoU} measures the ratio of shared space to total occupied space between a prediction and a ground-truth reference. In its general form, given two spatial regions $A$ and $B$:
+The Intersection over Union (\gls{IoU}) measures the ratio of shared space to total occupied space between a prediction and a ground-truth reference. In its general form, given two spatial regions $A$ and $B$:
 
 \begin{equation}
 \label{eq:iou}
 \text{IoU}(A, B) = \frac{|A \cap B|}{|A \cup B|}
 \end{equation}
 
-An IoU of 1 indicates perfect agreement, while 0 indicates no overlap. This formulation applies across multiple contexts in this thesis. For \textit{volumetric object comparison}, $A$ and $B$ represent predicted and ground-truth volumes discretised as voxel occupancy grids or signed distance fields, and $|\cdot|$ denotes the number of occupied voxels. Unlike the Chamfer Distance, which operates on surface points, the volumetric IoU captures how well the interior volume of an object is preserved, making it particularly suitable for evaluating completion methods that operate on voxelised representations (Chapter~\ref{ch:7_Object_Completion}). For \textit{3D object detection}, the same formula is applied to oriented bounding boxes rather than voxel grids. A detection is typically considered correct if the IoU with the ground-truth bounding box exceeds a predefined threshold, commonly 0.25 or 0.5 (Chapter~\ref{ch:5_Scene_Segmentation}).
+An \gls{IoU} of 1 indicates perfect agreement, while 0 indicates no overlap. This formulation applies across multiple contexts in this thesis. For \textit{volumetric object comparison}, $A$ and $B$ represent predicted and ground-truth volumes discretised as voxel occupancy grids or signed distance fields, and $|\cdot|$ denotes the number of occupied voxels. Unlike the Chamfer Distance, which operates on surface points, the volumetric \gls{IoU} captures how well the interior volume of an object is preserved, making it particularly suitable for evaluating completion methods that operate on voxelised representations (Chapter~\ref{ch:7_Object_Completion}). For \textit{3D object detection}, the same formula is applied to oriented bounding boxes rather than voxel grids. A detection is typically considered correct if the \gls{IoU} with the ground-truth bounding box exceeds a predefined threshold, commonly 0.25 or 0.5 (Chapter~\ref{ch:5_Scene_Segmentation}).
 
 % ── Detection ────────────────────────────────────────────────────────────────
 \subsection{Detection Performance Metrics}
 \label{sec:bg_metrics_detection}
 
 \paragraph{Precision and Recall.}
-Precision and recall characterise the trade-off between false positives and false negatives in detection tasks. Given a set of detections, each classified as a true positive (TP), false positive (FP), or false negative (FN) based on the IoU threshold defined above:
+Precision and recall characterise the trade-off between false positives and false negatives in detection tasks. Given a set of detections, each classified as a true positive (TP), false positive (FP), or false negative (FN) based on the \gls{IoU} threshold defined above:
 
 \begin{equation}
 \label{eq:precision_recall}
@@ -418,34 +422,34 @@ Precision measures the proportion of detections that correspond to actual object
 The texture completion and inpainting stages of the pipeline produce visual outputs whose quality cannot be fully captured by geometric metrics alone. Four complementary metrics are used, progressing from pixel-level accuracy to increasingly perceptually meaningful comparisons.
 
 \paragraph{Peak Signal-to-Noise Ratio.}
-The Peak Signal-to-Noise Ratio (PSNR) quantifies the pixel-level reconstruction accuracy of a predicted image $\hat{I}$ relative to a reference image $I$. It is defined in terms of the Mean Squared Error (MSE):
+The Peak Signal-to-Noise Ratio (\gls{PSNR}) quantifies the pixel-level reconstruction accuracy of a predicted image $\hat{I}$ relative to a reference image $I$. It is defined in terms of the Mean Squared Error (MSE):
 
 \begin{equation}
 \label{eq:psnr}
 \text{PSNR}(\hat{I}, I) = 10 \cdot \log_{10} \left( \frac{L^2}{\text{MSE}(\hat{I}, I)} \right)
 \end{equation}
 
-where $L$ is the maximum possible pixel value (typically 255 for 8-bit images) and $\text{MSE}(\hat{I}, I) = \frac{1}{N} \sum_{i=1}^{N} (\hat{I}_i - I_i)^2$. Higher PSNR values indicate better reconstruction quality. While PSNR is widely used due to its simplicity, it correlates poorly with human perception of image quality, as it weights all pixel differences equally regardless of their visual significance.
+where $L$ is the maximum possible pixel value (typically 255 for 8-bit images) and $\text{MSE}(\hat{I}, I) = \frac{1}{N} \sum_{i=1}^{N} (\hat{I}_i - I_i)^2$. Higher \gls{PSNR} values indicate better reconstruction quality. While \gls{PSNR} is widely used due to its simplicity, it correlates poorly with human perception of image quality, as it weights all pixel differences equally regardless of their visual significance.
 
 \paragraph{Structural Similarity Index.}
-The Structural Similarity Index Measure (SSIM)~\cite{wang_image_2004} addresses the limitations of PSNR by comparing images based on luminance, contrast, and structural information rather than raw pixel differences. For two image patches $x$ and $y$:
+The Structural Similarity Index Measure (\gls{SSIM})~\cite{wang_image_2004} addresses the limitations of PSNR by comparing images based on luminance, contrast, and structural information rather than raw pixel differences. For two image patches $x$ and $y$:
 
 \begin{equation}
 \label{eq:ssim}
 \text{SSIM}(x, y) = \frac{(2\mu_x \mu_y + c_1)(2\sigma_{xy} + c_2)}{(\mu_x^2 + \mu_y^2 + c_1)(\sigma_x^2 + \sigma_y^2 + c_2)}
 \end{equation}
 
-where $\mu_x$, $\mu_y$ are the local means, $\sigma_x^2$, $\sigma_y^2$ the local variances, $\sigma_{xy}$ the cross-covariance, and $c_1$, $c_2$ stabilisation constants. SSIM values range from $-1$ to $1$, with 1 indicating identical images. The metric is computed locally over sliding windows and averaged across the image. SSIM better reflects perceived visual quality than PSNR, particularly for distortions that affect image structure rather than pixel intensity.
+where $\mu_x$, $\mu_y$ are the local means, $\sigma_x^2$, $\sigma_y^2$ the local variances, $\sigma_{xy}$ the cross-covariance, and $c_1$, $c_2$ stabilisation constants. \gls{SSIM} values range from $-1$ to $1$, with 1 indicating identical images. The metric is computed locally over sliding windows and averaged across the image. \gls{SSIM} better reflects perceived visual quality than \gls{PSNR}, particularly for distortions that affect image structure rather than pixel intensity.
 
 \paragraph{Learned Perceptual Image Patch Similarity.}
-The Learned Perceptual Image Patch Similarity (LPIPS)~\cite{zhang_unreasonable_2018} measures the perceptual distance between two images using deep features extracted from a pretrained neural network. Given images $\hat{I}$ and $I$, features are extracted at multiple layers $l$ of a network (typically VGG or AlexNet), and the distance is computed as a weighted sum of normalised feature differences:
+The Learned Perceptual Image Patch Similarity (\gls{LPIPS})~\cite{zhang_unreasonable_2018} measures the perceptual distance between two images using deep features extracted from a pretrained neural network. Given images $\hat{I}$ and $I$, features are extracted at multiple layers $l$ of a network (typically VGG or AlexNet), and the distance is computed as a weighted sum of normalised feature differences:
 
 \begin{equation}
 \label{eq:lpips}
 \text{LPIPS}(\hat{I}, I) = \sum_l \frac{1}{H_l W_l} \sum_{h,w} \| w_l \odot (\hat{\phi}_l^{hw} - \phi_l^{hw}) \|^2
 \end{equation}
 
-where $\phi_l^{hw}$ and $\hat{\phi}_l^{hw}$ are the unit-normalised feature activations at spatial position $(h, w)$ in layer $l$, and $w_l$ are learned per-channel weights. Lower LPIPS values indicate greater perceptual similarity. LPIPS has been shown to correlate more strongly with human judgements of image similarity than both PSNR and SSIM, particularly for the types of distortions produced by generative models.
+where $\phi_l^{hw}$ and $\hat{\phi}_l^{hw}$ are the unit-normalised feature activations at spatial position $(h, w)$ in layer $l$, and $w_l$ are learned per-channel weights. Lower \gls{LPIPS} values indicate greater perceptual similarity. \gls{LPIPS} has been shown to correlate more strongly with human judgements of image similarity than both \gls{PSNR} and \gls{SSIM}, particularly for the types of distortions produced by generative models.
 
 \paragraph{Texture Similarity.}
 To assess whether the material appearance of a completed object matches its reference, a texture similarity metric based on learned feature representations is employed. Given two texture patches, feature vectors are extracted using a pretrained EfficientNet~\cite{tan_efficientnet_2019} backbone, and their similarity is measured using cosine similarity:
@@ -455,7 +459,7 @@ To assess whether the material appearance of a completed object matches its refe
 \text{TexSim}(T_1, T_2) = \frac{f(T_1) \cdot f(T_2)}{\|f(T_1)\| \cdot \|f(T_2)\|}
 \end{equation}
 
-where $f(\cdot)$ denotes the feature extraction function. A cosine similarity of 1 indicates identical feature representations. Unlike PSNR and SSIM, which compare images at the pixel level, this metric captures higher-level material and texture properties such as pattern regularity, colour distribution, and surface characteristics. This makes it particularly suited for evaluating texture completion quality, where the completed region should exhibit the same material as the reference but need not reproduce the exact pixel pattern (Chapter~\ref{ch:7_Object_Completion}).
+where $f(\cdot)$ denotes the feature extraction function. A cosine similarity of 1 indicates identical feature representations. Unlike \gls{PSNR} and \gls{SSIM}, which compare images at the pixel level, this metric captures higher-level material and texture properties such as pattern regularity, colour distribution, and surface characteristics. This makes it particularly suited for evaluating texture completion quality, where the completed region should exhibit the same material as the reference but need not reproduce the exact pixel pattern (Chapter~\ref{ch:7_Object_Completion}).
 
 % ── Summary ──────────────────────────────────────────────────────────────────
 \subsection{Summary}
@@ -472,11 +476,11 @@ Table~\ref{tab:metrics_overview} summarises the evaluation metrics and indicates
         \textbf{Metric} & \textbf{Type} & \textbf{Range} & \textbf{Pipeline Stage(s)} \\
         \midrule
         Chamfer Distance    & Geometric     & $[0, \infty)$ $\downarrow$ & Object \& scene completion \\
-        IoU                 & Overlap       & $[0, 1]$ $\uparrow$       & Object detection \& completion \\
+        \gls{IoU}           & Overlap       & $[0, 1]$ $\uparrow$       & Object detection \& completion \\
         Precision and recall& Detection     & $[0, 1]$ $\uparrow$       & Object detection \\
-        PSNR                & Image quality & $[0, \infty)$ $\uparrow$  & Scene \& texture completion \\
-        SSIM                & Image quality & $[-1, 1]$ $\uparrow$      & Scene \& texture completion \\
-        LPIPS               & Perceptual    & $[0, 1]$ $\downarrow$     & Scene \& texture completion \\
+        \gls{PSNR}          & Image quality & $[0, \infty)$ $\uparrow$  & Scene \& texture completion \\
+        \gls{SSIM}          & Image quality & $[-1, 1]$ $\uparrow$      & Scene \& texture completion \\
+        \gls{LPIPS}         & Perceptual    & $[0, 1]$ $\downarrow$     & Scene \& texture completion \\
         Texture Similarity  & Perceptual    & $[-1, 1]$ $\uparrow$      & Texture completion \\
         \bottomrule
     \end{tabular}
@@ -492,11 +496,11 @@ This chapter established the conceptual and terminological foundation for the re
  
 The review of prior approaches in Section~\ref{sec:bg_sota_dynamification} showed that, although important progress has been made in object detection, scene completion, object completion and visual inpainting, these components are still largely addressed in isolation. No existing method integrates them into a unified workflow capable of producing complete, editable and object-structured scene representations from heterogeneous and multi-temporal indoor scan data.
  
-The representational overview in Section~\ref{sec:bg_representations} showed that the choice of representation strongly determines which operations are feasible throughout the pipeline. Explicit representations such as point clouds and meshes remain most suitable for acquisition, rendering and editing, while implicit representations such as signed and unsigned distance fields provide a flexible intermediate form for completion and learning-based inference. Spatial data structures such as voxel grids, octrees and k-d trees complement these representations by enabling scalable processing of large 3D datasets. On this basis, the thesis adopts unstructured coloured point clouds as primary input, textured meshes as the main output for reconstructed environments, and SDF- or UDF-based volumetric encodings as intermediate representations in completion stages. BIM, neural implicit and Gaussian splatting representations are excluded from the pipeline output due to their respective limitations in visual fidelity, deterministic editability or geometric maturity.
+The representational overview in Section~\ref{sec:bg_representations} showed that the choice of representation strongly determines which operations are feasible throughout the pipeline. Explicit representations such as point clouds and meshes remain most suitable for acquisition, rendering and editing, while implicit representations such as signed and unsigned distance fields provide a flexible intermediate form for completion and learning-based inference. Spatial data structures such as voxel grids, octrees and k-d trees complement these representations by enabling scalable processing of large 3D datasets. On this basis, the thesis adopts unstructured coloured point clouds as primary input, textured meshes as the main output for reconstructed environments, and \gls{SDF}- or \gls{UDF}-based volumetric encodings as intermediate representations in completion stages. \gls{BIM}, neural implicit and Gaussian splatting representations are excluded from the pipeline output due to their respective limitations in visual fidelity, deterministic editability or geometric maturity.
  
 The \gls{DRM} requirements formalised in Section~\ref{sec:bg_drm_requirements} define what the pipeline must produce: geometric and textural completeness, object-level decomposition, and part-aware editability. The distinction between primary, secondary and tertiary building elements determines how each element is routed through the pipeline: permanent structural elements are completed as part of the environment, while movable objects are reconstructed as individually manipulable entities.
  
-Finally, the evaluation metrics defined in Section~\ref{sec:bg_metrics} provide a unified quantitative framework for the experimental chapters that follow. Geometric accuracy is assessed through the Chamfer Distance and volumetric IoU, detection quality through precision, recall and detection IoU, and visual quality through PSNR, SSIM, LPIPS and texture similarity. By defining these metrics here rather than in individual chapters, consistent evaluation criteria are established across all pipeline stages.
+Finally, the evaluation metrics defined in Section~\ref{sec:bg_metrics} provide a unified quantitative framework for the experimental chapters that follow. Geometric accuracy is assessed through the Chamfer Distance and volumetric IoU, detection quality through precision, recall and detection \gls{IoU}, and visual quality through \gls{PSNR}, \gls{SSIM}, \gls{LPIPS} and texture similarity. By defining these metrics here rather than in individual chapters, consistent evaluation criteria are established across all pipeline stages.
  
 With this conceptual, representational and evaluative basis in place, the following chapters address the individual stages of the proposed methodology, beginning with the acquisition and generation of the datasets on which the pipeline operates.
  

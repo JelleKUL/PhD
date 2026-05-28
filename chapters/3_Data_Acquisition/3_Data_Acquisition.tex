@@ -152,7 +152,7 @@ The sensing technologies used in this dataset span a wide range of accuracy, den
 Static \gls{TLS} systems such as the Leica ScanStation P30~\cite{noauthor_leica_nodate} and BLK360~\cite{noauthor_leica_nodate-1} provide the highest measurement accuracy, typically achieving single-point accuracies below 5\,mm at ranges up to 50\,m~\cite{bassier_standalone_2016}. These systems capture structured point grids of 10 to 40 million points per setup, along with panoramic imagery. However, the static nature of the measurement introduces significant occlusions at ground level and behind objects, as only surfaces visible from the scanner position are recorded. Consecutive setups must be registered, typically through a combination of target-based and cloud-to-cloud methods, with sub-millimetre error propagation achievable across setups~\cite{geyter_point_2022}.
 
 \paragraph{Indoor Mobile Mapping Systems.}
-Indoor mobile mapping systems (\gls{iMMS}) such as the NavVis VLX~\cite{noauthor_navvis_nodate} combine LiDAR sensors with camera-based \gls{SLAM} algorithms to achieve continuous data acquisition while the operator moves through the environment. These systems produce unordered point clouds with uneven point distributions, but their continuous trajectory results in significantly better spatial coverage than static scanners, particularly in cluttered environments. Global accuracies of LOA20 ($2\sigma \leq 0.05$\,m) to LOA30 ($2\sigma \leq 0.015$\,m) are achievable when supported by control measurements~\cite{geyter_point_2022, vermandere_two-step_2022}. Data acquisition is typically two to three times faster than with static TLS.
+Indoor mobile mapping systems (\gls{iMMS}) such as the NavVis VLX~\cite{noauthor_navvis_nodate} combine LiDAR sensors with camera-based \gls{SLAM} algorithms to achieve continuous data acquisition while the operator moves through the environment. These systems produce unordered point clouds with uneven point distributions, but their continuous trajectory results in significantly better spatial coverage than static scanners, particularly in cluttered environments. Global accuracies of LOA20 ($2\sigma \leq 0.05$\,m) to LOA30 ($2\sigma \leq 0.015$\,m) are achievable when supported by control measurements~\cite{geyter_point_2022, vermandere_two-step_2022}. Data acquisition is typically two to three times faster than with static \gls{TLS}.
 
 \paragraph{XR Devices.}
 Extended Reality devices such as the Microsoft HoloLens~2~\cite{hubner_evaluation_2020} represent the lower end of the capture spectrum. These head-mounted devices are equipped with a 1\,MP \gls{ToF} sensor and four grey-scale tracking cameras, producing real-time polygonal meshes at a default spatial resolution of approximately 0.08\,m$^3$~\cite{geyter_point_2022, hubner_evaluation_2020}. While their accuracy is limited, with single-point accuracies of approximately 1\,cm/m and a maximum useful range of 3--4\,m, they offer unparalleled mobility and can capture regions inaccessible to larger systems. The accompanying RGB camera provides localised imagery that can be used for 2D-based alignment methods.
@@ -163,9 +163,9 @@ Recent smartphones equipped with LiDAR sensors, such as iPhone models with the A
 \subsection{Capture Methodology}
 \label{sec:3_capture_method}
 
-Each sensing technology was deployed according to its intended use case~\cite{geyter_point_2022}. For TLS captures, one or two scanner setups were placed per room, positioning the scanner to maximise coverage of the structural elements while accepting the inherent ground-level occlusions caused by furniture and equipment. For iMMS captures, the operator walked through the environment following a natural trajectory, ensuring loop closures where possible to minimise drift accumulation. For XR device captures, the operator walked around the room attempting to capture all accessible surfaces, including regions underneath and behind furniture that are typically harder to reach with larger scanners.
+Each sensing technology was deployed according to its intended use case~\cite{geyter_point_2022}. For \gls{TLS} captures, one or two scanner setups were placed per room, positioning the scanner to maximise coverage of the structural elements while accepting the inherent ground-level occlusions caused by furniture and equipment. For \gls{iMMS} captures, the operator walked through the environment following a natural trajectory, ensuring loop closures where possible to minimise drift accumulation. For \gls{XR} device captures, the operator walked around the room attempting to capture all accessible surfaces, including regions underneath and behind furniture that are typically harder to reach with larger scanners.
 
-This deliberate combination of sensors and deployment strategies produces complementary datasets: TLS data provides high-accuracy structural geometry with systematic occlusions, iMMS data provides high-coverage reconstructions with moderate accuracy, and XR data provides fast, accessible captures with reduced accuracy but improved coverage in cluttered areas.
+This deliberate combination of sensors and deployment strategies produces complementary datasets: \gls{TLS} data provides high-accuracy structural geometry with systematic occlusions, \gls{iMMS} data provides high-coverage reconstructions with moderate accuracy, and \gls{XR} data provides fast, accessible captures with reduced accuracy but improved coverage in cluttered areas.
 
 \subsection{Captured Scenes}
 \label{sec:3_captured_scenes}
@@ -218,7 +218,7 @@ The dataset spans more than three orders of magnitude in per-session point count
   \centering
   \medskip
   \includegraphics[width=1\textwidth]{Campus}
-  \caption[Captured scenes]{Example captures of the three environments: the laboratory rooms (left), the prefab living lab under construction (middle), and the Bruges residential renovation (right).}
+  \caption[Captured scenes]{Examples of the captured scenes: 3 Campus captures and the prefab living lab under construction respectively}
   \label{fig:3_captured_scenes}
 \end{figure}
 
@@ -272,6 +272,7 @@ Scanner type presets based on manufacturer specifications are summarised in Tabl
     \centering
     \caption[Virtual scanner presets]{Scanner type presets used in the virtual scanning framework, based on manufacturer specifications of real devices.}
     \label{tab:scanner_presets}
+    \resizebox{\textwidth}{!}{%
     \begin{tabular}{l c c c c c}
         \toprule
         \textbf{Scanner Type} & \textbf{Density} & \textbf{Range} & \textbf{Vert.\ Range} & \textbf{Sys.\ Noise} & \textbf{Dist.\ Noise} \\
@@ -285,7 +286,7 @@ Scanner type presets based on manufacturer specifications are summarised in Tabl
         iPhone LiDAR       & 50.0 & 5   & 180 & 10.0 & 10.0 \\
         HoloLens 2         & 80.0 & 4   & 120 & 10.0 & 15.0 \\
         \bottomrule
-    \end{tabular}
+    \end{tabular}}
 \end{table}
 
 \subsubsection{Geometric Scanning}
@@ -331,7 +332,7 @@ A procedural scene generation system was developed to automatically create diver
   \centering
   \medskip
   \includegraphics[width=1\textwidth]{Proc_gen_method}
-  \caption[Procedural Room Layout Generator]{Overview of the procedural room layout generator.}
+  \caption[Procedural Room Layout Generator]{Overview the 3 steps of the procedural room layout generator: Floor generation, room structure generation, and furniture placement.}
   \label{fig:3_Room_Generator}
 \end{figure}
 
