@@ -1,24 +1,210 @@
 % !TeX root = ../../thesis.tex
+\chapter{Scene Completion}
+\label{ch:6_Scene_Completion}
 
-\chapter{Scene Completion} \label{ch:6_Scene_Completion}
-
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
+\label{sec:6_intro}
 
-\section{Related work}
+This chapter addresses the environment completion stage of the pipeline, reconstructing the permanent structural fabric of the scene. As defined in Chapter~\ref{ch:background}, these primary building elements such as walls, floors and ceilings define the room envelope and are reconstructed as a continuous background model, in contrast to the movable objects that are completed individually in Chapter~\ref{ch:7_Object_Completion}~\cite{2ILFXM_2024}. The stage takes the object-removed point cloud and the structural planes from Chapter~\ref{ch:5_Scene_Segmentation}, together with the scene-level occlusion grid and the panoramic image, and produces a complete textured mesh of the empty room.
 
+After object isolation, the foreground furniture has been cut out of the scene, leaving large rectangular holes in the floor, the walls and the surrounding surfaces where the bounding box volumes were removed~\cite{vermandere_guided_2025}. The geometry behind these objects, as well as the regions hidden from the scanner by sensor occlusion, is missing and must be filled in. Because indoor environments are predominantly composed of large planar surfaces, the reconstruction is performed per plane rather than over the full unstructured point cloud. This keeps the geometry constrained to physically plausible surfaces and, by reconstructing only within regions marked as occluded in the scene-level grid from Chapter~\ref{ch:5_Scene_Segmentation}, avoids hallucinating structure in observed free space. This contrasts with scene-level completion methods that treat the environment as a monolithic volume and infer missing geometry globally~\cite{hubner_voxel-based_2020, dai_scancomplete_2018, dai_spsg_2020, roldao_3d_2022}.
+
+The completion is split into two complementary problems. The geometric reconstruction converts each detected plane into a watertight mesh fragment that follows the scanned surface where it was observed and fills the gaps where it was not~\cite{vermandere_semantic_2024}. The textural reconstruction then maps the panoramic image onto each fragment, masks out the pixels that belong to removed objects or occluded regions, and inpaints the missing texture so that the resulting surface appears continuous~\cite{vermandere_semantic_2024, suvorov_resolution-robust_2022}. The rooms are reconstructed as full closed walls; openings such as windows and doors are handled separately in Chapter~\ref{ch:8_Scene_Dynamification} to make them dynamic.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Related Work}
+\label{sec:6_related}
+
+This section reviews the three areas of prior work most relevant to the contributions of this chapter: geometric reconstruction of surfaces from point clouds, image inpainting, and object removal with scene inpainting.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Geometry Reconstruction}
+\label{sec:6_rw_geometry}
+
+Reconstructing a continuous surface from an unstructured point cloud is a long-standing problem in geometry processing. The most widely used general-purpose method is screened Poisson surface reconstruction~\cite{kazhdan_screened_2013}, which produces watertight surfaces from oriented point sets by solving a screened Poisson equation that interpolates the input points. An alternative for volumetric data extracts the surface from a discretised field using the Marching Cubes algorithm~\cite{lorensen_marching_1998}. These general-purpose methods tend to close large gaps with smooth bulging surfaces and to produce defects such as holes or non-manifold geometry that require further repair~\cite{attene_lightweight_2010}, which is undesirable for the flat structural elements of a room where the missing regions should remain planar.
+
+For indoor environments specifically, the structural regularity of buildings is commonly exploited by reconstructing walls, floors and ceilings from detected planar primitives rather than from the raw points. Budroni and Boehm~\cite{budroni_automatic_2010} reconstruct Manhattan-world interiors through a volume sweep over detected planes, and Jung et al.~\cite{jung_automated_2016} use constrained least-squares adjustment to produce wireframe models of indoor structures. Hübner et al.~\cite{hubner_voxel-based_2020} voxelise the input geometry and apply a rule-based sweep to label walls, wall openings and empty interior, without assuming a Manhattan-world layout or perfectly planar surfaces. Li et al.~\cite{li_hybrid_2024} segment the room point cloud into external planar structure and internal objects, reconstructing the structure as a lightweight polygonal model from intersecting faces while replacing the objects with fitted CAD models. Nikoohemat et al.~\cite{nikoohemat_exploiting_2017, nikoohemat_change_2018} combine plane detection with trajectory-based occlusion reasoning to recover the structural surfaces of cluttered interiors. These plane-based approaches motivate the per-plane reconstruction strategy used in this chapter, which keeps the reconstructed structure flat while still following the scanned surface where it was observed.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Image Inpainting}
+\label{sec:6_rw_inpainting}
+
+Image inpainting fills missing or masked regions of an image with plausible content. Classical methods propagate surrounding colour and structure into the hole, but they struggle with the large masks that result from removing entire pieces of furniture. Learning-based methods have largely replaced them. LaMa~\cite{suvorov_resolution-robust_2022} uses fast Fourier convolutions to provide a large receptive field, which makes it particularly effective at completing wide masks and repetitive structures such as walls and floors while generalising to resolutions higher than those seen during training. Diffusion-based approaches such as Stable Diffusion~\cite{rombach_high-resolution_2021} and the Inpaint Anything pipeline~\cite{yu_inpaint_2023}, which combines segmentation with generative filling, produce highly detailed results but can introduce content that is inconsistent with the surrounding surface and are computationally heavier. For the planar surfaces reconstructed in this chapter, where the goal is a continuous texture rather than novel detail, the large-mask robustness of LaMa~\cite{suvorov_resolution-robust_2022} is the most suitable choice.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Object Removal and Scene Inpainting}
+\label{sec:6_rw_defurnishing}
+
+A growing body of work addresses the combined problem of removing furniture from a captured scene and filling in the revealed background, a task often referred to as defurnishing. Semantic scene completion methods such as SPSG~\cite{dai_spsg_2020} and broader surveys of the field~\cite{roldao_3d_2022} jointly infer missing geometry and colour, but treat the scene as a monolithic volume and do not separate the structural background from the removed clutter. Wei et al.~\cite{wei_clutter_2023} detect and remove clutter from 3D scenes and inpaint the resulting holes with view-consistent geometry and texture by merging individually inpainted RGB-D images, demonstrating results on ScanNet and Matterport. For panoramic input specifically, Slavcheva et al.~\cite{slavcheva_empty_2024} defurnish indoor panoramas using a fine-tuned Stable Diffusion model with increased context and improved blending, producing geometrically plausible inpaints without explicit room layout estimation.
+
+NeRFiller~\cite{weber_nerfiller_2023} completes missing portions of a 3D capture through generative 3D inpainting, but focuses on completing scenes rather than removing foreground objects and operates on neural radiance fields rather than explicit meshes. Closest to the present setting is the defurnishing pipeline of Dolhasz et al.~\cite{dolhasz_defurnishing_2025}, which jointly removes furniture from both a textured mesh and its corresponding panoramic images: it segments and removes furniture from the mesh, extends planes and fills holes to obtain a simplified structural mesh, and uses geometric edges rendered from that mesh to guide a ControlNet inpainting of the panoramas. These approaches inpaint directly on the panoramic views, which couples the texture result to the particular viewpoint and can leave inconsistencies between views. The method proposed in this chapter instead inpaints each reconstructed plane individually in its own flattened texture space~\cite{vermandere_semantic_2024}, which decouples the result from the viewpoint and keeps the inpainting layout geometrically consistent with the planar surface.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Methodology}
+\label{sec:6_methodology}
 
-\subsection{Geometry reconstruction}
+The scene completion methodology takes the object-removed point cloud, the structural planes and the scene-level occlusion grid from Chapter~\ref{ch:5_Scene_Segmentation}, together with the panoramic image of the scene, and outputs a complete textured mesh of the empty room. It proceeds in two stages: a geometric reconstruction that turns the detected planes into watertight mesh fragments (Section~\ref{sec:6_geometry}), and a textural reconstruction that projects, masks and inpaints the panorama onto these fragments (Section~\ref{sec:6_texture}). An overview of the full pipeline is shown in Figure~\ref{fig:6_method_overview}.
 
-\subsection{Color inpainting}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\textwidth]{Scene_completion_method}
+  \caption[Scene completion pipeline]{Overview of the proposed scene completion pipeline, from the object-removed point cloud and panorama to the final textured mesh.}
+  \label{fig:6_method_overview}
+\end{figure}
 
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Geometry Reconstruction}
+\label{sec:6_geometry}
+
+The geometric reconstruction converts the structural planes detected in Chapter~\ref{ch:5_Scene_Segmentation} into a set of watertight mesh fragments that together form the closed shell of the room. It consists of plane instance segmentation, plane boundary detection, surface point generation and surface projection.
+
+
+% ── 6.3.1.1 ──────────────────────────────────────────────────────────────────
+\subsubsection{Plane Instance Segmentation}
+\label{sec:6_plane_segmentation}
+
+The starting point is the iterative RANSAC plane detection introduced in Chapter~\ref{ch:5_Scene_Segmentation}, applied here to the object-removed point cloud~\cite{korman_latent_2018}. Removing the bounding box volumes of the detected objects beforehand leaves a point cloud dominated by the structural surfaces, so the dominant planes recovered correspond directly to the walls, floor and ceiling. Each plane is returned as an implicit model together with the subset of points that support it.
+
+A single plane model is infinite and overlaps with the others, so the planes must be cut into bounded, non-overlapping fragments before they can be meshed. For each detected plane, an oversized quad is first created, sized to the axis-aligned bounding box of the scene so that it more than covers the room. This quad is then recursively split by every other detected plane: at each split a Sutherland-Hodgman clipping operation divides the current fragment into the parts in front of and behind the cutting plane, and both parts are retained with their normals oriented toward the scene centre. After cutting against all other planes, each plane is represented by a set of fragments whose edges coincide with the intersections between planes, giving tight seams where walls meet the floor and ceiling.
+
+Many of these fragments fall in regions of the room where the corresponding surface was never scanned and therefore do not represent real geometry. To remove them, each fragment is tested against the segmented plane points: a fragment is kept only if a sufficient number of points (a minimum of 1000 in the experiments) lie within a small distance of its surface, after projecting the nearby points into the fragment's plane and testing them against its 2D boundary. Fragments that contain too few supporting points are discarded as empty, leaving only the fragments that correspond to observed structural surfaces.
+
+
+% ── 6.3.1.2 ──────────────────────────────────────────────────────────────────
+\subsubsection{Surface Point Generation}
+\label{sec:6_point_generation}
+
+The retained plane fragments are flat and pass through the scanned surface, but the goal is a mesh that follows the real surface where it was observed while still covering the holes left by object removal and occlusion. To achieve this, the missing regions of each plane are first filled with synthetic points at the same density as the surrounding scan.
+
+For each fragment, points are sampled uniformly on its surface and voxel-downsampled to the scene voxel size of 5\,cm, matching the density of the scanned point cloud. Only the sampled points that lie further than one voxel from any existing scanned point are kept, so that the synthetic points fill the unoccupied gaps without duplicating the observed geometry. The unoccupied sampled points are then combined with the original segmented points of that plane to obtain a complete, evenly sampled point cloud for the surface.
+
+
+% ── 6.3.1.3 ──────────────────────────────────────────────────────────────────
+\subsubsection{Surface Projection}
+\label{sec:6_surface_projection}
+
+The combined point cloud is converted into a mesh that conforms to the scanned surface. Each plane fragment is first remeshed into a regular grid at the voxel density. The interior of the fragment is filled with grid points spaced one voxel apart, while the boundary edges produced by the plane cutting are subdivided to the same spacing and preserved exactly, so that adjacent fragments keep their shared seams. The interior and boundary vertices are triangulated together using a constrained Delaunay triangulation that respects the boundary segments.
+
+Each interior vertex of this subdivided mesh is then projected onto the scanned surface by displacing it along the plane normal to match the nearest combined surface point, found through a k-d tree query. This lets the reconstructed surface follow the small undulations and offsets present in the real scan rather than remaining perfectly flat, while the preserved boundary vertices are kept in place to ensure a tight fit against the neighbouring planes. The triangle normals are finally oriented toward the recorded scanner position so that the resulting surface faces into the room.
+
+The result is a set of watertight mesh fragments that together form the closed structural shell of the empty room, conforming to the scanned surfaces where they were observed and spanning the regions that were occluded or removed.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Texture Reconstruction}
+\label{sec:6_texture}
+
+With the geometry reconstructed, the second stage assigns a continuous texture to each plane. This requires a per-plane parameterisation, a projection of the panorama onto each plane, a mask of the regions that must be replaced, and an inpainting step that fills those regions.
+
+
+% ── 6.3.2.1 ──────────────────────────────────────────────────────────────────
+\subsubsection{UV Parameterisation}
+\label{sec:6_uv}
+
+Each reconstructed plane is mapped to a 2D \gls{UV} space so that it can be textured and inpainted as a regular image~\cite{vermandere_semantic_2024}. The parameterisation is built from the plane normal, oriented to point toward the scene centre, and a consistent up direction: the world vertical axis for vertical surfaces such as walls, and a horizontal axis for floors and ceilings. The horizontal texture axis is taken as the cross product of the up vector and the normal, and the vertical texture axis completes the right-handed frame, with both flipped if necessary so that the texture's up direction matches the chosen up axis. The vertices are projected onto this frame and normalised to the unit square. Keeping the up direction and the orientation toward the scanner consistent across planes ensures that the subsequent inpainting operates on an upright, logically laid out image rather than an arbitrarily rotated one, which has been shown to improve the plausibility of the inpainted texture~\cite{vermandere_semantic_2024}.
+
+
+% ── 6.3.2.2 ──────────────────────────────────────────────────────────────────
+\subsubsection{Panorama Projection and Occlusion Masking}
+\label{sec:6_pano_projection}
+
+When a panoramic image of the scene is available, it is used as the source texture so that the reconstructed surfaces carry the real appearance of the room. For each plane, a texture image is generated by sampling the panorama: a regular grid of points is laid out over the plane in its UV frame, mapped back into 3D, and projected into the equirectangular panorama through the inverse of the scanner transform to retrieve the corresponding colour. This produces one texture per plane, aligned with its UV parameterisation.
+
+The panorama still contains all the foreground objects, so the pixels that belong to removed or occluded geometry must be masked out before they are baked into the reconstructed surface. The mask is derived from the scene-level occlusion information computed in Chapter~\ref{ch:5_Scene_Segmentation}. Where a second panorama of the empty scene is available, as in the synthetic V-Scan data, the mask is obtained directly by comparing the furnished and empty panoramas: pixels whose mean per-channel difference exceeds a small threshold are marked as occluded, and the difference mask is blurred slightly to smooth its edges. Where only a single panorama is available, the same regions are identified by comparing the depth of the reconstructed planes against the captured scene depth and masking the pixels that lie closer than the reconstructed surface, equivalently to reading the occluded voxels from the scene-level occlusion grid. The masked regions are transferred onto each plane's projected texture, marking the pixels to be replaced.
+
+
+% ── 6.3.2.3 ──────────────────────────────────────────────────────────────────
+\subsubsection{Texture Inpainting}
+\label{sec:6_inpainting}
+
+Each masked plane texture is inpainted individually. Before inpainting, the mask is dilated by a fixed margin (20 pixels in the experiments) so that no fringe of clutter or movable furniture remains around the edges of the removed regions. The dilated mask and the masked texture are passed to LaMa~\cite{suvorov_resolution-robust_2022}, which fills the missing region with content consistent with the surrounding wall or floor texture. Inpainting per plane rather than on the panorama directly means the network operates on a flat, upright surface with a coherent layout, which suits the repetitive planar structures it is asked to complete and keeps the result independent of the original viewpoint.
+
+The inpainted textures are finally applied back to the corresponding UV-parameterised mesh fragments, and the textured fragments are combined into the final mesh of the completed environment, exported as a single textured model. This completed empty scene, together with the isolated objects from Chapter~\ref{ch:5_Scene_Segmentation}, forms the input to the object completion stage in Chapter~\ref{ch:7_Object_Completion} and the dynamification stage in Chapter~\ref{ch:8_Scene_Dynamification}.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Experiments}
+\label{sec:6_experiments}
 
+The scene completion is evaluated both geometrically and texturally on the V-Scan synthetic dataset (Section~\ref{sec:3_vscan}), which provides a ground-truth empty scene point cloud and a ground-truth empty panorama for every scene alongside the furnished capture, enabling direct comparison of the reconstructed empty room against its reference~\cite{vermandere_synthetic_2026}. The method is additionally evaluated qualitatively on real scans from the Matterport3D dataset~\cite{chang_matterport3d_2017}, for which no defurnished ground truth is available.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Evaluation Protocol}
+\label{sec:6_exp_protocol}
+
+The geometric accuracy of the reconstructed mesh is measured against the ground-truth empty room geometry using the Chamfer distance and the F-score at a 5\,cm threshold, both computed between points sampled on the reconstructed and ground-truth surfaces. Following the definitions established in Chapter~\ref{ch:background}, the Chamfer distance reports the average bidirectional surface distance in metres, capturing both accuracy and completeness, and the F-score reports the fraction of reconstructed and ground-truth points that lie within 5\,cm of each other.
+
+The textural accuracy is measured by comparing the inpainted plane textures against the ground-truth empty panorama reprojected onto the same planes, using the three image quality metrics defined in Chapter~\ref{ch:background}: the peak signal-to-noise ratio (PSNR), the structural similarity index (SSIM) and the learned perceptual image patch similarity (LPIPS)~\cite{zhang_unreasonable_2018}. PSNR and SSIM quantify pixel-level and structural fidelity respectively, where higher is better, while LPIPS measures perceptual similarity in a deep feature space, where lower is better.
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Results on V-Scan}
+\label{sec:6_exp_vscan}
+
+Table~\ref{tab:6_completion_results} reports the geometric and textural results per environment type, averaged over all scenes of each class.
+
+\begin{table}[h]
+    \centering
+    \caption[Scene completion results per environment type]{Scene completion results per V-Scan environment type. Geometric accuracy is reported as Chamfer distance and F-score at 5\,cm against the ground-truth empty geometry; textural accuracy is reported as PSNR, SSIM and LPIPS against the ground-truth empty panorama. Values are mean $\pm$ standard deviation across all scenes of each type.}
+    \label{tab:6_completion_results}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{l c c c c c}
+        \toprule
+        \textbf{Environment} & \textbf{Chamfer $\downarrow$ (m)} & \textbf{F-score @5cm $\uparrow$} & \textbf{PSNR $\uparrow$ (dB)} & \textbf{SSIM $\uparrow$} & \textbf{LPIPS $\downarrow$} \\
+        \midrule
+        Bedroom     & $0.0161 \pm 0.0022$ & $0.9756 \pm 0.0109$ & $59.25 \pm 11.91$ & $0.9902 \pm 0.0049$ & $0.0121 \pm 0.0054$ \\
+        Dining room & $0.0152 \pm 0.0013$ & $0.9807 \pm 0.0074$ & $51.25 \pm 10.70$ & $0.9833 \pm 0.0077$ & $0.0231 \pm 0.0114$ \\
+        Industrial  & $0.0183 \pm 0.0016$ & $0.9823 \pm 0.0064$ & $44.62 \pm 5.47$  & $0.9345 \pm 0.0215$ & $0.0497 \pm 0.0121$ \\
+        Living room & $0.0153 \pm 0.0013$ & $0.9798 \pm 0.0074$ & $48.30 \pm 12.36$ & $0.9822 \pm 0.0094$ & $0.0208 \pm 0.0143$ \\
+        Office      & $0.0182 \pm 0.0013$ & $0.9842 \pm 0.0037$ & $42.79 \pm 3.56$  & $0.9246 \pm 0.0356$ & $0.0449 \pm 0.0081$ \\
+        \bottomrule
+    \end{tabular}%
+    }
+\end{table}
+
+The geometric reconstruction is consistently accurate across all environment types. The Chamfer distance stays between 1.5\,cm and 1.9\,cm and the F-score at 5\,cm remains above 0.975 throughout, which indicates that almost all of the reconstructed surface lies within one voxel of the ground-truth geometry. The residential scenes (bedroom, dining room, living room) have slightly lower Chamfer distances than the industrial and office scenes, reflecting their simpler and more regular planar layouts, while the industrial scenes are the most challenging geometrically due to their larger extent and more complex structural surfaces. The tight standard deviations confirm that the per-plane reconstruction behaves robustly regardless of furniture arrangement, because the geometry is constrained to the detected structural planes rather than reconstructed from the unstructured points.
+
+The textural results show a clearer separation between scene types. The residential scenes achieve high fidelity, with the bedroom reaching a PSNR of 59.25\,dB, an SSIM of 0.9902 and an LPIPS of 0.0121, because their walls and floors are largely uniform and the masked regions are surrounded by repetitive texture that LaMa~\cite{suvorov_resolution-robust_2022} completes reliably. The industrial and office scenes score noticeably lower, with PSNR around 43--45\,dB and higher LPIPS values, because they contain larger occluded regions and more textured, less repetitive surfaces where the inpainted content diverges more from the ground truth. This mirrors the occlusion characterisation in Chapter~\ref{ch:5_Scene_Segmentation}, where the industrial scenes showed the largest and most variable occluded volumes, confirming that textural difficulty is driven primarily by the amount of surface that has to be reconstructed from the inpainting prior rather than observed directly.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\textwidth]{Scene_completion_results}
+  \caption[Scene completion examples on V-Scan]{Examples of completed environments for different V-Scan environment types. Left: the object-removed input point cloud. Middle: the reconstructed mesh geometry. Right: the final textured and inpainted mesh.}
+  \label{fig:6_vscan_results}
+\end{figure}
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Qualitative Results on Matterport3D}
+\label{sec:6_exp_matterport}
+
+To assess the applicability of the method to real-world data, the pipeline is applied to scans from the Matterport3D dataset~\cite{chang_matterport3d_2017}, which provides real captured indoor scenes with panoramic imagery but no ground-truth empty geometry. As no defurnished reference is available, the evaluation is qualitative.
+
+\todo{Add Matterport3D qualitative results and figure.}
+
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Conclusion}
+\label{sec:6_conclusion}
+
+This chapter presented the scene completion methodology that reconstructs the empty environment from the object-removed point cloud, the structural planes and the scene-level occlusion grid produced in Chapter~\ref{ch:5_Scene_Segmentation}, together with the scene panorama.
+
+The geometric reconstruction cuts the detected planes into bounded fragments along their mutual intersections, discards the fragments without sufficient point support, fills the unobserved regions with synthetic points at the scan density, and projects a constrained Delaunay remesh onto the scanned surface to obtain watertight mesh fragments that form the closed shell of the room. The textural reconstruction parameterises each fragment, projects the panorama onto it, masks the regions belonging to removed objects and occluded geometry using the occlusion information from Chapter~\ref{ch:5_Scene_Segmentation}, and inpaints those regions per plane with LaMa~\cite{suvorov_resolution-robust_2022}. Evaluated on the V-Scan dataset, the method reconstructs the geometry to within a Chamfer distance of 1.5--1.9\,cm and an F-score above 0.975 across all environment types, and recovers the texture with high fidelity on residential scenes (up to 59.25\,dB PSNR) and lower but still plausible fidelity on the more occluded industrial and office scenes.
+
+Several limitations should be noted. The reconstruction assumes that the structural surfaces are planar, so curved geometry, and surfaces that were never scanned and lie outside any detected plane, cannot be recovered; methods that voxelise the input without a planarity assumption avoid this restriction at the cost of a coarser surface~\cite{hubner_voxel-based_2020}. The rooms are reconstructed as full closed walls, which means openings such as windows and doors are filled in rather than preserved; making these dynamic is deferred to Chapter~\ref{ch:8_Scene_Dynamification}. The textural quality depends on the availability and alignment of a panoramic image and degrades when the occluded regions are large or highly textured, as seen in the industrial scenes. Finally, the quantitative evaluation relies on the synthetic V-Scan ground truth~\cite{vermandere_synthetic_2026}, as no real dataset provides defurnished references; the Matterport3D experiment provides only qualitative evidence of real-world applicability.
+
+Despite these limitations, the completed empty environment provides the structural context required for the remaining pipeline. Beyond serving as the visual background of the reconstruction, the reconstructed planes act as the physical boundary constraints that inform the object completion stage, resolving the mutual dependency between scene-level and object-level completion identified in Chapter~\ref{ch:introduction}~\cite{vermandere_guided_2025}. Together with the isolated objects from Chapter~\ref{ch:5_Scene_Segmentation}, the completed environment forms the input to the object completion stage in Chapter~\ref{ch:7_Object_Completion}, after which the static reconstruction is turned into a dynamic, interactive scene in Chapter~\ref{ch:8_Scene_Dynamification}.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Keep the following \cleardoublepage at the end of this file, 
+% Keep the following \cleardoublepage at the end of this file,
 % otherwise \includeonly includes empty pages.
 \cleardoublepage
-
-% vim: tw=70 nocindent expandtab foldmethod=marker foldmarker={{{}{,}{}}}
