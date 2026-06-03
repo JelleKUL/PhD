@@ -13,18 +13,20 @@
 The Architecture, Engineering, Construction and Operations (\gls{AECO}) industry is undergoing a rapid digital transformation, driven by advances in reality capture technologies such as laser scanning and photogrammetry~\cite{bassier_geomapi_2024}. These technologies enable the efficient acquisition of high-resolution 3D models of the physical environment, forming a foundation for data-driven workflows and digital twins~\cite{coupry_bim-based_2021}.
 
 %  introduce the two dominant modelling approaches (scan vs Parametric)
-Current digital representations of indoor built environments are primarily derived from two distinct modelling approaches. Reality capture-based models provide highly detailed and visually accurate reconstructions of real-world scenes, making them well suited for documentation, inspection and visualization~\cite{bassier_standalone_2016}. In contrast, parametric models represent environments as collections of semantic, editable objects, enabling efficient querying, modification and simulation~\cite{bassier_processing_2020}.
-
-%  compare strengths and limitations of scan vs BIM
-Each approach offers distinct advantages, but also exhibits inherent limitations (Figure \ref{fig:1_Scan_VS_BIM}). Reality capture-based models preserve geometric and visual fidelity, yet remain static and incomplete, lacking explicit object decomposition and semantic relationships~\cite{geyter_point_2022}. In contrast, parametric models like Building Information Modelling (\gls{BIM}) provide an editable and complete representation of buildings, but often lack geometric detail and visual realism, as they are typically created with a certain degree of abstraction during the design phase and do not fully reflect as-built conditions~\cite{bassier_processing_2020}. 
+Current digital representations of indoor built environments are primarily derived from two distinct modelling approaches  (Figure \ref{fig:1_Scan_VS_BIM}). Reality capture-based models provide highly detailed and visually accurate reconstructions of real-world scenes, making them well suited for documentation, inspection and visualization~\cite{bassier_standalone_2016}. In contrast, parametric models represent environments as collections of semantic, editable objects, enabling efficient querying, modification and simulation~\cite{bassier_processing_2020}.
 
 \begin{figure}[h]
   \centering
   \medskip
   \includegraphics[width=1\textwidth]{Scan_VS_BIM.pdf}
-  \caption[Scan vs. BIM]{Comparison between reality capture (a) and Building Information Modelling (b) approaches.}
+  \caption[Scan vs. BIM]{Comparison between reality capture (left) and Building Information Modelling (right) approaches.}
   \label{fig:1_Scan_VS_BIM}
 \end{figure}
+
+%  compare strengths and limitations of scan vs BIM
+Each approach offers distinct advantages, but also exhibits inherent limitations. Reality capture-based models preserve geometric and visual fidelity, yet remain static and incomplete, lacking explicit object decomposition and semantic relationships~\cite{geyter_point_2022}. In contrast, parametric models like Building Information Modelling (\gls{BIM}) provide an editable and complete representation of buildings, but often lack geometric detail and visual realism, as they are typically created with a certain degree of abstraction during the design phase and do not fully reflect as-built conditions~\cite{bassier_processing_2020}. 
+
+
 
 %  identify core limitation of existing approaches and motivate need for new representation
 This contrast highlights a fundamental limitation in current digital modelling workflows: no single representation simultaneously provides realism, completeness and editability.
@@ -47,15 +49,14 @@ DRMs enable a range of applications that require both accuracy and flexibility. 
 Despite this potential, two fundamental barriers prevent \gls{DRM}s from being efficiently and reliably produced from existing building data: Incomplete data and limited editability.
 
 % explain first barrier — incompleteness in space and over time
-The first fundamental barrier is incompleteness, both in space and over time. Scan-based devices capture only the surfaces visible from their sensor positions, leaving significant portions of every scene unobserved because of occlusions and sensor constraints~\cite{vermandere_guided_2025}. In addition, buildings evolve continuously: furniture is rearranged, equipment is replaced, and layouts change through use~\cite{vermandere_two-step_2022}. As a result, any captured dataset becomes progressively more incomplete as a representation of the current state of the environment once changes occur after acquisition.
+The first fundamental barrier is incompleteness, both in space and over time. Distance sensors capture only the surfaces visible from their sensor positions, leaving significant portions of every scene unobserved because of occlusions and sensor constraints~\cite{vermandere_guided_2025}. In addition, buildings evolve continuously: furniture is rearranged, equipment is replaced, and layouts change through use~\cite{vermandere_two-step_2022}. As a result, any captured dataset becomes progressively more incomplete as a representation of the current state of the environment once changes occur after acquisition.
 
 % explain second barrier — lack of structure and editability
-The second fundamental barrier is limited editability caused by the unintelligent nature of captured data. Reality-capture outputs typically represent scenes as large collections of points known as a point cloud. While these point clouds can accurately describe appearance and geometry, they do not inherently distinguish between different objects and their surroundings \cite{geyter_point_2022}. Transforming these monolithic observations into meaningful editable objects is therefore a non-trivial task.
+The second fundamental barrier is limited editability caused by the unintelligent nature of captured data. Reality-capture outputs typically represent scenes as large, collections of points known as a point cloud, or as meshes of connected triangles, the latter being generally more efficient as large flat surfaces such as walls and floors can be represented by only a few triangles. While these representations can accurately describe appearance and geometry, neither inherently distinguishes between different objects and their surroundings~\cite{geyter_point_2022}. Transforming these monolithic observations into meaningful, independently manipulable objects is therefore a non-trivial task.
 
 % highlight interaction between both barriers and reinforce difficulty
 These two barriers reinforce each other: incomplete data makes object extraction and editing more difficult, while the absence of individually editable objects complicates efficient updating as scenes change over time. Together, they explain why achieving realism, completeness, and editability within a single representation remains challenging.
 
-\todo{Add more related works?}
 %  review existing work categories
 Existing research has made significant progress in addressing individual aspects of this problem. Scene-level completion methods reconstruct missing geometry from partial observations~\cite{dai_scancomplete_2018, dai_spsg_2020, roldao_3d_2022, hubner_voxel-based_2020}, while object-level approaches focus on reconstructing individual objects using learned representations~\cite{mittal_autosdf_2022, chibane_implicit_2020, ren_xcube_2023, cheng_sdfusion_2023}. Other methods improve visual quality through texture reconstruction and clutter removal~\cite{suvorov_resolution-robust_2022, wei_clutter_2023, slavcheva_empty_2024, dolhasz_defurnishing_2025}, and some approaches attempt scene decomposition~\cite{li_hybrid_2024, ardelean_gen3dsr_2025}. 
 
@@ -78,7 +79,7 @@ Even when up-to-date and aligned recordings are available, the data remains an s
 
 %  define incompleteness and occlusion challenge
 \paragraph{Incompleteness and occlusion.}
-Scan-based devices record only what is visible from their sensor positions, leaving occluded regions unobserved at both scene and object level~\cite{vermandere_synthetic_2026, vermandere_geometry_2025}. Three distinct categories of occlusion must be addressed. First, \textit{sensor occlusion} arises from regions outside the scanner's line of sight, such as the far side of a room not covered by any scan position. Second, \textit{inter-object occlusion} arises when the surface of one object is hidden behind another. And finally, \textit{contact occlusion} arises when two objects are physically touching, hiding the surfaces that are in contact.
+Distance sensors record only what is visible from their sensor positions, leaving occluded regions unobserved at both scene and object level~\cite{vermandere_synthetic_2026, vermandere_geometry_2025}. Three distinct categories of occlusion must be addressed. First, \textit{sensor occlusion} arises from regions outside the scanner's line of sight, such as the far side of a room not covered by any scan position. Second, \textit{inter-object occlusion} arises when the surface of one object is hidden behind another. And finally, \textit{contact occlusion} arises when two objects are physically touching, hiding the surfaces that are in contact.
 
 %  highlight scene vs object completion gap — the duality argument
 Beyond these individual categories, a structural difficulty is that scene-level and object-level completion are typically treated as separate and incompatible problems. Scene-level methods~\cite{hubner_voxel-based_2020, dai_scancomplete_2018, dai_spsg_2020, roldao_3d_2022} treat the environment as a monolithic volume, inferring missing geometry globally. This works for sensor occlusions, but fails at completing contact occlusions as surfaces hidden where two objects touch cannot be distinguished from empty space by a model with no concept of object identity. Object-level methods~\cite{mittal_autosdf_2022, chibane_implicit_2020, ren_xcube_2023, cheng_sdfusion_2023}, by contrast, require objects to be pre-isolated from the scene, discarding the environmental context such as walls, floors and neighbouring objects. Context that is essential for determining where a partially observed object ends. Resolving this mutual dependency requires a framework in which scene and object completion are coupled through shared geometric constraints, not treated in isolation.
@@ -97,7 +98,7 @@ The absence of a unified framework that jointly addresses alignment, completion,
  
 \section{Research aim}
 \label{sec3:researchaim}
-\todo{DRMs 1 keer te veel uitgelegd?}
+
 The primary aim of this thesis is to develop a unified and modular methodology for transforming partially scanned indoor environments into complete, structured and dynamically editable representations, referred to in this work as \gls{DRM}s.
 
 The scope of this research is limited to single-room indoor environments containing furniture or industrial equipment. This enables a focused investigation of densely furnished scenes where occlusions, object interactions and heterogeneous sensing conditions are significant, while the dominant architectural structure remains largely planar. Outdoor scenes, highly deformable objects, large multi-room environments, and transparent or highly reflective surfaces that are inherently difficult to capture are outside the scope of this thesis.
@@ -105,16 +106,17 @@ The scope of this research is limited to single-room indoor environments contain
 % why modular pipeline?
 Rather than relying on a monolithic end-to-end solution, the proposed methodology adopts a modular pipeline in which each stage addresses a specific challenge identified in Section~\ref{sec2:problem}, produces intermediate outputs that can be validated independently, and passes structured information to subsequent stages. This design is motivated both by the complexity and variety of real-world scan data, requiring more robust and adaptable approaches and by the rapid advancement of related technologies, ensuring the pipeline can be updated with new technologies as they emerge.
 
-The research therefore aims not only to reconstruct missing geometry, but to establish a coherent transformation process from raw scan data to interactive digital environments. The proposed pipeline consists of five tightly connected stages, illustrated in Figure~\ref{fig:1_Research_Aim}.
-
-\begin{figure}[h!]
+\begin{figure}[]
   \centering
   \medskip
   \includegraphics[width=1\textwidth]{Main_Pipeline.pdf}
-  \caption[Main pipeline]{Overview of the proposed modular pipeline for transforming partial scans into Dynamic Reality Models. Raw scan data is first aligned and updated (a.), object detection and segmentation (b.), scene (c.) and objects (d.) completion, and finally dynamification (e.).}
+  \caption[Main pipeline]{Overview of the proposed modular pipeline for transforming partial scans into Dynamic Reality Models.}
   \label{fig:1_Research_Aim}
 \end{figure}
-\todo{Better match the Image to the pipeline chapters}
+
+The research therefore aims not only to reconstruct missing geometry and texture, but to establish a coherent transformation process from raw scan data to interactive digital environments. The proposed pipeline consists of five tightly connected stages, illustrated in Figure~\ref{fig:1_Research_Aim}.
+
+
 
 \begin{itemize}
     \item \textbf{Scene alignment and updating.} To address the inconsistency of heterogeneous observations, the first objective is the alignment of multi-source and multi-temporal scan data into a common coordinate frame, together with the incremental integration of newly acquired lower-end observations into existing high-quality datasets~\cite{vermandere_two-step_2022, vermandere_automatic_2022, bassier_geomapi_2024}. This stage provides a coherent and up-to-date geometric basis for all subsequent processing, maximises scene coverage by combining complementary observations, and avoids the need for repeated full rescanning.
@@ -130,8 +132,7 @@ The research therefore aims not only to reconstruct missing geometry, but to est
 
 A central scientific objective of this thesis is the coupling of scene-level and object-level completion within a shared framework. Rather than treating both tasks independently, the proposed methodology uses common occlusion reasoning and geometric constraints so that scene completion avoids reconstructing regions occupied by objects, while object completion uses environmental context such as walls, floors and neighbouring objects to guide plausible predictions. In this way, the mutual dependency between both completion problems is explicitly resolved.
 
-\todo{I don't really introduce the dataset in this thesis but in a paper that will be out by the time this comes out.}
-An additional objective is methodological evaluation. Since the surfaces most relevant to completion are precisely those that remain unobserved in real scans, conventional datasets cannot provide direct ground truth for the regions that must be reconstructed. This thesis therefore introduces the V-Scan synthetic dataset: a procedurally generated benchmark of partially scanned indoor environments paired with complete ground-truth geometry at both scene and object level, enabling controlled and quantitative evaluation under realistic scanning conditions~\cite{de_geyter_automated_2022, vermandere_synthetic_2026}.
+An additional objective is methodological evaluation. Since the surfaces most relevant to completion are precisely those that remain unobserved in real scans, conventional datasets cannot provide direct ground truth for the regions that must be reconstructed. This thesis therefore introduces the V-Scan synthetic dataset: a procedurally generated collection of partially scanned indoor environments paired with complete ground-truth geometry at both scene and object level, enabling controlled and quantitative evaluation under realistic scanning conditions~\cite{de_geyter_automated_2022, vermandere_synthetic_2026}.
 
 In summary, the thesis aims to contribute:
 
