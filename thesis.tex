@@ -120,8 +120,17 @@
 \usepackage{amsmath}
 \DeclareMathOperator*{\argmin}{argmin}
 \usepackage{array}
+\usepackage{caption}
 \usepackage{graphicx}
+\usepackage{tabularx}
 \usepackage{wrapfig}
+
+\setlength{\textfloatsep}{10pt plus 4pt minus 2pt} % space between float at top/bottom and text
+\setlength{\floatsep}{10pt plus 4pt minus 2pt}       % space between two consecutive floats
+\setlength{\intextsep}{10pt plus 4pt} % space above and below in-text floats (htbp)
+\captionsetup{skip=2pt, belowskip=0pt}
+
+
 
 \newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
 
