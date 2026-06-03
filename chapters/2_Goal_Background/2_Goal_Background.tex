@@ -19,302 +19,23 @@
 \section{Introduction}
 \label{sec:bg_intro}
 
-% explain the outline of the chapter
-This chapter establishes the conceptual and terminological foundation for the remainder of the thesis: it surveys existing approaches to scene dynamification (Section \ref{sec:bg_sota_dynamification}), reviews 3D scene representations and their suitability for the proposed pipeline (Section \ref{sec:bg_representations}), formalises the input and output requirements of a DRM (Section \ref{sec:bg_drm_requirements}), and defines the evaluation metrics used throughout (Section \ref{sec:bg_metrics}).
+Chapter~\ref{ch:introduction} introduced the \gls{DRM} as a representation that combines the realism of captured data with the editability of parametric models, and identified the central research gap as the absence of a unified pipeline from partial scan to dynamic scene. Before that pipeline can be described, the present chapter fixes the vocabulary, the data and the evaluation criteria that the remaining chapters depend on.
 
-% ─────────────────────────────────────────────────────────────────────────────
-\section{Existing Approaches to Scene Dynamification}
-\label{sec:bg_sota_dynamification}
+Scene dynamification, as used throughout this thesis, is the transformation of a static, partially observed scan into a complete and object-structured representation whose individual elements can be repositioned, removed and scaled while remaining geometrically and visually plausible. This single notion underlies every subsequent stage, and the purpose of this chapter is to make precise what it requires and how its results are measured.
 
-Although the individual components of the proposed pipeline(object detection~\cite{qi_deep_2019,xu_back_2022, cheng_aic3dod_nodate}, completion~\cite{mittal_autosdf_2022, chibane_implicit_2020,ren_xcube_2023,team_sam_2025} and inpainting~\cite{suvorov_resolution-robust_2022, vermandere_semantic_2024}) have been studied extensively in isolation, the specific problem of transforming a partial scan into a fully dynamic and editable scene representation has received comparatively little attention~\cite{ardelean_gen3dsr_2025}.
-
-The closest relevant body of work includes methods for indoor scene understanding that decompose a scan into structural and object components. Li~et~al.~\cite{li_hybrid_2024} segment indoor point clouds into planar structural elements and detected objects, reconstruct the structural geometry via plane fitting~\cite{korman_latent_2018}, and replace detected objects with matched CAD models retrieved from a database~\cite{siddiqui_retrievalfuse_2021}. This approach produces a lightweight and semantically structured scene, but is limited to objects that have a close match in a predefined database and does not address the visual completeness of the reconstruction.
-
-Methods based on neural implicit representations encode scenes not as explicit surfaces but as continuous functions learned by a neural network, allowing high-quality visual reconstruction from images alone. Approaches such as NeRFiller~\cite{weber_nerfiller_2023} and related scene completion methods~\cite{dai_spsg_2020, chen_circle_2021} exploit this to fill in missing regions through generative 2D inpainting. While these approaches can produce visually plausible completions, the scene structure is stored inside the network parameters rather than as explicit, addressable geometry, meaning the result is not decomposed at the object level and does not support object-level manipulation or explicit geometric editing~\cite{roldao_3d_2022}.
-
-Gen3DSR~\cite{ardelean_gen3dsr_2025} reconstructs a dynamic 3D scene from a single RGB image by separating objects from the scene using 2D segmentation masks and completing each independently using depth estimation and generative models. This is conceptually the closest existing approach to the pipeline proposed here, but it relies on a single image as input, limiting geometric accuracy, and does not address the alignment, updating or part-aware scaling stages that are central to this work.
-
-More broadly, the field of semantic scene completion~\cite{roldao_3d_2022} aims to predict complete geometry and semantics from partial observations, but typically treats the scene as a monolithic volume and does not produce object-level decompositions suitable for interactive manipulation.
-
-In summary, while components of the proposed pipeline exist in the literature, no existing work integrates alignment, object-level completion, scene completion and part-aware dynamification into a unified framework operating on multi-source, multi-temporal scan data. This gap motivates the contributions of the subsequent chapters.
-
-% ─────────────────────────────────────────────────────────────────────────────
-\section{3D Scene Representations}
-\label{sec:bg_representations}
-
-A clear understanding of scene dynamification requires an overview of the main ways in which 3D geometry and appearance can be represented digitally. The chosen representation strongly influences which operations are possible, how missing geometry can be reconstructed, how colour can be stored, and how easily a scene can be edited or interacted with afterwards. In general, 3D representations can be divided into two broad categories: \textit{explicit} and \textit{implicit} representations.
-
-Explicit representations store geometry directly as discrete entities such as points, surfaces or volumetric elements. They are generally intuitive to interpret and well suited for visualization, rendering and geometric processing. Implicit representations encode geometry indirectly through functions defined over 3D space, where surfaces are recovered from quantities such as occupancy, density or distance values. They are particularly useful for reconstruction, shape completion and learning-based modelling. Each representation type offers distinct advantages and limitations depending on the intended application.
-
-% ── Explicit ────────────────────────────────────────────────────────────────
-\todo{Layout and replace images with my special chair}
-\subsection{Explicit Representations}
-\label{sec:bg_explicit}
-
-Explicit representations can be visualised directly in most 3D software, without the need for any extra processing. This makes them practical for rendering, editing and many downstream applications.
-
-\begin{figure}[htbp]
-  \centering
-  \medskip
-  \includegraphics[width=0.3\textwidth]{Pointcloud}
-  \caption[Pointcloud representation]{Example of a point cloud representation.}
-  \label{fig:Pointcloud}
-\end{figure}
-
-\paragraph{Point clouds.}
-A point cloud is a collection of sampled 3D points,
-\[
-P = \{\mathbf{p}_i\}_{i=1}^{N},
-\]
-where each point is represented as
-\[
-\mathbf{p}_i =
-(x_i, y_i, z_i,\; n_{x,i}, n_{y,i}, n_{z,i},\; r_i, g_i, b_i),
-\]
-with $(x_i, y_i, z_i) \in \mathbb{R}^{3}$ denoting the measured 3D position, $(n_{x,i}, n_{y,i}, n_{z,i}) \in \mathbb{R}^{3}$ the associated surface normal, and $(r_i, g_i, b_i)$ the colour attributes of the point. The point cloud therefore stores both geometric and appearance information sampled from visible surfaces.
-
-Point clouds are the natural output of laser scanners, depth cameras and mobile sensing devices, and form the main raw input used throughout this thesis. Their main advantage is that they closely reflect real physical measurements. They are simple to acquire, scalable to large scenes and can capture fine geometric detail when densely sampled.
-
-A distinction is commonly made between \textit{structured} and \textit{unstructured} point clouds. Structured point clouds preserve the original sensor topology, meaning that points are arranged on a regular 2D grid corresponding to image pixels or scan angles. This neighbourhood structure enables efficient operations such as normal estimation, segmentation and projection-based processing. Depth images and many RGB-D camera outputs are typical examples of structured point clouds. Unstructured point clouds, by contrast, store points only as an unordered set of spatial samples without an inherent neighbourhood relationship. They are the dominant output of terrestrial laser scanners and merged multi-scan datasets, but require spatial indexing methods such as k-d trees or octrees (see section \ref{sec:bg_datastructures}) to recover local neighbourhoods for processing.
-
-However, point clouds do not contain explicit surface connectivity. In other words, neighbouring points are not directly linked to form surfaces. This makes tasks such as rendering, mesh generation or watertight reconstruction more difficult. Their quality also depends strongly on the sensing device used, ranging from highly accurate terrestrial laser scanners to noisier mobile and \gls{XR}-based systems~\cite{bassier_standalone_2016, vermandere_two-step_2022, de_geyter_automated_2022}.
-
-\begin{figure}[htbp]
-  \centering
-  \medskip
-  \includegraphics[width=0.3\textwidth]{Mesh}
-  \caption[Mesh representation]{Example of a mesh representation.}
-  \label{fig:Mesh}
-\end{figure}
-\paragraph{Meshes.}
-
-A mesh represents a surface using connected vertices, edges and faces. In practice, most meshes consist of triangles, making them efficient to process and render. A mesh can be written as
-\[
-M = (V,E,F),
-\]
-where
-\[
-V = \{\mathbf{v}_i\}_{i=1}^{N_v}, \qquad
-\mathbf{v}_i = (x_i,y_i,z_i),
-\]
-is the set of vertices,
-\[
-E = \{(\mathbf{v}_i,\mathbf{v}_j)\},
-\]
-is the set of edges connecting neighbouring vertices, and
-\[
-F = \{(\mathbf{v}_i,\mathbf{v}_j,\mathbf{v}_k)\},
-\]
-is the set of triangular faces.
-
-Meshes are the standard representation in computer graphics because they explicitly define surfaces and support efficient rendering. They are also widely used for simulation, collision detection and geometric editing.
-
-Colour can be stored per vertex or face, but is often stored separately as a texture image. Each point on the mesh surface is linked to a location in a 2D image through \gls{UV} coordinates~\cite{heckbert_survey_1986}. For a vertex $\mathbf{v}_i$, the associated texture coordinate is written as
-\[
-\mathbf{t}_i = (u_i, v_i), \qquad (u_i,v_i)\in[0,1]^2,
-\]
-where $u_i$ and $v_i$ denote the horizontal and vertical coordinates within the texture image. The mapping from 3D surface points to 2D texture space is commonly referred to as UV mapping. This allows the 3D object to appear more detailed and realistic, without having to add more geometric complexity. However, this also introduces extra complexity when the mesh needs to be repaired or completed~\cite{vermandere_semantic_2024}.
-
-Mesh representations from indoor scans are often reconstructed using a meshing algorithm. Since this process is not perfect, the results contain defects such as holes, incorrect connections or non-manifold geometry. Extra repair steps are therefore commonly required before further use~\cite{geyter_point_2022, attene_lightweight_2010}.
-
-\begin{figure}[htbp]
-  \centering
-  \medskip
-  \includegraphics[width=0.3\textwidth]{Splat}
-  \caption[3D Gaussian splatting]{Example of a 3D Gaussian splatting representation.}
-  \label{fig:Splat}
-\end{figure}
-\paragraph{3D Gaussian splatting.}
-
-A representation that has seen a recent resurgence is 3D Gaussian splatting~\cite{kerbl_3d_2023}, in which the scene is represented as a set of anisotropic 3D Gaussians,
-\[
-\mathcal{G} = \{G_i\}_{i=1}^{N},
-\]
-where each Gaussian primitive is parameterised as
-\[
-G_i = (\boldsymbol{\mu}_i,\Sigma_i,\alpha_i,\mathbf{s}_i).
-\]
-Here, $\boldsymbol{\mu}_i \in \mathbb{R}^{3}$ denotes the centre position, $\Sigma_i \in \mathbb{R}^{3 \times 3}$ the covariance matrix controlling orientation and spatial extent, $\alpha_i \in [0,1]$ the opacity, and $\mathbf{s}_i$ the spherical harmonic coefficients encoding view-dependent colour.
-
-With the rise of computing power and new machine learning models, this representation has gained considerable attention for its ability to achieve real-time novel view synthesis at high visual fidelity trained from a set of input views. Each Gaussian combines approximate geometry and appearance in a compact form.
-
-However, Gaussian splatting is currently more suitable for visualization than for editing. Reliable object-level manipulation, topology-aware reconstruction and geometry completion remain active research topics~\cite{ardelean_gen3dsr_2025, yin_sai3d_2023}. Furthermore, the lack of an explicit, watertight surface definition makes completion and UV-based texture operations difficult to apply. For these reasons, 3D Gaussian splatting is not adopted as an intermediate or output representation in this thesis. \todo{actually, I'm not quite sure yet, now the final output is marched 3D textures}
-
-%\begin{figure}[h]
-%  \centering
-%  \medskip
-%  \includegraphics[width=1\textwidth]{Explicit_Reps}
-%  \caption[Explicit representations]{Overview of explicit representations: point clouds, meshes, voxel grids and 3D Gaussian splatting.}
-%  \label{fig:2_Explicit_Reps}
-%\end{figure}
-
-% ── Implicit ────────────────────────────────────────────────────────────────
-\subsection{Implicit Representations}
-\label{sec:bg_implicit}
-
-Implicit representations do not store surfaces directly. Instead, geometry is described through functions evaluated in space. The surface is then recovered from these functions. Such methods are often more flexible than explicit representations and are widely used in reconstruction and generative modelling.
-
-\begin{figure}[htbp]
-  \centering
-  \medskip
-  \includegraphics[width=0.3\textwidth]{SDF}
-  \caption[Signed Distance Function]{Example of a Signed Distance Function representation.}
-  \label{fig:SDF}
-\end{figure}
-\paragraph{Signed Distance Functions.}
-
-A \gls{SDF} describes a function that defines the signed distance from any given point in space to the nearest surface. By convention, values are negative inside an object, positive outside, and zero exactly on the surface:
-
-\begin{gather}
-f(\mathbf{x}) < 0 \quad \text{inside the object}. \\
-f(\mathbf{x}) = 0 \quad \text{on the surface}. \\
-f(\mathbf{x}) > 0 \quad \text{outside the object}.
-\end{gather}
-
-The surface can therefore be recovered as the zero level set of the function, giving a smooth and continuous description of geometry.
-
-3D SDFs can be rendered through ray marching, a technique that traces rays step-by-step from the viewpoint, using the function to determine the step length toward the surface~\cite{hart_sphere_1996}. Alternatively, a mesh can be extracted using the Marching Cubes algorithm~\cite{lorensen_marching_1998}, which generates triangles at the zero crossing of the discrete voxel grid.
-
-When sampled on a regular voxel grid, SDFs are well suited for learning-based completion methods and have been widely used for object reconstruction~\cite{mittal_autosdf_2022, ren_xcube_2023, cheng_sdfusion_2023, rao_patchcomplete_2022, chu_diffcomplete_2023, yan_shapeformer_2023}. However, standard SDFs assume a closed watertight surface, which is often not available in raw scan data. \gls{UDF}s avoid this limitation by storing only unsigned distance values, making them applicable to open or incomplete meshes~\cite{vermandere_geometry_2025}.
-
-For the dynamification step, SDFs can be extended to \gls{CSDF}s by additionally storing per-voxel colour information, enabling joint geometry and appearance manipulation~\cite{oechsle_texture_2019,vermandere_adaptive_2026}.
-
-\begin{figure}[htbp]
-  \centering
-  \medskip
-  \includegraphics[width=0.3\textwidth]{Parametric}
-  \caption[Parametric representation]{Example of a parametric representation.}
-  \label{fig:Parametric}
-\end{figure}
-
-\paragraph{Parametric and semantic models.}
-
-Parametric and semantic models describe geometry through structured object definitions rather than purely through sampled surfaces. Instead of storing only points or triangles, these representations encode objects by parameters, construction logic and semantic relationships. They are widely used in design, engineering and manufacturing workflows because they support efficient editing, querying and procedural modification.
-
-Computer-Aided Design (\gls{CAD}) models are the most common example of parametric modelling. \gls{CAD} systems typically represent objects using boundary representations, constructive solid geometry, extrusion profiles or feature-based modelling operations. For example, a table leg may be defined by a profile sketch and extrusion height rather than by a fixed triangle mesh. This allows dimensions to be changed while preserving design intent. \gls{CAD} models are therefore highly suitable for manufacturing, tolerance control and geometric editing, but often contain limited semantic context about how objects function within a larger environment.
-
-\gls{BIM} extends this principle to the building scale by representing environments as structured collections of semantically meaningful parametric objects. Each element is described by its type, dimensions and relationships to other elements, rather than only by explicit surface geometry.
-
-This structured representation supports efficient querying, clash detection, scheduling, simulation and modification. However, \gls{CAD} and \gls{BIM} models typically describe intended or designed geometry rather than captured as-built conditions, and therefore often lack the geometric irregularities, clutter and visual realism present in real environments.
-
-\begin{figure}[htbp]
-  \centering
-  \medskip
-  \includegraphics[width=0.3\textwidth]{NERF}
-  \caption[NeRF representation]{Example of a NeRF representation.}
-  \label{fig:NERF}
-\end{figure}
-
-\paragraph{Neural implicit representations.}
-
-Neural implicit methods use neural networks to represent geometry or appearance as continuous functions over space. Instead of storing explicit vertices, faces or points, a neural network with parameters $\theta$ learns a mapping
-\[
-f_{\theta} : \mathbb{R}^{3} \rightarrow \mathbb{R}^{m},
-\]
-where the input is a spatial coordinate $\mathbf{x}=(x,y,z)$ and the output may encode occupancy, distance, density, colour or other scene properties.
-
-A well-known example is the \gls{NeRF}, which additionally conditions on viewing direction $\mathbf{d}$ and predicts volume density and emitted colour:
-\[
-F_{\theta}(\mathbf{x},\mathbf{d}) = (\sigma,\mathbf{c}),
-\]
-where $\sigma$ denotes volumetric density and $\mathbf{c}=(r,g,b)$ the view-dependent radiance~\cite{mildenhall_nerf_2020}. Rendering is then performed through volumetric integration along camera rays.
-
-These methods can produce highly realistic novel-view synthesis results and compactly encode complex scenes. However, the scene structure is stored inside the network parameters $\theta$ rather than as directly editable objects, making object-level interaction, deterministic updates and geometric editing more difficult~\cite{weber_nerfiller_2023}. Recent work aims to decompose such models into separate objects~\cite{ardelean_gen3dsr_2025}, but robust interactive editing remains an open challenge. Neural implicit methods are therefore considered useful supporting tools, but not final output formats for the dynamic scene representations targeted in this thesis.
-
-%\begin{figure}[h]
-%  \centering
-%  \medskip
-%  \includegraphics[width=1\textwidth]{Implicit_Reps}
-%  \caption[Implicit representations]{Overview of implicit representations: signed distance functions, unsigned distance functions and neural radiance fields.}
-%  \label{fig:2_Implicit_Reps}
-%\end{figure}
-
-% ── Spatial data structures ────────────────────────────────────────────────
-\subsection{Spatial Data Structures}
-\label{sec:bg_datastructures}
-
-Beyond geometric representations themselves, efficient processing of 3D data also depends on the underlying data structures used to store, index and query spatial information. Large-scale scenes often contain millions of points or volumetric samples, making direct linear access computationally inefficient. Spatial data structures therefore play a central role in neighbourhood search, collision queries, ray traversal, completion and hierarchical reconstruction.
-
-\begin{figure}[htbp]
-  \centering
-  \medskip
-  \includegraphics[width=0.3\textwidth]{Voxel}
-  \caption[Voxel grid representation]{Example of a voxel grid representation.}
-  \label{fig:Voxel}
-\end{figure}
-
-\paragraph{Voxel grids.}
-
-Voxel grids divide 3D space into small cubic cells, analogous to how pixels divide a 2D image. A voxel grid can be written as
-\[
-G = \{g_{ijk}\}, \qquad i,j,k \in \{1,\dots,n\},
-\]
-where each voxel $g_{ijk}$ stores one or more attributes associated with that spatial cell.
-
-Voxel grids can function as an \textit{explicit} representation when they directly encode occupancy, colour or semantic labels. For example,
-\[
-g_{ijk} \in \{0,1\}
-\]
-may indicate whether a voxel is empty or occupied. In this form, the geometry is represented explicitly as filled volume elements.
-They can also function as a discretised container for \textit{implicit} representations. Instead of storing occupancy, each voxel may store a sampled scalar field such as a signed or unsigned distance value,
-\[
-g_{ijk} = f(x_i,y_j,z_k),
-\]
-where $f$ is an SDF or UDF evaluated at the voxel centre. Surfaces are then recovered as level sets of the stored field rather than from occupied cells directly. This dual role makes voxel grids particularly important in learning-based completion methods, where they provide a regular tensor structure for 3D convolutional networks~\cite{dai_scancomplete_2018, dai_spsg_2020}.
-
-The main limitation of dense voxel grids is memory consumption. If the resolution doubles along each axis, the total number of voxels increases by a factor of eight. As a result, voxel grids are often used as intermediate representations or replaced by sparse hierarchical structures.
-
-\begin{figure}[htbp]
-  \centering
-  \medskip
-  \includegraphics[width=0.3\textwidth]{Octree}
-  \caption[Octree representation]{Example of an octree representation.}
-  \label{fig:Octree}
-\end{figure}
-
-\paragraph{Octrees.}
-
-An octree is a hierarchical spatial partitioning structure that recursively subdivides 3D space into eight equally sized cubic children. Starting from a root node representing the full domain, subdivision continues only in regions requiring additional detail. This adaptive refinement greatly reduces memory usage compared with dense voxel grids when large empty regions are present.
-
-Formally, an octree node at depth $d$ represents a cubic region $\Omega_d$, which may either remain a leaf node or be subdivided into eight child regions:
-\[
-\Omega_d \rightarrow \{\Omega_{d+1}^{1}, \dots, \Omega_{d+1}^{8}\}.
-\]
-
-Octrees are widely used for point cloud indexing, occupancy mapping, multiresolution reconstruction and ray tracing. They are particularly suitable for indoor scenes, where much of the volume is empty space and detail is concentrated near surfaces.
-
-\paragraph{k-d trees.}
-
-A k-d tree (short for k-dimensional tree) is a binary space-partitioning structure used primarily for point-based data. Rather than subdividing space uniformly, each node recursively splits the dataset along one coordinate axis. For a 3D point set, successive splits are typically performed along the $x$, $y$ and $z$ axes.
-
-At each node, a point set $P$ is partitioned into two subsets:
-\[
-P = P^{-} \cup P^{+},
-\]
-according to whether points lie below or above a splitting plane.
-
-k-d trees are especially effective for nearest-neighbour and radius-search queries, making them a standard acceleration structure for unstructured point clouds. Operations such as normal estimation, registration, clustering and segmentation frequently rely on repeated local neighbourhood searches, for which k-d trees provide substantial speed improvements over brute-force methods.
-
-
-% ── 2.2.3 ────────────────────────────────────────────────────────────────────
-\subsection{Representations Used in This Thesis}
-\label{sec:bg_rep_choice}
-
-Given the above considerations, the pipeline operates primarily with coloured point clouds and textured meshes as the main data types, with SDFs and UDFs as intermediate representations in completion stages. Octrees and k-dtrees are used for optimising neighbourhood and occupancy queries during processing. Point clouds are the natural output of the sensing devices used and serve as input to detection and completion modules~\cite{qi_pointnet_2016}. Textured meshes are the output of the scene completion stage, providing a compact, renderable and editable surface representation~\cite{vermandere_semantic_2024}. SDFs are used internally within object completion networks, bridging the gap between irregular scan data and the fixed-size inputs required by learning-based models~\cite{mittal_autosdf_2022, chibane_implicit_2020}.
-
-BIM and neural representations are excluded from the pipeline output: BIM lacks the visual fidelity and geometric detail of captured data~\cite{bassier_processing_2020}, and NeRFs do not support the deterministic object-level editing required for dynamification~\cite{weber_nerfiller_2023}. Gaussian splatting is likewise excluded due to the absence of mature tools for geometric editing and completion~\cite{kerbl_3d_2023}.
+The chapter is organised so that the reader first sees what the pipeline must produce before encountering the technical building blocks. Section~\ref{sec:bg_drm_requirements} formalises the inputs and output requirements of a \gls{DRM} and states which representations are used at each stage. Section~\ref{sec:bg_representations} then explains the 3D scene representations themselves, justifying the choices made in the requirements. Section~\ref{sec:bg_metrics} defines the evaluation metrics used in the experimental chapters. Finally, Section~\ref{sec:bg_sota_dynamification} positions the proposed approach relative to existing work on scene dynamification.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Dynamic Reality Model Requirements}
 \label{sec:bg_drm_requirements}
 
-Having established the representational landscape, this section formalises what a \gls{DRM} must provide and what inputs it operates on. The requirements connect the representational choices above to the pipeline design and occlusion typology established in Chapter~\ref{ch:introduction}.
+This section formalises what a \gls{DRM} must provide and what inputs it operates on, before the representations that realise these requirements are discussed in Section~\ref{sec:bg_representations}. The requirements connect the pipeline design and the occlusion typology established in Chapter~\ref{ch:introduction} to the concrete data types used in each stage.
 
-% ── 2.3.1 ────────────────────────────────────────────────────────────────────
+% ── Inputs ───────────────────────────────────────────────────────────────────
 \subsection{Inputs}
 \label{sec:bg_inputs}
 
-The pipeline takes as input heterogeneous, multi-source data captured from real indoor environments. Two primary modalities are considered (\ref{fig:Pointcloud_Pano}).
+The pipeline takes as input heterogeneous, multi-source data captured from real indoor environments. Two primary modalities are considered (Figure~\ref{fig:Pointcloud_Pano}).
 
 \begin{figure}[htbp]
   \centering
@@ -330,7 +51,7 @@ Unstructured point clouds form the geometric backbone of the input data. These m
 \paragraph{Image data.}
 Panoramic images or localised pinhole camera images provide complementary appearance information. Panoramic images, captured at the scanner positions, enable dense colour assignment to the point cloud through angular projection. Localised images from mobile devices provide additional texture cues and support 2D-based alignment and inpainting operations. Co-localisation of images within the same coordinate system as the point cloud is a prerequisite for cross-modal processing~\cite{bassier_geomapi_2024}.
 
-% ── 2.3.2 ────────────────────────────────────────────────────────────────────
+% ── Output requirements ──────────────────────────────────────────────────────
 \subsection{Output Requirements}
 \label{sec:bg_outputs}
 
@@ -342,17 +63,14 @@ Panoramic images or localised pinhole camera images provide complementary appear
   \label{fig:DRM_Requirements}
 \end{figure}
 
-The output of the pipeline is a \gls{DRM}: a complete and editable representation of the indoor environment. This representation must satisfy the following requirements as seen in Figure~\ref{fig:DRM_Requirements}.
+The output of the pipeline is a \gls{DRM}: a complete and editable representation of the indoor environment. This representation must satisfy the following requirements, illustrated in Figure~\ref{fig:DRM_Requirements}.
 
 \paragraph{Geometric completeness.}
-
 Both the fixed structural elements of the scene and the individual objects within it must be geometrically complete. Occluded or unobserved regions must be reconstructed so that the resulting representation contains no holes, missing surfaces or incomplete volumes. This requirement applies across multiple categories of indoor elements, which are treated differently throughout the pipeline.
 
-To distinguish between the types of elements in a scene, we use the \gls{CI/SFB} code \cite{2ILFXM_2024}, where building elements are divided in primary, secondary and tertiary categories.
+To distinguish between the types of elements in a scene, the \gls{CI/SFB} classification is used~\cite{2ILFXM_2024}, in which building elements are divided into primary, secondary and tertiary categories. Primary building elements comprise the permanent structural fabric of the environment, such as walls, floors, ceilings, columns, beams and stair cores. These components define the global enclosure and spatial layout of the room and are therefore handled by the \textit{environment completion} stage. Secondary building elements comprise fixed but typically non-structural architectural components such as doors, windows, partition walls, façade panels, radiators, built-in cabinets and suspended ceilings. Depending on their permanence and geometric integration with the surrounding structure, these elements may be reconstructed either as part of the environment or as separate editable objects. Tertiary elements comprise movable or replaceable interior assets such as furniture, machinery, shelving, desks, chairs and equipment. These elements are treated by the \textit{object completion} stage, where they are reconstructed as individually manipulable entities.
 
-Primary building elements comprise the permanent structural fabric of the environment, such as walls, floors, ceilings, columns, beams and stair cores. These components define the global enclosure and spatial layout of the room and are therefore handled by the \textit{environment completion} stage. Secondary building elements comprise fixed but typically non-structural architectural components such as doors, windows, partition walls, façade panels, radiators, built-in cabinets and suspended ceilings. Depending on their permanence and geometric integration with the surrounding structure, these elements may be reconstructed either as part of the environment or as separate editable objects. Tertiary elements comprise movable or replaceable interior assets such as furniture, machinery, shelving, desks, chairs and equipment. These elements are treated by the \textit{object completion} stage, where they are reconstructed as individually manipulable entities.
-
-The distinction between environment and object completion is motivated by both geometry and intended interaction. Elements that define the room envelope or are permanently integrated into the building are most efficiently reconstructed as part of a continuous background model. Movable or replaceable elements instead require independent representations that support repositioning, removal or scaling after reconstruction.
+The distinction between environment and object completion is motivated by both geometry and intended interaction. Elements that define the room envelope or are permanently integrated into the building are most efficiently reconstructed as part of a continuous background model, while movable or replaceable elements require independent representations that support repositioning, removal or scaling after reconstruction.
 
 \paragraph{Textural completeness.}
 The completed geometry must be accompanied by plausible texture. Missing texture regions arising from occlusions or incomplete image coverage must be inpainted consistently with the surrounding appearance~\cite{vermandere_semantic_2024, suvorov_resolution-robust_2022}. The resulting textured representation must be visually coherent across the entire scene.
@@ -361,111 +79,239 @@ The completed geometry must be accompanied by plausible texture. Missing texture
 Individual objects must be represented as separate entities rather than as part of a monolithic surface. This decomposition is essential for enabling object-level manipulation.
 
 \paragraph{Part awareness and scalability.}
-To support realistic manipulation, completed objects must carry a notion of their internal part structure. This enables part-aware scaling operations in which individual structural components can be scaled independently or repeated rather than applying a uniform deformation to the entire object.
+To support realistic manipulation, completed objects must carry a notion of their internal part structure. This enables part-aware scaling operations in which individual structural components can be scaled independently or repeated rather than applying a uniform deformation to the entire object~\cite{vermandere_adaptive_2026}.
+
+% ── Representations used per stage ───────────────────────────────────────────
+\subsection{Representations Used per Stage}
+\label{sec:bg_rep_choice}
+
+The requirements above determine which representation is most appropriate at each stage of the pipeline. Table~\ref{tab:rep_overview} summarises these choices; the representations themselves are explained in detail in Section~\ref{sec:bg_representations}, which also justifies the exclusions.
+
+In short, the pipeline operates primarily with coloured point clouds and textured meshes, with \gls{SDF}s and \gls{UDF}s as intermediate representations in the completion stages. Point clouds are the natural output of the sensing devices and serve as input to detection and completion modules~\cite{qi_pointnet_2016}. Textured meshes are the output of the scene completion stage, providing a compact, renderable and editable surface representation~\cite{vermandere_semantic_2024}. \gls{SDF}s are used internally within object completion networks, bridging the gap between irregular scan data and the fixed-size inputs required by learning-based models~\cite{mittal_autosdf_2022, chibane_implicit_2020}. \gls{BIM}, neural implicit and Gaussian splatting representations are excluded from the pipeline output for the reasons given in the final column.
+
+\begin{table}[htbp]
+    \centering
+    \caption[Representations used per pipeline stage]{Representations adopted at each stage of the pipeline, and representations excluded from the output with their reason.}
+    \label{tab:rep_overview}
+    \begin{tabular}{l l l}
+        \toprule
+        \textbf{Role} & \textbf{Representation} & \textbf{Reason} \\
+        \midrule
+        Primary input        & Coloured point cloud       & Native sensor output; geometry + colour \\
+        Appearance input     & Panoramic / pinhole image  & Dense colour and 2D alignment cues \\
+        Completion (interm.)  & \gls{SDF} / \gls{UDF} on voxel grid & Fixed-size input for learning-based completion \\
+        Main output          & Textured mesh              & Compact, renderable and editable surface \\
+        Indexing (interm.)   & Octree / k-d tree          & Fast neighbourhood and occupancy queries \\
+        \midrule
+        Excluded             & \gls{BIM}                  & Lacks captured visual and geometric detail \\
+        Excluded             & \gls{NeRF} / neural implicit & No deterministic object-level editing \\
+        Excluded             & Gaussian splatting         & Immature geometric editing and completion \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{3D Scene Representations}
+\label{sec:bg_representations}
+
+This section explains the representations referenced in Table~\ref{tab:rep_overview}, so that the choices made there can be understood and justified. The chosen representation strongly influences which operations are possible: how missing geometry can be reconstructed, how colour can be stored, and how easily a scene can be edited afterwards.
+
+Representations divide into two broad categories. \textit{Explicit} representations store geometry directly as discrete entities such as points, surfaces or volumetric elements, and are well suited to visualization, rendering and geometric processing. \textit{Implicit} representations encode geometry indirectly through functions defined over 3D space, where surfaces are recovered from quantities such as occupancy, density or distance values, and are particularly useful for reconstruction, shape completion and learning-based modelling. Spatial data structures, discussed at the end of the section, are not representations of geometry themselves but determine how efficiently it can be stored and queried.
+
+% ── Explicit ────────────────────────────────────────────────────────────────
+\todo{Layout and replace images with my special chair}
+\subsection{Explicit Representations}
+\label{sec:bg_explicit}
+
+Explicit representations can be visualised directly in most 3D software without extra processing, which makes them practical for rendering, editing and many downstream applications.
+
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{Pointcloud}
+  \caption[Pointcloud representation]{Example of a point cloud representation.}
+  \label{fig:Pointcloud}
+\end{figure}
+
+\paragraph{Point clouds.}
+A point cloud is a collection of sampled 3D points,
+\[
+P = \{\mathbf{p}_i\}_{i=1}^{N},
+\]
+where each point carries a measured position $\mathbf{p}_i = (x_i, y_i, z_i) \in \mathbb{R}^{3}$, an associated surface normal $\vec{\mathbf{n}}_i = (n_{x,i}, n_{y,i}, n_{z,i}) \in \mathbb{R}^{3}$, and colour attributes $(r_i, g_i, b_i)$. The point cloud therefore stores both geometric and appearance information sampled from visible surfaces.
+
+Point clouds are the natural output of laser scanners, depth cameras and mobile sensing devices, and form the main raw input used throughout this thesis. Their main advantage is that they closely reflect real physical measurements: they are simple to acquire, scalable to large scenes and can capture fine geometric detail when densely sampled.
+
+A distinction is commonly made between \textit{structured} and \textit{unstructured} point clouds. Structured point clouds preserve the original sensor topology, meaning that points are arranged on a regular 2D grid corresponding to image pixels or scan angles. This neighbourhood structure enables efficient operations such as normal estimation, segmentation and projection-based processing, and is typical of depth images and many RGB-D camera outputs. Unstructured point clouds store points only as an unordered set of spatial samples without an inherent neighbourhood relationship. They are the dominant output of terrestrial laser scanners and merged multi-scan datasets, but require spatial indexing structures such as k-d trees or octrees (Section~\ref{sec:bg_datastructures}) to recover local neighbourhoods for processing.
+
+Point clouds do not contain explicit surface connectivity: neighbouring points are not directly linked to form surfaces, which makes rendering, mesh generation and watertight reconstruction more difficult. Their quality also depends strongly on the sensing device, ranging from highly accurate terrestrial laser scanners to noisier mobile and \gls{XR}-based systems~\cite{bassier_standalone_2016, vermandere_two-step_2022, de_geyter_automated_2022}.
+
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{Mesh}
+  \caption[Mesh representation]{Example of a mesh representation.}
+  \label{fig:Mesh}
+\end{figure}
+\paragraph{Meshes.}
+A mesh represents a surface using connected vertices, edges and faces. In practice, most meshes consist of triangles, making them efficient to process and render. A mesh can be written as
+\[
+M = (V,E,F),
+\]
+where $V = \{\mathbf{v}_i\}_{i=1}^{N}$ with $\mathbf{v}_i = (x_i,y_i,z_i)$ is the set of vertices, $E = \{(\mathbf{v}_i,\mathbf{v}_j)\}$ the set of edges connecting neighbouring vertices, and $F = \{(\mathbf{v}_i,\mathbf{v}_j,\mathbf{v}_k)\}$ the set of triangular faces.
+
+Meshes are the standard representation in computer graphics because they explicitly define surfaces and support efficient rendering, simulation, collision detection and geometric editing.
+
+Colour can be stored per vertex or face, but is often stored separately as a texture image. Each point on the mesh surface is linked to a location in a 2D image through \gls{UV} coordinates~\cite{heckbert_survey_1986}. For a vertex $\mathbf{v}_i$, the associated texture coordinate is written as
+\[
+\mathbf{c}_i = (u_i, v_i), \qquad (u_i,v_i)\in[0,1]^2,
+\]
+where $u_i$ and $v_i$ denote the horizontal and vertical coordinates within the texture image. This mapping from 3D surface points to 2D texture space, commonly referred to as UV mapping, allows the object to appear more detailed and realistic without adding geometric complexity, but introduces extra complexity when the mesh must be repaired or completed~\cite{vermandere_semantic_2024}.
+
+Mesh representations from indoor scans are often reconstructed using a meshing algorithm. Since this process is imperfect, the results contain defects such as holes, incorrect connections or non-manifold geometry, so repair steps are commonly required before further use~\cite{geyter_point_2022, attene_lightweight_2010}.
+
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{Splat}
+  \caption[3D Gaussian splatting]{Example of a 3D Gaussian splatting representation.}
+  \label{fig:Splat}
+\end{figure}
+\paragraph{3D Gaussian splatting.}
+A representation that has seen a recent resurgence is 3D Gaussian splatting~\cite{kerbl_3d_2023}, in which the scene is represented as a set of anisotropic 3D Gaussians,
+\[
+S = \{S_i\}_{i=1}^{N},
+\]
+where each Gaussian primitive is parameterised as
+\[
+S_i = (\mathbf{p}_i, \mathbf{C}_i, o_i, \vec{\mathbf{h}}_i).
+\]
+Here, $\mathbf{p}_i \in \mathbb{R}^{3}$ denotes the centre position, $\mathbf{C}_i \in \mathbb{R}^{3 \times 3}$ the covariance matrix controlling orientation and spatial extent, $o_i \in [0,1]$ the opacity, and $\vec{\mathbf{h}}_i$ the spherical harmonic coefficients encoding view-dependent colour.
+
+With the rise of computing power and new machine learning models, this representation has gained considerable attention for its ability to achieve real-time novel view synthesis at high visual fidelity, trained from a set of input views. Each Gaussian combines approximate geometry and appearance in a compact form.
+
+However, Gaussian splatting is currently more suitable for visualization than for editing. Reliable object-level manipulation, topology-aware reconstruction and geometry completion remain active research topics~\cite{ardelean_gen3dsr_2025, yin_sai3d_2023}, and the lack of an explicit, watertight surface definition makes completion and UV-based texture operations difficult to apply. For these reasons, 3D Gaussian splatting is not adopted as an intermediate or output representation in this thesis. \todo{actually, I'm not quite sure yet, now the final output is marched 3D textures}
+
+% ── Implicit ────────────────────────────────────────────────────────────────
+\subsection{Implicit Representations}
+\label{sec:bg_implicit}
+
+Implicit representations do not store surfaces directly. Instead, geometry is described through functions evaluated in space, and the surface is recovered from these functions. Such methods are often more flexible than explicit representations and are widely used in reconstruction and generative modelling.
+
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{SDF}
+  \caption[Signed Distance Function]{Example of a Signed Distance Function representation.}
+  \label{fig:SDF}
+\end{figure}
+\paragraph{Signed Distance Functions.}
+An \gls{SDF} defines the signed distance from any point in space to the nearest surface. By convention, values are negative inside an object, positive outside, and zero exactly on the surface:
+\begin{gather}
+f(\mathbf{x})_\text{sdf} < 0 \quad \text{inside the object}, \\
+f(\mathbf{x})_\text{sdf} = 0 \quad \text{on the surface}, \\
+f(\mathbf{x})_\text{sdf} > 0 \quad \text{outside the object}.
+\end{gather}
+The surface is recovered as the zero level set of the function, giving a smooth and continuous description of geometry.
+
+3D SDFs can be rendered through ray marching, a technique that traces rays step by step from the viewpoint, using the function to determine the step length toward the surface~\cite{hart_sphere_1996}. Alternatively, a mesh can be extracted using the Marching Cubes algorithm~\cite{lorensen_marching_1998}, which generates triangles at the zero crossing of the discrete voxel grid.
+
+When sampled on a regular voxel grid, SDFs are well suited for learning-based completion methods and have been widely used for object reconstruction~\cite{mittal_autosdf_2022, ren_xcube_2023, cheng_sdfusion_2023, rao_patchcomplete_2022, chu_diffcomplete_2023, yan_shapeformer_2023}. However, standard SDFs assume a closed watertight surface, which is often not available in raw scan data. \gls{UDF}s avoid this limitation by storing only unsigned distance values $f(\mathbf{x})_\text{udf}$, making them applicable to open or incomplete meshes~\cite{vermandere_geometry_2025}. For the dynamification step, SDFs can be extended to \gls{CSDF}s by additionally storing per-voxel colour information, enabling joint geometry and appearance manipulation~\cite{oechsle_texture_2019, vermandere_adaptive_2026}.
+
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{Parametric}
+  \caption[Parametric representation]{Example of a parametric representation.}
+  \label{fig:Parametric}
+\end{figure}
+
+\paragraph{Parametric and semantic models.}
+Parametric and semantic models describe geometry through structured object definitions rather than purely through sampled surfaces. Instead of storing only points or triangles, these representations encode objects by parameters, construction logic and semantic relationships, and are widely used in design, engineering and manufacturing workflows because they support efficient editing, querying and procedural modification.
+
+Computer-Aided Design (\gls{CAD}) models are the most common example. \gls{CAD} systems typically represent objects using boundary representations, constructive solid geometry, extrusion profiles or feature-based modelling operations. For example, a table leg may be defined by a profile sketch and extrusion height rather than by a fixed triangle mesh, which allows dimensions to be changed while preserving design intent. \gls{CAD} models are therefore highly suitable for manufacturing, tolerance control and geometric editing, but often contain limited semantic context about how objects function within a larger environment.
+
+\gls{BIM} extends this principle to the building scale by representing environments as structured collections of semantically meaningful parametric objects, each described by its type, dimensions and relationships to other elements rather than only by explicit surface geometry. This supports efficient querying, clash detection, scheduling, simulation and modification. However, \gls{CAD} and \gls{BIM} models typically describe intended or designed geometry rather than captured as-built conditions, and therefore often lack the geometric irregularities, clutter and visual realism present in real environments~\cite{bassier_processing_2020}.
+
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{NERF}
+  \caption[NeRF representation]{Example of a NeRF representation.}
+  \label{fig:NERF}
+\end{figure}
+
+\paragraph{Neural implicit representations.}
+Neural implicit methods use neural networks to represent geometry or appearance as continuous functions over space. Instead of storing explicit vertices, faces or points, a neural network with parameters $\theta$ learns a mapping
+\[
+f_\theta : \mathbb{R}^{3} \rightarrow \mathbb{R}^{m},
+\]
+where the input is a spatial coordinate $\mathbf{x}=(x,y,z)$ and the $m$-dimensional output may encode occupancy, distance, density, colour or other scene properties.
+
+A well-known example is the \gls{NeRF}, which additionally conditions on viewing direction $\vec{\mathbf{d}}$ and predicts volume density and emitted colour:
+\[
+f_\theta(\mathbf{x},\vec{\mathbf{d}}) = (\sigma,\vec{\mathbf{r}}),
+\]
+where $\sigma$ denotes volumetric density and $\vec{\mathbf{r}}=(r,g,b)$ the view-dependent radiance~\cite{mildenhall_nerf_2020}. Rendering is then performed through volumetric integration along camera rays.
+
+These methods can produce highly realistic novel-view synthesis and compactly encode complex scenes. However, the scene structure is stored inside the network parameters $\theta$ rather than as directly editable objects, making object-level interaction, deterministic updates and geometric editing more difficult~\cite{weber_nerfiller_2023}. Recent work aims to decompose such models into separate objects~\cite{ardelean_gen3dsr_2025}, but robust interactive editing remains an open challenge. Neural implicit methods are therefore considered useful supporting tools, but not final output formats for the dynamic scene representations targeted in this thesis.
+
+% ── Spatial data structures ────────────────────────────────────────────────
+\subsection{Spatial Data Structures}
+\label{sec:bg_datastructures}
+
+Beyond geometric representations themselves, efficient processing of 3D data depends on the data structures used to store, index and query spatial information. Large-scale scenes often contain millions of points or volumetric samples, making direct linear access computationally inefficient. Spatial data structures therefore play a central role in neighbourhood search, collision queries, ray traversal, completion and hierarchical reconstruction.
+
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{Voxel}
+  \caption[Voxel grid representation]{Example of a voxel grid representation.}
+  \label{fig:Voxel}
+\end{figure}
+
+\paragraph{Voxel grids.}
+Voxel grids divide 3D space into small cubic cells, analogous to how pixels divide a 2D image. A voxel grid can be written as
+\[
+\mathbf{G} = \{g_{ijk}\}, \qquad i,j,k \in \{1,\dots,n\},
+\]
+where each voxel $g_{ijk}$ stores one or more attributes associated with that spatial cell.
+
+Voxel grids function as an \textit{explicit} representation when they directly encode occupancy, colour or semantic labels. For example, $g_{ijk} \in \{0,1\}$ may indicate whether a voxel is empty or occupied, so that geometry is represented explicitly as filled volume elements. They also function as a discretised container for \textit{implicit} representations: each voxel may instead store a sampled scalar field such as a signed or unsigned distance value, $g_{ijk} = f(x_i,y_j,z_k)$, where $f$ is an SDF or UDF evaluated at the voxel centre. Surfaces are then recovered as level sets of the stored field rather than from occupied cells directly. This dual role makes voxel grids particularly important in learning-based completion methods, where they provide a regular tensor structure for 3D convolutional networks~\cite{dai_scancomplete_2018, dai_spsg_2020}.
+
+The main limitation of dense voxel grids is memory consumption: doubling the resolution along each axis increases the total number of voxels by a factor of eight. As a result, voxel grids are often used as intermediate representations or replaced by sparse hierarchical structures.
+
+\begin{figure}[htbp]
+  \centering
+  \medskip
+  \includegraphics[width=0.3\textwidth]{Octree}
+  \caption[Octree representation]{Example of an octree representation.}
+  \label{fig:Octree}
+\end{figure}
+
+\paragraph{Octrees.}
+An octree is a hierarchical spatial partitioning structure that recursively subdivides 3D space into eight equally sized cubic children. Starting from a root node representing the full domain, subdivision continues only in regions requiring additional detail. This adaptive refinement greatly reduces memory usage compared with dense voxel grids when large empty regions are present.
+
+Formally, an octree node at depth $d$ represents a cubic region $N_d$, which may either remain a leaf node or be subdivided into eight child regions:
+\[
+N_d \rightarrow \{N_{d+1}^{1}, \dots, N_{d+1}^{8}\}.
+\]
+Octrees are widely used for point cloud indexing, occupancy mapping, multiresolution reconstruction and ray tracing. They are particularly suitable for indoor scenes, where much of the volume is empty space and detail is concentrated near surfaces.
+
+\paragraph{k-d trees.}
+A k-d tree (short for k-dimensional tree) is a binary space-partitioning structure used primarily for point-based data. Rather than subdividing space uniformly, each node recursively splits the dataset along one coordinate axis. For a 3D point set, successive splits are typically performed along the $x$, $y$ and $z$ axes. At each node, a point set $P$ is partitioned into two subsets,
+\[
+P = P^{-} \cup P^{+},
+\]
+according to whether points lie below or above a splitting plane.
+
+k-d trees are especially effective for nearest-neighbour and radius-search queries, making them a standard acceleration structure for unstructured point clouds. Operations such as normal estimation, registration, clustering and segmentation frequently rely on repeated local neighbourhood searches, for which k-d trees provide substantial speed improvements over brute-force methods.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Evaluation Metrics}
 \label{sec:bg_metrics}
-\todo{This might be a little too long for the thesis, maybe explain in one section instead of subsections per metric}
 
-The output requirements formalised in the previous section demand geometric completeness, textural completeness, correct object detection and part-aware editability. Assessing whether a given method satisfies these requirements requires quantitative metrics that are appropriate for each output modality. Rather than introducing these metrics separately in each experimental chapter, this section defines them once in a unified framework. The metrics are organised by type: geometric metrics that assess spatial accuracy, overlap metrics that assess volumetric or categorical agreement, detection metrics that assess identification performance, and perceptual metrics that assess visual quality.
-
-% ── Geometric ────────────────────────────────────────────────────────────────
-\subsection{Geometric Metrics}
-\label{sec:bg_metrics_geometric}
-
-\paragraph{Chamfer Distance.}
-The Chamfer Distance (\gls{CD}) measures the average closest-point distance between two point sets and is the most widely used metric for evaluating 3D shape reconstruction quality. Given two point sets $P$ and $Q$, the Chamfer Distance is defined as:
-
-\begin{equation}
-\label{eq:chamfer}
-\text{CD}(P, Q) = \frac{1}{|P|} \sum_{p \in P} \min_{q \in Q} \|p - q\|^2 \;+\; \frac{1}{|Q|} \sum_{q \in Q} \min_{p \in P} \|q - p\|^2
-\end{equation}
-
-The first term measures the \textit{accuracy} of the prediction, while the second term measures its \textit{completeness}. A lower Chamfer Distance indicates a better geometric match. The metric is symmetric and captures both missing and excessive geometry, but it is sensitive to outliers and does not account for surface normals or topology.
-
-In this thesis, the Chamfer Distance is used to evaluate the geometric accuracy of completed objects (Chapter~\ref{ch:7_Object_Completion}) and reconstructed scene elements (Chapter~\ref{ch:6_Scene_Completion}).
-
-% ── Overlap ──────────────────────────────────────────────────────────────────
-\subsection{Overlap Metrics}
-\label{sec:bg_metrics_overlap}
-
-\paragraph{Intersection over Union.}
-The Intersection over Union (\gls{IoU}) measures the ratio of shared space to total occupied space between a prediction and a ground-truth reference. In its general form, given two spatial regions $A$ and $B$:
-
-\begin{equation}
-\label{eq:iou}
-\text{IoU}(A, B) = \frac{|A \cap B|}{|A \cup B|}
-\end{equation}
-
-An \gls{IoU} of 1 indicates perfect agreement, while 0 indicates no overlap. This formulation applies across multiple contexts in this thesis. For \textit{volumetric object comparison}, $A$ and $B$ represent predicted and ground-truth volumes discretised as voxel occupancy grids or signed distance fields, and $|\cdot|$ denotes the number of occupied voxels. Unlike the Chamfer Distance, which operates on surface points, the volumetric \gls{IoU} captures how well the interior volume of an object is preserved, making it particularly suitable for evaluating completion methods that operate on voxelised representations (Chapter~\ref{ch:7_Object_Completion}). For \textit{3D object detection}, the same formula is applied to oriented bounding boxes rather than voxel grids. A detection is typically considered correct if the \gls{IoU} with the ground-truth bounding box exceeds a predefined threshold, commonly 0.25 or 0.5 (Chapter~\ref{ch:5_Scene_Segmentation}).
-
-% ── Detection ────────────────────────────────────────────────────────────────
-\subsection{Detection Performance Metrics}
-\label{sec:bg_metrics_detection}
-
-\paragraph{Precision and Recall.}
-Precision and recall characterise the trade-off between false positives and false negatives in detection tasks. Given a set of detections, each classified as a true positive (TP), false positive (FP), or false negative (FN) based on the \gls{IoU} threshold defined above:
-
-\begin{equation}
-\label{eq:precision_recall}
-\text{Precision} = \frac{\text{TP}}{\text{TP} + \text{FP}}, \qquad
-\text{Recall} = \frac{\text{TP}}{\text{TP} + \text{FN}}
-\end{equation}
-
-Precision measures the proportion of detections that correspond to actual objects, while recall measures the proportion of actual objects that are successfully detected. A high precision with low recall indicates conservative detection with few false alarms but many missed objects; the converse indicates aggressive detection. In this thesis, precision and recall are reported for the 3D object detection stage (Chapter~\ref{ch:5_Scene_Segmentation}) to assess how reliably objects are identified and localised within the scene.
-
-% ── Perceptual ───────────────────────────────────────────────────────────────
-\subsection{Perceptual and Image Quality Metrics}
-\label{sec:bg_metrics_perceptual}
-
-The texture completion and inpainting stages of the pipeline produce visual outputs whose quality cannot be fully captured by geometric metrics alone. Four complementary metrics are used, progressing from pixel-level accuracy to increasingly perceptually meaningful comparisons.
-
-\paragraph{Peak Signal-to-Noise Ratio.}
-The Peak Signal-to-Noise Ratio (\gls{PSNR}) quantifies the pixel-level reconstruction accuracy of a predicted image $\hat{I}$ relative to a reference image $I$. It is defined in terms of the Mean Squared Error (MSE):
-
-\begin{equation}
-\label{eq:psnr}
-\text{PSNR}(\hat{I}, I) = 10 \cdot \log_{10} \left( \frac{L^2}{\text{MSE}(\hat{I}, I)} \right)
-\end{equation}
-
-where $L$ is the maximum possible pixel value (typically 255 for 8-bit images) and $\text{MSE}(\hat{I}, I) = \frac{1}{N} \sum_{i=1}^{N} (\hat{I}_i - I_i)^2$. Higher \gls{PSNR} values indicate better reconstruction quality. While \gls{PSNR} is widely used due to its simplicity, it correlates poorly with human perception of image quality, as it weights all pixel differences equally regardless of their visual significance.
-
-\paragraph{Structural Similarity Index.}
-The Structural Similarity Index Measure (\gls{SSIM})~\cite{wang_image_2004} addresses the limitations of PSNR by comparing images based on luminance, contrast, and structural information rather than raw pixel differences. For two image patches $x$ and $y$:
-
-\begin{equation}
-\label{eq:ssim}
-\text{SSIM}(x, y) = \frac{(2\mu_x \mu_y + c_1)(2\sigma_{xy} + c_2)}{(\mu_x^2 + \mu_y^2 + c_1)(\sigma_x^2 + \sigma_y^2 + c_2)}
-\end{equation}
-
-where $\mu_x$, $\mu_y$ are the local means, $\sigma_x^2$, $\sigma_y^2$ the local variances, $\sigma_{xy}$ the cross-covariance, and $c_1$, $c_2$ stabilisation constants. \gls{SSIM} values range from $-1$ to $1$, with 1 indicating identical images. The metric is computed locally over sliding windows and averaged across the image. \gls{SSIM} better reflects perceived visual quality than \gls{PSNR}, particularly for distortions that affect image structure rather than pixel intensity.
-
-\paragraph{Learned Perceptual Image Patch Similarity.}
-The Learned Perceptual Image Patch Similarity (\gls{LPIPS})~\cite{zhang_unreasonable_2018} measures the perceptual distance between two images using deep features extracted from a pretrained neural network. Given images $\hat{I}$ and $I$, features are extracted at multiple layers $l$ of a network (typically VGG or AlexNet), and the distance is computed as a weighted sum of normalised feature differences:
-
-\begin{equation}
-\label{eq:lpips}
-\text{LPIPS}(\hat{I}, I) = \sum_l \frac{1}{H_l W_l} \sum_{h,w} \| w_l \odot (\hat{\phi}_l^{hw} - \phi_l^{hw}) \|^2
-\end{equation}
-
-where $\phi_l^{hw}$ and $\hat{\phi}_l^{hw}$ are the unit-normalised feature activations at spatial position $(h, w)$ in layer $l$, and $w_l$ are learned per-channel weights. Lower \gls{LPIPS} values indicate greater perceptual similarity. \gls{LPIPS} has been shown to correlate more strongly with human judgements of image similarity than both \gls{PSNR} and \gls{SSIM}, particularly for the types of distortions produced by generative models.
-
-\paragraph{Texture Similarity.}
-To assess whether the material appearance of a completed object matches its reference, a texture similarity metric based on learned feature representations is employed. Given two texture patches, feature vectors are extracted using a pretrained EfficientNet~\cite{tan_efficientnet_2019} backbone, and their similarity is measured using cosine similarity:
-
-\begin{equation}
-\label{eq:tex_sim}
-\text{TexSim}(T_1, T_2) = \frac{f(T_1) \cdot f(T_2)}{\|f(T_1)\| \cdot \|f(T_2)\|}
-\end{equation}
-
-where $f(\cdot)$ denotes the feature extraction function. A cosine similarity of 1 indicates identical feature representations. Unlike \gls{PSNR} and \gls{SSIM}, which compare images at the pixel level, this metric captures higher-level material and texture properties such as pattern regularity, colour distribution, and surface characteristics. This makes it particularly suited for evaluating texture completion quality, where the completed region should exhibit the same material as the reference but need not reproduce the exact pixel pattern (Chapter~\ref{ch:7_Object_Completion}).
-
-% ── Summary ──────────────────────────────────────────────────────────────────
-\subsection{Summary}
-\label{sec:bg_metrics_summary}
-
-Table~\ref{tab:metrics_overview} summarises the evaluation metrics and indicates the pipeline stages in which each is applied.
+The output requirements of Section~\ref{sec:bg_drm_requirements} demand geometric completeness, textural completeness, correct object detection and part-aware editability. Assessing whether a method satisfies these requirements requires quantitative metrics appropriate to each output modality. Rather than introducing these metrics separately in each experimental chapter, they are defined once here in a unified framework. Table~\ref{tab:metrics_overview} gives an overview before the individual definitions, so that the reader can see at a glance which metric applies to which pipeline stage and in which direction it improves.
 
 \begin{table}[htbp]
     \centering
@@ -486,24 +332,111 @@ Table~\ref{tab:metrics_overview} summarises the evaluation metrics and indicates
     \end{tabular}
 \end{table}
 
-Together, these metrics provide a comprehensive evaluation framework covering geometric accuracy, volumetric agreement, detection reliability, and visual quality across all stages of the proposed pipeline. The experimental chapters that follow will refer back to these definitions when reporting quantitative results.
+The metrics are grouped by type: geometric metrics that assess spatial accuracy, overlap metrics that assess volumetric or categorical agreement, detection metrics that assess identification performance, and perceptual metrics that assess visual quality.
 
-%──────────────────────────────────────────────────────────────────────────────────
+% ── Geometric ────────────────────────────────────────────────────────────────
+\subsection{Geometric Metrics}
+\label{sec:bg_metrics_geometric}
+
+\paragraph{Chamfer Distance.}
+The Chamfer Distance (\gls{CD}) measures the average closest-point distance between two point sets and is the most widely used metric for evaluating 3D shape reconstruction quality. Given two point sets $P$ and $Q$, it is defined as
+\begin{equation}
+\label{eq:chamfer}
+\text{CD}(P, Q) = \frac{1}{|P|} \sum_{\mathbf{p} \in P} \min_{\mathbf{q} \in Q} \|\mathbf{p} - \mathbf{q}\|^2 \;+\; \frac{1}{|Q|} \sum_{\mathbf{q} \in Q} \min_{\mathbf{p} \in P} \|\mathbf{q} - \mathbf{p}\|^2 .
+\end{equation}
+The first term measures the \textit{accuracy} of the prediction, while the second measures its \textit{completeness}. A lower Chamfer Distance indicates a better geometric match. The metric is symmetric and captures both missing and excessive geometry, but is sensitive to outliers and does not account for surface normals or topology. It is used to evaluate the geometric accuracy of completed objects (Chapter~\ref{ch:7_Object_Completion}) and reconstructed scene elements (Chapter~\ref{ch:6_Scene_Completion}).
+
+% ── Overlap ──────────────────────────────────────────────────────────────────
+\subsection{Overlap Metrics}
+\label{sec:bg_metrics_overlap}
+
+\paragraph{Intersection over Union.}
+The Intersection over Union (\gls{IoU}) measures the ratio of shared space to total occupied space between a prediction and a ground-truth reference. Given two spatial regions $A$ and $B$,
+\begin{equation}
+\label{eq:iou}
+\text{IoU}(A, B) = \frac{|A \cap B|}{|A \cup B|} .
+\end{equation}
+An \gls{IoU} of 1 indicates perfect agreement, while 0 indicates no overlap. This formulation applies across multiple contexts in this thesis. For \textit{volumetric object comparison}, $A$ and $B$ represent predicted and ground-truth volumes discretised as voxel occupancy grids or signed distance fields, and $|\cdot|$ denotes the number of occupied voxels. Unlike the Chamfer Distance, which operates on surface points, the volumetric \gls{IoU} captures how well the interior volume of an object is preserved, making it particularly suitable for evaluating completion methods that operate on voxelised representations (Chapter~\ref{ch:7_Object_Completion}). For \textit{3D object detection}, the same formula is applied to oriented bounding boxes rather than voxel grids; a detection is typically considered correct if the \gls{IoU} with the ground-truth bounding box exceeds a predefined threshold, commonly 0.25 or 0.5 (Chapter~\ref{ch:5_Scene_Segmentation}).
+
+% ── Detection ────────────────────────────────────────────────────────────────
+\subsection{Detection Performance Metrics}
+\label{sec:bg_metrics_detection}
+
+\paragraph{Precision and Recall.}
+Precision and recall characterise the trade-off between false positives and false negatives in detection tasks. Given a set of detections, each classified as a true positive (TP), false positive (FP) or false negative (FN) based on the \gls{IoU} threshold defined above,
+\begin{equation}
+\label{eq:precision_recall}
+\text{Precision} = \frac{\text{TP}}{\text{TP} + \text{FP}}, \qquad
+\text{Recall} = \frac{\text{TP}}{\text{TP} + \text{FN}} .
+\end{equation}
+Precision measures the proportion of detections that correspond to actual objects, while recall measures the proportion of actual objects that are successfully detected. A high precision with low recall indicates conservative detection with few false alarms but many missed objects; the converse indicates aggressive detection. Precision and recall are reported for the 3D object detection stage (Chapter~\ref{ch:5_Scene_Segmentation}) to assess how reliably objects are identified and localised within the scene.
+
+% ── Perceptual ───────────────────────────────────────────────────────────────
+\subsection{Perceptual and Image Quality Metrics}
+\label{sec:bg_metrics_perceptual}
+
+The texture completion and inpainting stages of the pipeline produce visual outputs whose quality cannot be fully captured by geometric metrics alone. Four complementary metrics are used, progressing from pixel-level accuracy to increasingly perceptually meaningful comparisons.
+
+\paragraph{Peak Signal-to-Noise Ratio.}
+The Peak Signal-to-Noise Ratio (\gls{PSNR}) quantifies the pixel-level reconstruction accuracy of a predicted image $I^*$ relative to a reference image $I$. It is defined in terms of the Mean Squared Error (MSE):
+\begin{equation}
+\label{eq:psnr}
+\text{PSNR}(I^*, I) = 10 \cdot \log_{10} \left( \frac{L^2}{\text{MSE}(I^*, I)} \right),
+\end{equation}
+where $L$ is the maximum possible pixel value (typically 255 for 8-bit images) and $\text{MSE}(I^*, I) = \frac{1}{N} \sum_{i=1}^{N} (I^*_i - I_i)^2$. Higher \gls{PSNR} values indicate better reconstruction quality. While \gls{PSNR} is widely used due to its simplicity, it correlates poorly with human perception, as it weights all pixel differences equally regardless of their visual significance.
+
+\paragraph{Structural Similarity Index.}
+The Structural Similarity Index Measure (\gls{SSIM})~\cite{wang_image_2004} addresses this limitation by comparing images based on luminance, contrast and structural information rather than raw pixel differences. For two image patches $x$ and $y$,
+\begin{equation}
+\label{eq:ssim}
+\text{SSIM}(x, y) = \frac{(2\mu_x \mu_y + c_1)(2\sigma_{xy} + c_2)}{(\mu_x^2 + \mu_y^2 + c_1)(\sigma_x^2 + \sigma_y^2 + c_2)},
+\end{equation}
+where $\mu_x$, $\mu_y$ are the local means, $\sigma_x^2$, $\sigma_y^2$ the local variances, $\sigma_{xy}$ the cross-covariance, and $c_1$, $c_2$ stabilisation constants. \gls{SSIM} values range from $-1$ to $1$, with 1 indicating identical images. The metric is computed locally over sliding windows and averaged across the image, and better reflects perceived visual quality than \gls{PSNR}, particularly for distortions that affect image structure rather than pixel intensity.
+
+\paragraph{Learned Perceptual Image Patch Similarity.}
+The Learned Perceptual Image Patch Similarity (\gls{LPIPS})~\cite{zhang_unreasonable_2018} measures the perceptual distance between two images using deep features extracted from a pretrained neural network. Given images $I^*$ and $I$, features are extracted at multiple layers $l$ of a network (typically VGG or AlexNet), and the distance is computed as a weighted sum of normalised feature differences:
+\begin{equation}
+\label{eq:lpips}
+\text{LPIPS}(I^*, I) = \sum_l \frac{1}{H_l W_l} \sum_{h,w} \| w_l \odot (\phi^{*hw}_l - \phi_l^{hw}) \|^2,
+\end{equation}
+where $\phi_l^{hw}$ and $\phi^{*hw}_l$ are the unit-normalised feature activations at spatial position $(h, w)$ in layer $l$, and $w_l$ are learned per-channel weights. Lower \gls{LPIPS} values indicate greater perceptual similarity. \gls{LPIPS} has been shown to correlate more strongly with human judgements of image similarity than both \gls{PSNR} and \gls{SSIM}, particularly for the types of distortions produced by generative models.
+
+\paragraph{Texture Similarity.}
+To assess whether the material appearance of a completed object matches its reference, a texture similarity metric based on learned feature representations is employed. Given two texture patches $T_1$ and $T_2$, feature vectors are extracted using a pretrained EfficientNet~\cite{tan_efficientnet_2019} backbone $f_\text{feat}(\cdot)$, and their similarity is measured using cosine similarity:
+\begin{equation}
+\label{eq:tex_sim}
+\text{TexSim}(T_1, T_2) = \frac{f_\text{feat}(T_1) \cdot f_\text{feat}(T_2)}{\|f_\text{feat}(T_1)\| \cdot \|f_\text{feat}(T_2)\|} .
+\end{equation}
+A cosine similarity of 1 indicates identical feature representations. Unlike \gls{PSNR} and \gls{SSIM}, which compare images at the pixel level, this metric captures higher-level material and texture properties such as pattern regularity, colour distribution and surface characteristics. This makes it particularly suited for evaluating texture completion quality, where the completed region should exhibit the same material as the reference but need not reproduce the exact pixel pattern (Chapter~\ref{ch:7_Object_Completion}).
+
+Together, these metrics provide a comprehensive evaluation framework covering geometric accuracy, volumetric agreement, detection reliability and visual quality across all stages of the pipeline. The experimental chapters refer back to these definitions when reporting quantitative results.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Existing Approaches to Scene Dynamification}
+\label{sec:bg_sota_dynamification}
+
+With the requirements, representations and metrics established, this final section positions the proposed pipeline relative to existing work. Although the individual components of the pipeline, namely object detection~\cite{qi_deep_2019, xu_back_2022, cheng_aic3dod_nodate}, completion~\cite{mittal_autosdf_2022, chibane_implicit_2020, ren_xcube_2023, team_sam_2025} and inpainting~\cite{suvorov_resolution-robust_2022, vermandere_semantic_2024}, have been studied extensively in isolation, the specific problem of transforming a partial scan into a fully dynamic and editable scene representation has received comparatively little attention~\cite{ardelean_gen3dsr_2025}.
+
+The closest relevant body of work includes methods for indoor scene understanding that decompose a scan into structural and object components. Li~et~al.~\cite{li_hybrid_2024} segment indoor point clouds into planar structural elements and detected objects, reconstruct the structural geometry via plane fitting~\cite{korman_latent_2018}, and replace detected objects with matched CAD models retrieved from a database~\cite{siddiqui_retrievalfuse_2021}. This approach produces a lightweight and semantically structured scene, but is limited to objects that have a close match in a predefined database and does not address the visual completeness of the reconstruction.
+
+Methods based on neural implicit representations encode scenes not as explicit surfaces but as continuous functions learned by a neural network, allowing high-quality visual reconstruction from images alone. Approaches such as NeRFiller~\cite{weber_nerfiller_2023} and related scene completion methods~\cite{dai_spsg_2020, chen_circle_2021} exploit this to fill missing regions through generative 2D inpainting. While these produce visually plausible completions, the scene structure is stored inside the network parameters rather than as explicit, addressable geometry, so the result is not decomposed at the object level and does not support object-level manipulation or explicit geometric editing~\cite{roldao_3d_2022}.
+
+Gen3DSR~\cite{ardelean_gen3dsr_2025} reconstructs a dynamic 3D scene from a single RGB image by separating objects from the scene using 2D segmentation masks and completing each independently using depth estimation and generative models. This is conceptually the closest existing approach to the pipeline proposed here, but it relies on a single image as input, limiting geometric accuracy, and does not address the alignment, updating or part-aware scaling stages that are central to this work.
+
+More broadly, the field of semantic scene completion~\cite{roldao_3d_2022} aims to predict complete geometry and semantics from partial observations, but typically treats the scene as a monolithic volume and does not produce object-level decompositions suitable for interactive manipulation.
+
+In summary, while components of the proposed pipeline exist in the literature, no existing work integrates alignment, object-level completion, scene completion and part-aware dynamification into a unified framework operating on multi-source, multi-temporal scan data. This gap motivates the contributions of the subsequent chapters.
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Conclusion}
 \label{sec:bg_conclusion}
- 
-This chapter established the conceptual and terminological foundation for the remainder of the thesis. It addressed four aspects that the subsequent chapters build upon: the positioning of scene dynamification relative to existing work, the representational landscape of 3D data, the formal requirements of a \gls{DRM}, and the evaluation framework used to assess reconstruction quality.
- 
-The review of prior approaches in Section~\ref{sec:bg_sota_dynamification} showed that, although important progress has been made in object detection, scene completion, object completion and visual inpainting, these components are still largely addressed in isolation. No existing method integrates them into a unified workflow capable of producing complete, editable and object-structured scene representations from heterogeneous and multi-temporal indoor scan data.
- 
-The representational overview in Section~\ref{sec:bg_representations} showed that the choice of representation strongly determines which operations are feasible throughout the pipeline. Explicit representations such as point clouds and meshes remain most suitable for acquisition, rendering and editing, while implicit representations such as signed and unsigned distance fields provide a flexible intermediate form for completion and learning-based inference. Spatial data structures such as voxel grids, octrees and k-d trees complement these representations by enabling scalable processing of large 3D datasets. On this basis, the thesis adopts unstructured coloured point clouds as primary input, textured meshes as the main output for reconstructed environments, and \gls{SDF}- or \gls{UDF}-based volumetric encodings as intermediate representations in completion stages. \gls{BIM}, neural implicit and Gaussian splatting representations are excluded from the pipeline output due to their respective limitations in visual fidelity, deterministic editability or geometric maturity.
- 
-The \gls{DRM} requirements formalised in Section~\ref{sec:bg_drm_requirements} define what the pipeline must produce: geometric and textural completeness, object-level decomposition, and part-aware editability. The distinction between primary, secondary and tertiary building elements determines how each element is routed through the pipeline: permanent structural elements are completed as part of the environment, while movable objects are reconstructed as individually manipulable entities.
- 
-Finally, the evaluation metrics defined in Section~\ref{sec:bg_metrics} provide a unified quantitative framework for the experimental chapters that follow. Geometric accuracy is assessed through the Chamfer Distance and volumetric IoU, detection quality through precision, recall and detection \gls{IoU}, and visual quality through \gls{PSNR}, \gls{SSIM}, \gls{LPIPS} and texture similarity. By defining these metrics here rather than in individual chapters, consistent evaluation criteria are established across all pipeline stages.
- 
-With this conceptual, representational and evaluative basis in place, the following chapters address the individual stages of the proposed methodology, beginning with the acquisition and generation of the datasets on which the pipeline operates.
- 
+
+This chapter established the vocabulary, data and evaluation criteria on which the remaining chapters depend. The \gls{DRM} requirements of Section~\ref{sec:bg_drm_requirements} fixed what the pipeline must produce, namely geometric and textural completeness, object-level decomposition and part-aware editability, and the \gls{CI/SFB} distinction between primary, secondary and tertiary building elements determined how each element is routed to environment or object completion.
+
+These requirements directly motivated the representational choices of Section~\ref{sec:bg_representations}: unstructured coloured point clouds as primary input, textured meshes as the main output, and \gls{SDF}- or \gls{UDF}-based encodings as intermediate forms, with octrees and k-d trees as supporting indexing structures. \gls{BIM}, neural implicit and Gaussian splatting representations were excluded from the output for their respective limitations in visual fidelity, deterministic editability and geometric maturity, as summarised in Table~\ref{tab:rep_overview}.
+
+The evaluation metrics of Section~\ref{sec:bg_metrics}, summarised in Table~\ref{tab:metrics_overview}, provide a single consistent framework across all pipeline stages, and Section~\ref{sec:bg_sota_dynamification} showed that no existing method integrates these stages into a unified workflow. With this basis in place, the following chapters address the individual stages of the methodology, beginning with the acquisition and generation of the datasets on which the pipeline operates.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \cleardoublepage
 \cleardoublepage
