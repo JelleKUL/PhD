@@ -21,7 +21,14 @@
 \label{sec:4_intro}
 
 % Paragraph purpose: situate the chapter in the pipeline and frame the core technical problem
-This chapter addresses the first stage of the \gls{DRM} pipeline: aligning newly captured data with pre-existing reference datasets and incrementally updating those datasets with new observations. As established in Chapter~\ref{ch:introduction}, the absence of \gls{GNSS} in indoor environments means that the pose of a newly captured session cannot be determined directly, but must instead be estimated relative to existing reference data~\cite{vermandere_two-step_2022}. This is compounded by temporal change: objects may have moved or been replaced since the reference was acquired, causing feature-based registration methods that assume a static scene to fail~\cite{vermandere_two-step_2022}, while full re-documentation with high-end equipment remains impractical~\cite{bassier_standalone_2016, bassier_geomapi_2024}.
+This chapter addresses the first stage of the \gls{DRM} pipeline: aligning newly captured data with pre-existing reference datasets and incrementally updating those datasets with new observations (Figure~\ref{fig:4_align_update_intro}). As established in Chapter~\ref{ch:introduction}, the absence of \gls{GNSS} in indoor environments means that the pose of a newly captured session cannot be determined directly, but must instead be estimated relative to existing reference data~\cite{vermandere_two-step_2022}. This is compounded by temporal change: objects may have moved or been replaced since the reference was acquired, causing feature-based co-registration methods that assume a static scene to fail~\cite{vermandere_two-step_2022}, while full re-documentation with high-end equipment remains impractical~\cite{bassier_standalone_2016, bassier_geomapi_2024}.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1\textwidth]{Align_update_intro}
+  \caption[Alignment and Updating]{A reference scene (left) and a new session (middle) are aligned to produce a combined dataset (right) that integrates the new observations while preserving unchanged regions of the original reference.}
+  \label{fig:4_align_update_intro}
+\end{figure}
 
 % Paragraph purpose: introduce the proposed solution
 To address both challenges, this chapter presents a two-step alignment framework combined with a dataset updating mechanism. The alignment combines a coarse global positioning step with a fine multi-modal registration step that jointly leverages 2D image features and 3D geometric descriptors to produce a robust pose estimate. The updating procedure then determines which points in the existing dataset remain current and which should be replaced by the new observations.
@@ -40,7 +47,7 @@ This section reviews the four areas of prior work most relevant to the contribut
 The alignment of data captured by low-cost sensors such as \gls{XR} devices and smartphones presents unique challenges compared to the registration of high-end scanner data. These devices produce measurements of significantly lower accuracy, density, and spatial extent, which limits the effectiveness of conventional registration algorithms~\cite{geyter_point_2022}.
 
 % Paragraph purpose: discuss local tracking and SLAM
-Within a single measurement session, low-cost devices maintain their local pose through \gls{SLAM} algorithms that combine visual and inertial measurements. For instance, the Microsoft HoloLens~2 employs ORB-SLAM~\cite{cyrus_hololens_2019} using four grey-scale tracking cameras and an \gls{IMU} to continuously estimate the device's position and orientation within a local coordinate system. These local tracking methods are sufficiently accurate for small-scale scenes, achieving accuracies conforming to LOA20 ($2\sigma \leq 0.05$\,m) given adequate control and loop closures~\cite{geyter_point_2022}. However, the resulting data remains in an arbitrary local coordinate frame that bears no relation to any global or facility-wide reference system.
+Within a single measurement session, low-cost devices maintain their local pose through \gls{SLAM} algorithms that combine visual and inertial measurements. For instance, the Microsoft HoloLens~2 employs ORB-SLAM~\cite{cyrus_hololens_2019} using four grey-scale tracking cameras and an \gls{IMU} to continuously estimate the device's position and orientation within a local coordinate system. Although drift accumulates significantly over longer multi-room trajectories~\cite{geyter_point_2022, chen_accuracy_2018}, these local tracking methods are sufficiently accurate for single-room scenes, achieving accuracies conforming to LOA20 ($2\sigma \leq 0.05$\,m)~\cite{geyter_point_2022}. However, the resulting data remains in an arbitrary local coordinate frame that bears no relation to any global or facility-wide reference system.
 
 % Paragraph purpose: discuss the gap between local tracking and global registration
 Bridging this gap between accurate local tracking and global positioning is the central challenge addressed in this chapter. The local SLAM provides reliable relative positioning within a session, but the entire session must still be placed within the coordinate system of the pre-existing reference data. This is fundamentally a one-time transformation estimation per session, rather than a continuous tracking problem.
@@ -52,11 +59,17 @@ Bridging this gap between accurate local tracking and global positioning is the 
 % Paragraph purpose: review geometric registration approaches
 Three-dimensional registration methods estimate the transformation between two geometric datasets by matching corresponding features in 3D space. The most established approach is the Iterative Closest Point (\gls{ICP}) algorithm and its variants, which iteratively minimise the distance between corresponding point pairs. While effective for fine alignment, ICP requires a reasonable initial estimate and is sensitive to partial overlap and noise~\cite{bassier_geomapi_2024}.
 
+\begin{wrapfigure}{r}{0.4\textwidth}
+  \centering
+  \includegraphics[width=0.4\textwidth]{BIM_Feature_example}
+  \caption[BIM features]{Example of limited BIM features (green) that make traditional alignmet approaches unreliable.}
+  \label{fig:BIM_Features}
+\end{wrapfigure}
 % Paragraph purpose: discuss feature-based global registration
 For coarse alignment without a prior estimate, feature-based methods extract distinctive geometric descriptors from each dataset and establish correspondences between them. \gls{FPFH} descriptors~\cite{rusu_fast_2009} encode the local surface geometry around each point through histograms of angular relationships between surface normals. These descriptors can be matched across datasets to establish candidate correspondences, from which a rigid body transformation is estimated. The Fast Global Registration method proposed by Zhou et al.~\cite{zhou_fast_2016} avoids computationally demanding RANSAC-based outlier rejection by instead using a robust correspondence estimation function that simultaneously minimises distances between correspondences and down-weights outliers.
 
 % Paragraph purpose: discuss BIM-based alignment
-When a \gls{BIM} model is available, it can serve as an additional reference for geometric alignment. However, BIM geometries are typically abstract and sparse compared to captured point clouds, making conventional point-based features unreliable. The \gls{SUPER4PCS} algorithm~\cite{mellado_super_2014} addresses this by matching approximately congruent four-point sets between datasets, relying on geometric ratios rather than local surface detail. This makes it particularly well suited for aligning captured data with the planar and simplified geometry of BIM models.
+When a \gls{BIM} model is available, it can serve as an additional reference for geometric alignment. However, BIM geometries are typically abstract and sparse compared to captured point clouds, making conventional point-based features unreliable (Figure~\ref{fig:BIM_Features}). The \gls{SUPER4PCS} algorithm~\cite{mellado_super_2014} addresses this by matching approximately congruent four-point sets between datasets, relying on geometric ratios rather than local surface detail. This makes it particularly well suited for aligning captured data with the planar and simplified geometry of BIM models.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{2D-Based Alignment}
@@ -66,7 +79,7 @@ When a \gls{BIM} model is available, it can serve as an additional reference for
 Image-based alignment methods estimate the pose of a sensor by matching visual features between newly captured images and a set of geo-referenced reference images. This approach is particularly relevant for \gls{XR} devices and smartphones, which are equipped with cameras that produce imagery alongside their geometric measurements.
 
 % Paragraph purpose: discuss feature matching for pose estimation
-Structure-from-Motion (\gls{SfM}) techniques estimate camera poses by detecting and matching distinctive image features across multiple views~\cite{schonberger_structure--motion_2016}. \gls{ORB} features~\cite{cyrus_hololens_2019} provide a computationally efficient basis for this matching. When two or more reference images can be matched to a session image, the 3D coordinates of the matched feature points can be triangulated from the known reference poses, and the session camera pose can be estimated through a perspective-n-point solver~\cite{jinyu_survey_2019}.
+Structure-from-Motion (\gls{SfM}) techniques estimate camera poses by detecting and matching distinctive image features across multiple views~\cite{schonberger_structure--motion_2016}. A wide range of local feature detectors and descriptors exists for this purpose, including SIFT~\cite{sun_sift_2014}, SURF~\cite{bay_surf_2008}, and \gls{ORB}~\cite{rublee_orb_2011}, each offering different trade-offs between distinctiveness and computational cost. \gls{ORB} features in particular provide a computationally efficient basis for this matching and are used, for instance, by the Microsoft HoloLens~2~\cite{cyrus_hololens_2019}. When two or more reference images can be matched to a session image, the 3D coordinates of the matched feature points can be triangulated from the known reference poses, and the session camera pose can be estimated through a perspective-n-point solver~\cite{jinyu_survey_2019}.
 
 % Paragraph purpose: discuss limitations and challenges
 A significant challenge for image-based alignment in construction and facility environments is the potential for drastic changes in appearance between the reference and test data. Lighting conditions, surface treatments, and the presence or absence of temporary objects can all alter the visual features of a scene. Derivative features such as vanishing lines or geometric edge features have been proposed as more robust alternatives, as they are less likely to be associated with temporary scene elements~\cite{zollmann_augmented_2014}. Additionally, the repetitive nature of many indoor environments can cause ambiguous matches, where features from different rooms or corridors appear visually identical.
@@ -87,7 +100,6 @@ The key difficulty in actual updating is distinguishing unchanged regions, where
 
 \begin{figure}[h!]
   \centering
-  \medskip
   \includegraphics[width=1\textwidth]{Alignment_Method}
   \caption[Alignment pipeline overview]{Overview of the proposed two-step alignment and updating pipeline.}
   \label{fig:4_method_overview}
