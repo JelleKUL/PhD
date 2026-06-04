@@ -98,7 +98,7 @@ ShapeNet~\cite{chang_shapenet_2015} is the first primary dataset used for quanti
 
 
 \paragraph{Redwood.}
-The Redwood 3D Scan Dataset~\cite{choi_large_2016} is the second primary dataset used for quantitative isolated object completion evaluation. It contains real objects captured with consumer RGB-D sensors and reconstructed into dense 3D models (Figure~\ref{fig:3_Redwood}). Unlike ShapeNet, Redwood reflects the imperfections of real-world acquisition, including sensor noise, incomplete observations and reconstruction artefacts, making it particularly valuable for assessing whether methods trained on synthetic CAD models remain effective on realistic scanned objects.
+The Redwood 3D Scan Dataset~\cite{choi_large_2016} is the second primary dataset used for quantitative isolated object completion evaluation. It contains real objects captured with consumer RGB-D sensors and reconstructed into dense 3D models (Figure~\ref{fig:3_Redwood}). Despite its smaller scale compared to ShapeNet, Redwood reflects the imperfections of real-world acquisition, including sensor noise, incomplete observations and reconstruction artefacts, making it particularly valuable for assessing whether methods trained on synthetic CAD models remain effective on realistic scanned objects.
 \begin{figure}[h]
   \centering
   \includegraphics[width=1\textwidth]{Redwood}
@@ -220,7 +220,7 @@ Recent smartphones equipped with LiDAR sensors, such as iPhone models with the A
 \subsection{Captured Environments}
 \label{sec:3_captured_scenes}
 
-The captured environments fall into three categories, each presenting a different combination of structural and layout change that the alignment and updating methods must handle~\cite{geyter_point_2022, vermandere_two-step_2022, vermandere_automatic_2022}. In each environment every sensor was deployed according to its intended use case, with \gls{TLS} setups placed to maximise structural coverage, \gls{iMMS} captures following natural walking trajectories with loop closures where possible, and \gls{XR} captures focused on cluttered regions inaccessible to the larger systems~\cite{geyter_point_2022}.
+In each environment every sensor was deployed according to its intended use case, with \gls{TLS} setups placed to maximise structural coverage, \gls{iMMS} captures following natural walking trajectories with loop closures where possible, and \gls{XR} captures focused on cluttered regions inaccessible to the larger systems~\cite{geyter_point_2022}.
 
 \paragraph{Laboratory Rooms.} The laboratory rooms (Figure~\ref{fig:3_campus_dataset}) are single-storey industrial spaces containing working desks, test equipment and machinery. Between captures taken several months apart, all movable objects were displaced in the course of ongoing research activity, making these rooms the primary test case for multi-temporal alignment under layout change in an otherwise stable structural envelope.
 
@@ -229,7 +229,7 @@ The captured environments fall into three categories, each presenting a differen
   \vspace{-10pt}
   \includegraphics[width=1\textwidth]{Campus_dataset}
   \includegraphics[width=1\textwidth]{Campus_Image_Dataset}
-  \caption[Campus datasets]{The campus datasets, captured using a P30(top), Hololens(Left) and VLX(right) along with images captured by the Hololens.}
+  \caption[Campus datasets]{The campus datasets, captured using a P30(top), Hololens(left) and VLX(right) along with images captured by the Hololens.}
   \vspace{-10pt}
   \label{fig:3_campus_dataset}
 \end{figure}
@@ -260,7 +260,7 @@ The captured environments fall into three categories, each presenting a differen
 \section{Synthetic Data Creation}
 \label{sec:3_synthetic}
 
-The V-Scan dataset (Figure~\ref{fig:3_VScan}, Table~\ref{tab:vscan_summary}) was created to provide the joint property not available in any existing resource: partial scene scans paired with complete geometric ground truth, multi-sensory outputs, temporal variations and per-object annotations. It is the main benchmark used for the quantitative evaluation of scene and object completion in Chapters~\ref{ch:6_Scene_Completion} and~\ref{ch:7_Object_Completion}.
+The V-Scan dataset (Table~\ref{tab:vscan_summary}, Figure~\ref{fig:3_VScan}) was created to provide the joint property not available in any existing resource: partial scene scans paired with complete geometric ground truth, multi-sensory outputs, temporal variations and per-object annotations. It is the main benchmark used for the quantitative evaluation of scene and object completion in Chapters~\ref{ch:6_Scene_Completion} and~\ref{ch:7_Object_Completion}.
 
 \begin{table}[h]
     \centering
@@ -287,9 +287,7 @@ The V-Scan dataset (Figure~\ref{fig:3_VScan}, Table~\ref{tab:vscan_summary}) was
   \label{fig:3_VScan}
 \end{figure}
 
-
-
-V-Scan is produced by a two-part framework (Figure~\ref{fig:3_VScan_Method}): a procedural room generator that produces varied indoor environments (Section~\ref{sec:3_room_generator}), and a virtual scanner that mimics real acquisition devices to scan them (Section~\ref{sec:3_virtual_scanner}). The two are coordinated by a scan manager that emits the per-scene outputs described in Section~\ref{sec:3_vscan}. The remainder of this section first reviews related synthetic-data work (Section~\ref{sec:3_synthetic_related}) before detailing the framework and the dataset it produces.
+V-Scan is produced by a two-part framework (Figure~\ref{fig:3_VScan_Method}): a procedural room generator that produces varied indoor environments (Section~\ref{sec:3_room_generator}), and a virtual scanner that mimics real acquisition devices to scan them (Section~\ref{sec:3_virtual_scanner}). The two are coordinated by a scan manager that emits the per-scene outputs described in Section~\ref{sec:3_scan_management}. The remainder of this section first reviews related synthetic-data work (Section~\ref{sec:3_synthetic_related}) before detailing the framework and the dataset it produces.
 
 \subsection{Related Work}
 \label{sec:3_synthetic_related}
@@ -344,14 +342,14 @@ Once a room has been generated, a virtual scanner simulates common indoor acquis
 \begin{figure}[htpb]
   \centering
   \includegraphics[width=1\textwidth]{Vscan_method}
-  \caption[V-Scan Method]{Overview of the V-Scan method: A single scan position generates a pointcoud and panoramic image, which are then used to extract object-level observations and generate dataset outputs.}
+  \caption[V-Scan Method]{Overview of the V-Scan method: A single scan position generates a point cloud and panoramic image, which are then used to extract object-level observations and generate dataset outputs.}
   \label{fig:3_VScan_Method}
 \end{figure}
 
 
 \subsubsection{Scanner Configuration}
 
-The scanner behaviour is controlled through a set of parameters describing the sensing characteristics of the simulated device:\\
+The scanner behaviour is controlled through a set of parameters describing the sensing characteristics of the simulated device (visualised in Figure~\ref{fig:3_VScan_Parameters}):\\
 \begin{wrapfigure}{r}{0.34\textwidth}
   \centering
   \includegraphics[]{Scanner_params}
@@ -492,13 +490,13 @@ The procedural room generator and virtual scanner are coordinated by a \texttt{S
 
 The variation pass in step 5 supports three independent axes: furniture layout while preserving the room structure, scanner preset to simulate different sensing devices, and scanner position within the room. Each variation is stored alongside the main scan with its acquisition parameters, and an arbitrary number of variation passes can be configured per room, enabling controlled experiments on the impact of individual factors.
  
-For each generated scene, the dataset stores the scans together with the metadata and ground-truth annotations required for evaluation at scene level (furnished and empty scenes), object level (Partially scanned objects vs.\ ground-truth meshes) and detection level (ground-truth bounding boxes) (Figure~\ref{fig:3_vscan_object_outputs}). Point clouds are exported in ASCII format with position, normal and colour attributes; panoramic images as PNG; complete object meshes as PLY; and bounding boxes, room parameters, scan settings and variation parameters as JSON (Figure~\ref{fig:3_json_formats}).
+For each generated scene, the dataset stores the scans together with the metadata and ground-truth annotations required for evaluation at scene level (furnished vs. \ empty scenes), object level (partially scanned objects vs.\ ground-truth meshes) and detection level (ground-truth bounding boxes) (Figure~\ref{fig:3_vscan_data}). Point clouds are exported in ASCII format with position, normal and colour attributes; panoramic images as PNG; complete object meshes as PLY; and bounding boxes, room parameters, scan settings and variation parameters as JSON (Figure~\ref{fig:3_json_formats}).
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1\textwidth]{Vscan_data}
-    \caption[V-Scan data]{Example outputs from the V-Scan generation pipeline: full scene point clouds (left), Panoramic images (left) and isolated partial object point clouds (bottom).}
-    \label{fig:3_vscan_object_outputs}
+    \caption[V-Scan data]{Example outputs from the V-Scan generation pipeline: full scene point clouds (left), Panoramic images (right) and isolated partial object point clouds (bottom).}
+    \label{fig:3_vscan_data}
 \end{figure}
 
 \begin{figure}[htbp]
