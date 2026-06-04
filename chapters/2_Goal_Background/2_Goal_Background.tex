@@ -10,6 +10,7 @@
 \newglossaryentry{CAD}{name={CAD}, description={Computer-Aided Design}}
 \newglossaryentry{CI/SFB}{name={CI/SFB}, description={Classification and Information System for Building Elements}}
 \newglossaryentry{IoU}{name={IoU}, description={Intersection over Union}}
+\newglossaryentry{LOA}{name={LOA}, description={Level of Accuracy}}
 \newglossaryentry{CD}{name={CD}, description={Chamfer Distance}}
 \newglossaryentry{PSNR}{name={PSNR}, description={Peak Signal-to-Noise Ratio}}
 \newglossaryentry{SSIM}{name={SSIM}, description={Structural Similarity Index Measure}}
@@ -66,6 +67,8 @@ Panoramic images or localised pinhole camera images provide complementary appear
 \subsection{Output Requirements}
 \label{sec:bg_outputs}
 
+The output of the pipeline is a \gls{DRM}: a complete and editable representation of the indoor environment. This representation must satisfy the following requirements, illustrated in Figure~\ref{fig:DRM_Requirements}.
+
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=1\textwidth]{DRM_Requirements}
@@ -73,34 +76,16 @@ Panoramic images or localised pinhole camera images provide complementary appear
   \label{fig:DRM_Requirements}
 \end{figure}
 
-The output of the pipeline is a \gls{DRM}: a complete and editable representation of the indoor environment. This representation must satisfy the following requirements, illustrated in Figure~\ref{fig:DRM_Requirements}.
-
 \paragraph{Geometric completeness.}
-Both the fixed structural elements of the scene and the individual objects within it must be geometrically complete. To distinguish between the types of elements in a scene, we use the \gls{CI/SFB} code~\cite{2ILFXM_2024}, where building elements are divided into primary, secondary and tertiary categories, as summarised in Table~\ref{tab:cisfb_categories}.
+Both the fixed structural elements of the scene and the individual objects within it must be geometrically complete. To distinguish between the types of elements in a scene, we use the \gls{CI/SFB} code~\cite{2ILFXM_2024}, where building elements are divided into primary, secondary and tertiary categories as seen in Figure~\ref{fig:Building_Elements}.
 
-\begin{table}[htbp]
-    \centering
-    \caption[CI/SFB element categories]{Overview of indoor building element categories based on the \gls{CI/SFB} classification~\cite{2ILFXM_2024} and their corresponding pipeline stage.}
-    \label{tab:cisfb_categories}
-    \begin{tabularx}{\textwidth}{l X X}
-        \toprule
-        \textbf{Category} & \textbf{Description} & \textbf{Examples}\\
-        \midrule
-        Primary   & Permanent structural fabric defining the global enclosure and spatial layout & Walls, floors, ceilings \\
-        \addlinespace
-        Secondary & Fixed but typically non-structural architectural components & Doors, windows, built-in cabinets, \\
-        \addlinespace
-        Tertiary  & Movable or replaceable interior assets & Furniture, machinery, equipment \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
-
-\begin{wrapfigure}{l}{0.5\textwidth}
+\begin{figure}[]
   \centering
-  \includegraphics[]{Building_Elements}
-  \caption[Building Elements]{The three categories of building elements.}
+  \includegraphics[width=1\textwidth]{Building_Elements}
+  \caption[Building Elements]{The three categories of building elements with examples for each.}
   \label{fig:Building_Elements}
-\end{wrapfigure}
+\end{figure}
+
 The distinction between environment and object completion is motivated by both geometry and intended interaction. Elements that define the room envelope or are permanently integrated into the building are most efficiently reconstructed as part of a continuous background model, while movable or replaceable elements require independent representations that support repositioning, removal or scaling after reconstruction.
 
 
@@ -123,8 +108,9 @@ This thesis uses coloured point clouds as its primary input and textured meshes 
 
 \begin{table}[htbp]
     \centering
-    \caption[Representations used in this thesis]{Representations used in this thesis, with the role each plays in the pipeline and the reason for its selection or exclusion. Rows follow the order in which the representations are discussed in this section.}
+    \caption[3D Representations used in this thesis]{Representations used in this thesis, with the role each plays in the pipeline and the reason for its selection or exclusion. Rows follow the order in which the representations are discussed in this section.}
     \label{tab:rep_overview}
+    \renewcommand{\arraystretch}{1.2}
     \begin{tabularx}{\textwidth}{l l X}
         \toprule
         \textbf{Representation} & \textbf{Role} & \textbf{Reason} \\
@@ -132,10 +118,11 @@ This thesis uses coloured point clouds as its primary input and textured meshes 
         Coloured point cloud           & Primary input        & Native sensor output; geometry and colour \\
         Textured mesh                  & Main output          & Compact, renderable and editable surface \\
         Gaussian splatting             & Excluded             & Immature geometric editing and completion \\
+        \midrule
         \gls{SDF} / \gls{UDF}          & Completion (interm.) & In- and output for learning-based completion \\
-        \gls{BIM}                      & Excluded             & Lacks captured visual and geometric detail \\
+        Parametric models              & Excluded             & Lacks captured visual and geometric detail \\
         Neural implicit                & Completion (interm.) & Learning-based internal representations\\
-        Image                          & Appearance input     & Dense colour and 2D alignment cues \\
+        \midrule
         Voxel grid                     & Data Storage (interm.)& Discrete data structures \\
         Octree / k-d tree              & Indexing (interm.)   & Fast neighbourhood and occupancy queries \\
         \bottomrule
@@ -232,12 +219,15 @@ However, Gaussian splatting is currently more suitable for visualization than fo
 
 Implicit representations do not store surfaces directly. Instead, geometry is described through functions evaluated in space, and the surface is recovered from these functions. Such methods are often more flexible than explicit representations and are widely used in reconstruction and generative modelling.
 
-\begin{wrapfigure}{r}{0.4\textwidth}
+\begin{wrapfigure}[34]{r}{0.33\textwidth}
+  \vspace{-10pt}
   \centering
   \includegraphics[]{SDF}
-  \caption[Signed Distance Function]{Example of a Signed Distance Function representation.}
-  \label{fig:SDF}
+  \includegraphics[]{SDF_2d}
+  \caption[Signed Distance Function 2D]{Example of an SDF in 3D (top) and a 2D discretised slice (bottom). Distance values range from dark to light.}
+    \label{fig:SDF}
 \end{wrapfigure}
+
 \paragraph{Signed Distance Functions.}
 An \gls{SDF} defines the signed distance from any point in space to the nearest surface. By convention, values are negative inside an object, positive outside, and zero exactly on the surface:
 \begin{equation}
@@ -252,15 +242,9 @@ The surface is recovered as the zero level set of the function, giving a smooth 
 
 3D SDFs can be rendered through ray marching, a technique that traces rays from the viewpoint toward the scene. At each step, the SDF value at the current position directly provides the radius of an empty sphere around that point, meaning the ray can safely advance by that distance without overshooting the surface~\cite{hart_sphere_1996}. This variant, known as sphere tracing, is both efficient and geometrically exact: steps are large in open space and become progressively smaller as the ray approaches the zero level set, where the march terminates. Surface normals can then be recovered analytically as the gradient of the SDF, enabling direct shading without additional geometry queries. Alternatively, a mesh can be extracted using the Marching Cubes algorithm~\cite{lorensen_marching_1998}, which generates triangles at the zero crossing of the discrete voxel grid.
 
-\begin{wrapfigure}{l}{0.4\textwidth}
-  \centering
-  \includegraphics[]{SDF_2d}
-  \caption[Signed Distance Function 2D]{Example of a discretised Signed Distance Function representation. The colour map shows the distance values, going from dark bluet to light red}
-  \label{fig:SDF_2d}
-\end{wrapfigure}
 When sampled on a regular voxel grid, SDFs are well suited for learning-based completion methods and have been widely used for object reconstruction~\cite{mittal_autosdf_2022, ren_xcube_2023, cheng_sdfusion_2023, rao_patchcomplete_2022, chu_diffcomplete_2023, yan_shapeformer_2023}. However, standard SDFs assume a closed watertight surface, which is often not available in raw scan data. \gls{UDF}s avoid this limitation by storing only unsigned distance values $f(\mathbf{x})_\text{udf}$, making them applicable to open or incomplete meshes~\cite{vermandere_geometry_2025}. For the dynamification step, SDFs can be extended to Coloured Signed Distance Functions (\gls{CSDF}s) by additionally storing per-voxel colour information, enabling joint geometry and appearance manipulation~\cite{oechsle_texture_2019, vermandere_adaptive_2026}.
 
-\begin{wrapfigure}{r}{0.4\textwidth}
+\begin{wrapfigure}{r}{0.45\textwidth}
   \centering
   \includegraphics[]{Parametric}
   \caption[Parametric representation]{Example of a parametric representation.}
@@ -356,15 +340,22 @@ k-d trees are especially effective for nearest-neighbour and radius-search queri
     \label{tab:metrics_overview}
     \begin{tabularx}{\textwidth}{l l c X}
         \toprule
-        \textbf{Metric} & \textbf{Type} & \textbf{Direction} & \textbf{Pipeline Stage(s)} \\
+        \textbf{Type} & \textbf{Metric} & \textbf{Scoring} & \textbf{Pipeline Stage(s)} \\
         \midrule
-        Chamfer Distance    & Geometric     & $[0, \infty)$ $\downarrow$ & Object \& scene \newline completion \\
-        \gls{LOA}           & Geometric     & $[0, 100]\%$ $\uparrow$    & Scene completion \& \newline alignment \\
-        \gls{IoU}           & Overlap       & $[0, 1]$ $\uparrow$        & Object detection \& \newline completion \\
-        Precision \& Recall & Detection     & $[0, 1]$ $\uparrow$        & Object detection \& \newline scene completion \\
-        \gls{PSNR}          & Image quality & $[0, \infty)$ $\uparrow$   & Scene \& texture  \newline completion \\
-        \gls{SSIM}          & Image quality & $[-1, 1]$ $\uparrow$       & Scene \& texture \newline completion \\
-        \gls{LPIPS}         & Perceptual    & $[0, 1]$ $\downarrow$      & Scene \& texture \newline completion \\
+        \multirow{2}{*}{Geometric}
+            & Chamfer Distance    & $[0, \infty)$ $\downarrow$ & Object \& scene \newline completion \\
+            & \gls{LOA}           & $[0, 100]\%$ $\uparrow$    & Scene completion \newline \& alignment \\
+        \midrule
+        Overlap
+            & \gls{IoU}           & $[0, 1]$ $\uparrow$        & Object detection \newline \& completion \\
+        \midrule
+        Detection
+            & Precision \& Recall & $[0, 1]$ $\uparrow$        & Object detection \newline \& scene completion \\
+        \midrule
+        \multirow{3}{*}{Image quality}
+            & \gls{PSNR}          & $[0, \infty)$ $\uparrow$   & Scene \& texture \newline completion \\
+            & \gls{SSIM}          & $[-1, 1]$ $\uparrow$       & Scene \& texture \newline completion \\
+            & \gls{LPIPS}         & $[0, 1]$ $\downarrow$      & Scene \& texture \newline completion \\
         \bottomrule
     \end{tabularx}
 \end{table}

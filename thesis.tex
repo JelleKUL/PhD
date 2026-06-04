@@ -130,7 +130,15 @@
 \setlength{\intextsep}{10pt plus 4pt} % space above and below in-text floats (htbp)
 \captionsetup{skip=2pt, belowskip=0pt}
 
+\usepackage{ragged2e}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, shapes.geometric, positioning}
 
+\lstdefinelanguage{json}{
+    basicstyle=\small\ttfamily,
+    morestring=[b]",
+    literate={,}{{\textbf{,}}}1
+}
 
 \newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
 

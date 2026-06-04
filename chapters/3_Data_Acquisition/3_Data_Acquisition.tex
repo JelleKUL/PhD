@@ -6,7 +6,6 @@
 \newglossaryentry{TLS}{name={TLS}, description={Terrestrial Laser Scanner}}
 \newglossaryentry{iMMS}{name={iMMS}, description={Indoor Mobile Mapping System}}
 \newglossaryentry{ToF}{name={ToF}, description={Time-of-Flight}}
-\newglossaryentry{LOA}{name={LOA}, description={Level of Accuracy}}
 \newglossaryentry{SLAM}{name={SLAM}, description={Simultaneous Localisation and Mapping}}
 \newglossaryentry{TSDF}{name={TSDF}, description={Truncated Signed Distance Field}}
 \newglossaryentry{OBB}{name={OBB}, description = {Oriented Bounding Box}}
@@ -35,9 +34,8 @@ ScanNet++~\cite{yeshwanth_scannet_2023} is one of the primary real-world dataset
 
 \begin{figure}[h]
   \centering
-  \medskip
   \includegraphics[width=1\textwidth]{Scannet++}
-  \caption[ScanNet++ Dataset]{Example scenes from the ScanNet++ dataset.}
+  \caption[ScanNet++ Dataset]{Example scenes from the ScanNet++ dataset. From \cite{yeshwanth_scannet_2023}}
   \label{fig:3_ScanNet}
 \end{figure}
 
@@ -47,9 +45,8 @@ Matterport3D~\cite{chang_matterport3d_2017} is the second primary real-world dat
 
 \begin{figure}[h]
   \centering
-  \medskip
   \includegraphics[width=1\textwidth]{Matterport3D}
-  \caption[Matterport3D Dataset]{Example scenes from the Matterport3D dataset.}
+  \caption[Matterport3D Dataset]{Example scenes from the Matterport3D dataset. From \cite{chang_matterport3d_2017}}
   \label{fig:3_Matterport3D}
 \end{figure}
 
@@ -59,32 +56,28 @@ Together, ScanNet++ and Matterport3D provide two complementary real-world benchm
 \subsection{Object-Level Datasets}
 \label{sec:3_object_datasets}
 
-\todo{iets sterker verwoorden waarom we syntetisch en echt object gebruiken}
 Datasets such as the \textit{Redwood Object Scan Dataset}~\cite{choi_large_2016}, \textit{Pix3D}~\cite{sun_pix3d_2018}, \textit{Google Scanned Objects}~\cite{downs_google_2022}, and \textit{OmniObject3D}~\cite{wu_omniobject3d_2023} provide high-quality 3D object models derived from real scanning or image-based reconstruction. These resources are valuable for object reconstruction, novel-view synthesis, and shape modelling, but remain limited in scale, diversity and annotation quality compared to synthetic repositories like ShapeNet~\cite{chang_shapenet_2015}.
-
-\paragraph{ShapeNet.}
-
-ShapeNet~\cite{chang_shapenet_2015} is one of the primary datasets used for quantitative isolated object completion experiments in Chapter~\ref{ch:7_Object_Completion}. It is a large-scale repository of CAD-based 3D object models organised into semantic categories, containing tens of thousands of examples across common furniture and household object classes (Figure~\ref{fig:3_ShapeNet}). Its principal strength lies in the availability of clean and complete geometry, making it well suited for controlled benchmarking and for training data-hungry completion networks.
 
 \begin{figure}[h]
   \centering
-  \medskip
   \includegraphics[width=1\textwidth]{Shapenet}
-  \caption[ShapeNet Dataset]{Example objects from the ShapeNet dataset.}
+  \caption[ShapeNet Dataset]{a selection of objects from the ShapeNet \cite{chang_shapenet_2015} dataset consisting of over 51,300 models covering 55 categories}
   \label{fig:3_ShapeNet}
 \end{figure}
 
-\paragraph{Redwood.}
+\paragraph{ShapeNet.}
+ShapeNet~\cite{chang_shapenet_2015} is one of the primary datasets used for quantitative isolated object completion experiments in Chapter~\ref{ch:7_Object_Completion}. It is a large-scale repository of CAD-based 3D object models organised into semantic categories, containing tens of thousands of examples across common furniture and household object classes (Figure~\ref{fig:3_ShapeNet}). Its principal strength lies in the availability of clean and complete geometry, making it well suited for controlled benchmarking and for training data-hungry completion networks.
 
-The Redwood 3D Scan Dataset~\cite{choi_large_2016} is the second primary dataset used for quantitative isolated object completion evaluation. It contains real objects captured with consumer RGB-D sensors and reconstructed into dense 3D models (Figure~\ref{fig:3_Redwood}). Unlike ShapeNet, Redwood reflects the imperfections of real-world acquisition, including sensor noise, incomplete observations and reconstruction artefacts, making it particularly valuable for assessing whether methods trained on synthetic CAD models remain effective on realistic scanned objects.
 
 \begin{figure}[h]
   \centering
-  \medskip
   \includegraphics[width=1\textwidth]{Redwood}
-  \caption[Redwood Dataset]{Example scenes from the Redwood dataset.}
+  \caption[Redwood Dataset]{Example scenes from the Redwood dataset  \cite{choi_large_2016}, consisting of 441 real objects captured with consumer RGB-D sensors and reconstructed into dense 3D models.}
   \label{fig:3_Redwood}
 \end{figure}
+
+\paragraph{Redwood.}
+The Redwood 3D Scan Dataset~\cite{choi_large_2016} is the second primary dataset used for quantitative isolated object completion evaluation. It contains real objects captured with consumer RGB-D sensors and reconstructed into dense 3D models (Figure~\ref{fig:3_Redwood}). Unlike ShapeNet, Redwood reflects the imperfections of real-world acquisition, including sensor noise, incomplete observations and reconstruction artefacts, making it particularly valuable for assessing whether methods trained on synthetic CAD models remain effective on realistic scanned objects.
 
 Together, ShapeNet and Redwood provide complementary object-level benchmarks: ShapeNet offers scale and clean geometry, while Redwood offers realism and sensor-derived shape variation.
 
@@ -92,7 +85,15 @@ Together, ShapeNet and Redwood provide complementary object-level benchmarks: Sh
 \section{Real-World Data Capture}
 \label{sec:3_realworld}
 
-Real-world captures were performed at the KU~Leuven Technology Campus in Ghent across a range of industrial laboratory spaces and residential environments, using a combination of high-end terrestrial laser scanners and consumer-grade \gls{XR} devices.
+Real-world captures were performed at the KU~Leuven Technology Campus in Ghent across a range of industrial laboratory spaces and residential environments (Figure~\ref{fig:3_captured_scenes}), using a combination of high-end terrestrial laser scanners and consumer-grade \gls{XR} devices.
+
+\begin{figure}[h]
+  \centering
+  \medskip
+  \includegraphics[width=1\textwidth]{Campus}
+  \caption[Captured scenes]{Examples of the captured scenes: 3 Campus captures and the prefab living lab under construction respectively}
+  \label{fig:3_captured_scenes}
+\end{figure}
 
 \subsection{Sensing Technologies}
 \label{sec:3_sensors}
@@ -115,7 +116,7 @@ The sensing technologies used in this dataset span a wide range of accuracy, den
             Scan rate: $2 \times 0.6$ MHz \\
 
             Range: $100$ m &
-            Range: $100$ m \\
+            Range: $15$ m \\
 
             Cam: $175 \times 4$ MP &
             Cam: $4 \times 20$ MP \\
@@ -149,7 +150,7 @@ The sensing technologies used in this dataset span a wide range of accuracy, den
 \end{figure}
 
 \paragraph{Terrestrial Laser Scanners.}
-Static \gls{TLS} systems such as the Leica ScanStation P30~\cite{noauthor_leica_nodate} and BLK360~\cite{noauthor_leica_nodate-1} provide the highest measurement accuracy, typically achieving single-point accuracies below 5\,mm at ranges up to 50\,m~\cite{bassier_standalone_2016}. These systems capture structured point grids of 10 to 40 million points per setup, along with panoramic imagery. However, the static nature of the measurement introduces significant occlusions at ground level and behind objects, as only surfaces visible from the scanner position are recorded. Consecutive setups must be registered, typically through a combination of target-based and cloud-to-cloud methods, with sub-millimetre error propagation achievable across setups~\cite{geyter_point_2022}.
+Static \gls{TLS} systems such as the Leica ScanStation P30~\cite{noauthor_leica_nodate} and BLK360~\cite{noauthor_leica_nodate-1} provide the highest measurement accuracy, typically achieving single-point accuracies between 1 and 2\,mm for the P30 and 5 to 10\,mm for the BLK360 at ranges up to 100 and 60\,m respectively~\cite{bassier_standalone_2016}. These systems capture structured point grids of 10 to 40 million points per setup, along with panoramic imagery. However, the static nature of the measurement introduces significant occlusions at ground level and behind objects, as only surfaces visible from the scanner position are recorded. Consecutive setups must be co-registered, typically through a combination of target-based and cloud-to-cloud methods, with sub-millimetre error propagation achievable across setups~\cite{geyter_point_2022}.
 
 \paragraph{Indoor Mobile Mapping Systems.}
 Indoor mobile mapping systems (\gls{iMMS}) such as the NavVis VLX~\cite{noauthor_navvis_nodate} combine LiDAR sensors with camera-based \gls{SLAM} algorithms to achieve continuous data acquisition while the operator moves through the environment. These systems produce unordered point clouds with uneven point distributions, but their continuous trajectory results in significantly better spatial coverage than static scanners, particularly in cluttered environments. Global accuracies of LOA20 ($2\sigma \leq 0.05$\,m) to LOA30 ($2\sigma \leq 0.015$\,m) are achievable when supported by control measurements~\cite{geyter_point_2022, vermandere_two-step_2022}. Data acquisition is typically two to three times faster than with static \gls{TLS}.
@@ -170,70 +171,57 @@ This deliberate combination of sensors and deployment strategies produces comple
 \subsection{Captured Scenes}
 \label{sec:3_captured_scenes}
 
-Three categories of indoor environments were captured across the KU~Leuven campus in Ghent and at a residential site in Bruges (Figure~\ref{fig:3_captured_scenes}). These comprise industrial laboratory rooms used for soil, asphalt, and building physics research, a prefab living lab constructed on the campus, and a four-storey residential renovation in Bruges. Each environment was documented at multiple time points and with multiple sensors, producing the multi-temporal and multi-sensory data required for the alignment experiments in Chapter~\ref{ch:4_Alignment_Updating}. Between capture epochs, the environments were in active use or under active construction, resulting in natural variations in object placement, surface treatment, and structural configuration.
-
-The laboratory rooms are single-storey industrial spaces with footprints on the order of 10\,m~$\times$~30\,m, containing working desks, test equipment, machinery, and bulk materials. Between captures taken several months apart, all movable objects were displaced in the course of ongoing research activity, making these rooms the primary test case for multi-temporal alignment under layout change in an otherwise stable structural envelope.
-
-The living lab is a three-storey prefab residential building erected on the campus as a dedicated research facility. It was captured repeatedly throughout its construction, from early stake-out through to the installation of mechanical, electrical, and plumbing (MEP) systems, providing test data in which both the geometry and the surface appearance change drastically between epochs.
-
-The Bruges renovation is a four-storey residential building including a full basement and attic, captured during an interior refurbishment. The structural envelope is largely fixed, but the interior is cluttered with construction materials, tools, and temporary storage that change position between visits, complementing the living lab with a residential-scale renovation environment rather than a new-build construction site.
-
-In total, 45 measurement sessions were recorded across the three sites using the full range of sensors introduced in Section~\ref{sec:3_sensors}~\cite{vermandere_two-step_2022}. Table~\ref{tab:3_captured_scenes_metrics} summarises the dataset at the scene level, reporting per-sensor session counts, image and point counts, and the number of modelled 3D reference objects per scene.
+Three categories of indoor environments were captured across the KU~Leuven campus in Ghent and at a residential site in Bruges (Figure~\ref{fig:3_captured_scenes}), producing the multi-temporal and multi-sensory data required for the alignment experiments in Chapter~\ref{ch:4_Alignment_Updating}. Table~\ref{tab:3_captured_scenes_metrics} summarises the dataset at the scene level.
 
 \begin{table}[htbp]
     \centering
     \caption[Captured scenes dataset metrics]{Dataset-level metrics for the three captured environments, aggregated per sensor across all sessions of that sensor within each scene.}
     \label{tab:3_captured_scenes_metrics}
-    \resizebox{\textwidth}{!}{%
-    \begin{tabular}{l l c c c c}
+    \begin{tabularx}{\textwidth}{X r r r r}
         \toprule
-        \textbf{Scene} & \textbf{Sensor} & \textbf{\# Sessions} & \textbf{\# Images} & \textbf{\# 3D Objects} & \textbf{\# Points} \\
+        \textbf{Sensor} & \textbf{\# Sessions} & \textbf{\# Images} & \textbf{\# Objects} & \textbf{\# Points} \\
         \midrule
-        \multirow{3}{*}{Laboratory rooms (Ghent)}
-            & NavVis VLX           & 3  & 241  & 3   & 162{,}108{,}105 \\
-            & Microsoft HoloLens~2 & 6  & 35   & 483 & 1{,}089{,}574   \\
-            & BIM reference        & 3  & --   & 186 & 3{,}980         \\
+        \multicolumn{5}{l}{\textbf{Laboratory rooms (Ghent)}} \\
         \midrule
-        \multirow{4}{*}{Living lab (Ghent)}
-            & Leica ScanStation P30 & 1  & 274  & 2   & 7{,}638{,}931   \\
-            & DSLR photogrammetry   & 3  & 642  & 3   & 1{,}013{,}736   \\
-            & Microsoft HoloLens~2  & 5  & 30   & 15  & 439{,}816       \\
-            & BIM reference         & 1  & --   & 368 & 41{,}825        \\
+        NavVis VLX              & 3  & 241 & 3   & 162{,}108{,}105 \\
+        HoloLens~2              & 6  & 35  & 483 & 1{,}089{,}574   \\
+        BIM reference           & 3  & --  & 186 & 3{,}980         \\
         \midrule
-        \multirow{4}{*}{Bruges renovation}
-            & Leica BLK360          & 1  & --   & 20  & 264{,}525{,}819 \\
-            & DSLR photogrammetry   & 1  & 430  & 0   & --              \\
-            & Microsoft HoloLens~2  & 20 & 91   & 18  & 378{,}075       \\
-            & BIM reference         & 1  & --   & 594 & 24{,}783        \\
+        \multicolumn{5}{l}{\textbf{Living lab (Ghent)}} \\
         \midrule
-        \textbf{Total} & & \textbf{45} & \textbf{1{,}743} & \textbf{1{,}692} & $\sim \mathbf{1.72\times 10^{8}}$ \\
+        Leica P30               & 1  & 274 & 2   & 7{,}638{,}931 \\
+        DSLR                    & 3  & 642 & 3   & 1{,}013{,}736 \\
+        HoloLens~2              & 5  & 30  & 15  & 439{,}816     \\
+        BIM reference           & 1  & --  & 368 & 41{,}825      \\
+        \midrule
+        \multicolumn{5}{l}{\textbf{Bruges renovation}} \\
+        \midrule
+        Leica BLK360            & 1  & --  & 20  & 264{,}525{,}819 \\
+        DSLR                    & 1  & 430 & 0   & --              \\
+        HoloLens~2              & 20 & 91  & 18  & 378{,}075       \\
+        BIM reference           & 1  & --  & 594 & 24{,}783        \\
+        \midrule
+        \textbf{Total} & \textbf{45} & \textbf{1{,}743} & \textbf{1{,}692} & $\sim \mathbf{1.72\times 10^{8}}$ \\
         \bottomrule
-    \end{tabular}%
-    }
+    \end{tabularx}
 \end{table}
 
-The dataset spans more than three orders of magnitude in per-session point count, from roughly $10^{4}$ points on a HoloLens~2 session to over $10^{8}$ points on a single BLK360 setup, and covers four complementary sensor modalities per scene. This intentional heterogeneity provides realistic worst-case conditions under which the alignment and updating methods of Chapter~\ref{ch:4_Alignment_Updating} must still produce consistent pose estimates and coherent combined point clouds. The captured data and its sensor-by-sensor analysis have been reported in~\cite{geyter_point_2022, vermandere_two-step_2022, vermandere_automatic_2022}.
+The laboratory rooms are single-storey industrial spaces containing working desks, test equipment and machinery. Between captures taken several months apart, all movable objects were displaced in the course of ongoing research activity, making these rooms the primary test case for multi-temporal alignment under layout change in an otherwise stable structural envelope. The living lab is a three-storey prefab residential building captured repeatedly throughout its construction, from early stake-out through to MEP installation, providing test data in which both geometry and surface appearance change drastically between epochs. The Bruges renovation is a four-storey residential building captured during interior refurbishment, where the structural envelope is largely fixed but the interior is cluttered with construction materials and temporary storage that change position between visits.
 
-\begin{figure}[h]
-  \centering
-  \medskip
-  \includegraphics[width=1\textwidth]{Campus}
-  \caption[Captured scenes]{Examples of the captured scenes: 3 Campus captures and the prefab living lab under construction respectively}
-  \label{fig:3_captured_scenes}
-\end{figure}
+The dataset spans more than three orders of magnitude in per-session point count, from roughly $10^{4}$ points on a HoloLens~2 session to over $10^{8}$ on a single BLK360 setup. This intentional heterogeneity provides realistic worst-case conditions under which the alignment and updating methods must still produce consistent pose estimates and coherent combined point clouds~\cite{geyter_point_2022, vermandere_two-step_2022, vermandere_automatic_2022}.
+
+
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Synthetic Data Creation}
 \label{sec:3_synthetic}
 
-The real-world captures provide heterogeneous multi-sensory data for alignment evaluation, but lack complete geometric ground truth for quantitative assessment of scene and object completion. Surfaces that are occluded during acquisition are, by definition, absent from the captured data. A synthetic data generation framework was therefore developed to produce partial scans together with complete reference geometry under controlled conditions that approximate real indoor scanning scenarios.
+To enable the creation of synthetic data containing both partial scans and complete reference geometry for evaluation purposes, a 2 part framework was developed that can both mimic real-world scanning conditions (\ref{sec:3_virtual_scanner}) and create procedural indoor scenes (\ref{sec:3_room_generator}).
 
 \subsection{Related Work}
 \label{sec:3_synthetic_related}
 
-Synthetic datasets are widely used in 3D computer vision to overcome the cost, scale, and annotation limitations of real-world data collection. At the scene level, datasets such as \textit{SUNCG}~\cite{song_semantic_2016}, \textit{SceneNet RGB-D}~\cite{mccormac_scenenet_nodate}, \textit{InteriorNet}~\cite{li_interiornet_2018}, and \textit{Replica}~\cite{straub_replica_2019} provide large collections of indoor environments with rendered imagery, semantic labels, and complete scene geometry. However, they generally provide complete environments directly and do not model the partial, sensor-dependent observations encountered during real scanning.
-
-At the object level, repositories such as \textit{ShapeNet}~\cite{chang_shapenet_2015}, \textit{ModelNet}~\cite{wu_3d_2015}, and \textit{Amazon Berkeley Objects}~\cite{collins_abo_2022} contain extensive collections of CAD models and scanned object instances valuable for classification, retrieval, and geometric learning. Nevertheless, they represent complete objects in isolation and do not capture the contextual occlusions typical of indoor scenes.
+Synthetic datasets are widely used in 3D computer vision to overcome the cost, scale, and annotation limitations of real-world data collection. Datasets such as \textit{SUNCG}~\cite{song_semantic_2016}, \textit{SceneNet RGB-D}~\cite{mccormac_scenenet_nodate}, \textit{InteriorNet}~\cite{li_interiornet_2018}, and \textit{Replica}~\cite{straub_replica_2019} provide large collections of indoor environments with rendered imagery, semantic labels, and complete scene geometry. However, they generally provide complete environments directly and do not model the partial, sensor-dependent observations encountered during real scanning.
 
 Several studies have explored virtual scanning and LiDAR simulation to bridge the gap between ideal geometry and measured data. Early work such as Blume~et~al.~\cite{blume_simulating_2006} focused on range sensing simulation for robotics. More recent systems, including Popovas~et~al.~\cite{popovas_virtual_2021} and \textit{HELIOS++}~\cite{winiwarter_virtual_2022}, incorporate viewpoint-dependent visibility, sampling behaviour, and sensor noise with high realism, demonstrating the importance of modelling the acquisition process itself. However, these systems target surveying or robotics scenarios and do not provide object-level ground truth or completion-oriented supervision for furnished indoor environments.
 
@@ -241,27 +229,35 @@ Procedural scene generation offers a complementary approach. \textit{Infinigen I
 
 The framework proposed here combines both directions, integrating procedural scene generation with configurable virtual scanning to produce partial observations together with complete scene- and object-level ground truth.
 
-\subsection{Virtual Scanner}
-\label{sec:3_virtual_scanner}
-
-A virtual scanner was developed to simulate common indoor acquisition devices within a 3D environment. For each scan position, the system generates a coloured point cloud together with a panoramic image, approximating the outputs of terrestrial laser scanners and mobile depth-sensing devices. In addition to standard scene capture, the framework supports automated object extraction, empty-scene rescanning, and configurable scan variations for dataset generation. The full pipeline is illustrated in Figure~\ref{fig:3_VScan_Method}.
-
-\begin{figure}[h]
+\begin{figure}[]
   \centering
-  \medskip
   \includegraphics[width=1\textwidth]{Vscan_method}
   \caption[V-Scan Method]{Overview of the V-Scan method.}
   \label{fig:3_VScan_Method}
 \end{figure}
 
+\subsection{Virtual Scanner}
+\label{sec:3_virtual_scanner}
+
+A virtual scanner was developed to simulate common indoor acquisition devices within a 3D environment. For each scan position, the system generates a coloured point cloud together with a panoramic image, approximating the outputs of terrestrial laser scanners and mobile depth-sensing devices. In addition to standard scene capture, the framework supports automated object extraction, empty-scene rescanning, and configurable scan variations for dataset generation. The full pipeline is illustrated in Figure~\ref{fig:3_VScan_Method}.
+
+
+
+
+
 \subsubsection{Scanner Configuration}
 
-The scanner behaviour is controlled through a set of parameters describing the sensing characteristics of the simulated device:
-
+The scanner behaviour is controlled through a set of parameters describing the sensing characteristics of the simulated device:\\
+\begin{wrapfigure}{r}{0.34\textwidth}
+  \centering
+  \includegraphics[]{Scanner_params}
+  \caption[V-Scan Parameters]{Overview of the V-Scan parameters.}
+  \label{fig:3_VScan_Parameters}
+\end{wrapfigure}
 \begin{itemize}
-    \item \textbf{Scan density}: the angular spacing between consecutive rays, expressed as the point spacing in mm at 10\,m distance.
-    \item \textbf{Scan range}: the maximum detection distance, in metres.
-    \item \textbf{Vertical scan range}: the total angular extent of the vertical field of view, in degrees. A value less than 360° simulates the blind spots typically found at the zenith and nadir of terrestrial laser scanners.
+    \item \textbf{Scan density}: $\rho$, the angular spacing between consecutive rays, expressed as the point spacing in mm at 10\,m distance.
+    \item \textbf{Scan range}: $r$, the maximum detection distance, in metres.
+    \item \textbf{Vertical scan range}: $r_{\text{vert}}$, the total angular extent of the vertical field of view, in degrees. A value less than 360° simulates the blind spots typically found at the zenith and nadir of terrestrial laser scanners.
     \item \textbf{System noise}: $\sigma_{\text{sys}}$, the standard deviation of range-independent measurement noise, in mm.
     \item \textbf{Distance noise}: $\sigma_{\text{dist}}$, the standard deviation of range-dependent measurement noise, in mm per 10\,m.
 \end{itemize}
@@ -291,12 +287,12 @@ Scanner type presets based on manufacturer specifications are summarised in Tabl
 
 \subsubsection{Geometric Scanning}
 
-The acquisition process is simulated by casting rays from the scanner origin into the scene according to a spherical sampling pattern. For an angular spacing $\delta$, the number of horizontal and vertical samples is given by:
+The acquisition process is simulated by casting rays from the scanner origin into the scene according to a spherical sampling pattern. For an angular spacing $\rho$, the number of horizontal and vertical samples is given by:
 
 \begin{equation}
-n_{\text{horiz}} = \left\lceil \frac{2\pi}{\delta} \right\rceil,
+n_{\text{horiz}} = \left\lceil \frac{2\pi}{\rho} \right\rceil,
 \qquad
-n_{\text{vert}} = \left\lceil \frac{\pi}{\delta} \right\rceil
+n_{\text{vert}} = \left\lceil \frac{\pi}{\rho} \right\rceil
 \end{equation}
 
 Rays outside the selected vertical field of view are discarded to reproduce blind regions typically present above and below terrestrial scanners. Whenever a ray intersects a surface within range, a point is recorded together with its position, surface normal, and texture coordinates. Optional Gaussian noise is added to the measured range:
@@ -304,8 +300,13 @@ Rays outside the selected vertical field of view are discarded to reproduce blin
 \begin{equation}
 d' = d + \mathcal{N}\left(0,\sigma_{\text{sys}} + \sigma_{\text{dist}} d \right)
 \end{equation}
-
-where $d$ is the true distance, $\sigma_{\text{sys}}$ is the constant noise term, and $\sigma_{\text{dist}}$ controls distance-dependent uncertainty. After acquisition, points can be filtered to a predefined scan volume to retain only observations inside the target scene region.
+where:
+\begin{itemize}
+    \item $d$ is the true distance
+    \item $\sigma_{\text{sys}}$ is the constant noise term
+    \item $\sigma_{\text{dist}}$ controls distance-dependent uncertainty
+\end{itemize}
+After acquisition, points can be filtered to a predefined scan volume to retain only observations inside the target scene region.
 
 \subsubsection{Image Capture and Colour Assignment}
 
@@ -332,7 +333,7 @@ A procedural scene generation system was developed to automatically create diver
   \centering
   \medskip
   \includegraphics[width=1\textwidth]{Proc_gen_method}
-  \caption[Procedural Room Layout Generator]{Overview the 3 steps of the procedural room layout generator: Floor generation, room structure generation, and furniture placement.}
+  \caption[Procedural Room Layout Generator]{Overview the 3 steps of the procedural room layout generator: Floor generation (left), room structure generation(middle), and furniture placement (right).}
   \label{fig:3_Room_Generator}
 \end{figure}
 
@@ -353,13 +354,50 @@ Furniture placement is divided into wall-mounted and free-standing categories. W
 
 The virtual scanner and procedural room generator are coordinated by a \texttt{ScanManager} that orchestrates the automated generation of complete dataset entries. For each generated room, the scan manager executes the following sequence:
 
-\begin{enumerate}
-    \item \textbf{Room generation}: A new room is procedurally generated, and all detectable objects are identified within the scan volume.
-    \item \textbf{Full scene scan}: The scene is scanned with objects present, producing the main point cloud and panoramic image. Ground-truth meshes and bounding boxes are exported for all detected objects.
-    \item \textbf{Object isolation}: Each detected object's points are isolated from the full scan, producing partial point clouds per object. Optionally, per-object occlusion voxel grids are computed.
-    \item \textbf{Empty scene scan}: All detected objects are deactivated, and the scene is scanned again to produce the ground-truth empty scene point cloud.
-    \item \textbf{Scan variations}: Additional scans are generated with configurable variations in furniture layout, scanner type, and scanner position.
-\end{enumerate}
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+    % Left image
+    \node[anchor=north west, inner sep=0] (img) at (0,0) {
+        \includegraphics[width=0.33\textwidth]{Dataset_buildup}
+    };
+
+    % Right side: 5 equal vertical slots
+    \def\rightstart{0.37\textwidth}
+    \def\rightwidth{0.63\textwidth}
+    \def\totalheight{-16cm}  % adjust to match image height
+    \def\slotsize{3.2cm}    % adjust to spread items evenly
+
+    \node[anchor=north west, text width=\rightwidth, inner sep=4pt]
+        at (\rightstart, 0) {
+        \textbf{1. Room generation}\\
+        A new room is procedurally generated and all detectable objects are identified within the scan volume.
+    };
+    \node[anchor=north west, text width=\rightwidth, inner sep=4pt]
+        at (\rightstart, -1*\slotsize) {
+        \textbf{2. Full scene scan}\\
+        The scene is scanned with objects present, producing the main point cloud, panoramic image and ground-truth meshes and bounding boxes.
+    };
+    \node[anchor=north west, text width=\rightwidth, inner sep=4pt]
+        at (\rightstart, -2*\slotsize) {
+        \textbf{3. Object isolation}\\
+        Each detected object's points are isolated from the full scan, producing partial point clouds and occlusion voxel grids per object.
+    };
+    \node[anchor=north west, text width=\rightwidth, inner sep=4pt]
+        at (\rightstart, -3*\slotsize) {
+        \textbf{4. Empty scene scan}\\
+        All detected objects are deactivated and the scene is rescanned to produce the ground-truth empty scene point cloud.
+    };
+    \node[anchor=north west, text width=\rightwidth, inner sep=4pt]
+        at (\rightstart, -4*\slotsize) {
+        \textbf{5. Scan variations}\\
+        Additional scans are generated with configurable variations in furniture layout, scanner type and scanner position.
+    };
+\end{tikzpicture}
+\caption[V-Scan generation pipeline]{Sequential steps of the V-Scan synthetic data generation pipeline.}
+\label{fig:3_VScan_Parameters}
+\end{figure}
+
 
 Each variation is stored alongside the main scan with its acquisition parameters, enabling controlled experiments on the impact of individual factors. The variation system supports an arbitrary number of passes per room, each independently configurable.
 
@@ -367,6 +405,14 @@ Each variation is stored alongside the main scan with its acquisition parameters
 \label{sec:3_vscan}
 
 Using the framework above, the V-Scan dataset was created as the main benchmark for scene and object completion in this thesis. The dataset combines properties not jointly available in existing resources: partial scene scans with complete geometric ground truth, multi-sensory outputs, temporal variations, and per-object annotations (Figure~\ref{fig:3_VScan}).
+
+\begin{figure}[h]
+  \centering
+  \medskip
+  \includegraphics[width=1\textwidth]{Vscan_data}
+  \caption[V-Scan Dataset]{Example scenes from the V-Scan dataset.}
+  \label{fig:3_VScan}
+\end{figure}
 
 \subsubsection{Dataset Composition}
 
@@ -389,30 +435,63 @@ The V-Scan dataset contains 200 scene folders generated from 5 unique procedural
     \end{tabular}
 \end{table}
 
+
 \subsubsection{Per-Scene Outputs}
 
-For each scene folder, the following outputs are available:
+For each scene folder, along with the generated 3D scans, the following outputs are available:
 
-\begin{itemize}
-    \item \textbf{Main scan}: coloured point cloud of the furnished scene.
-    \item \textbf{Panoramic image}: equirectangular panoramic image from the scanner position.
-    \item \textbf{Scan parameters}: JSON file recording the scanner configuration.
-    \item \textbf{Room parameters}: JSON file recording the procedural generation parameters.
-    \item \textbf{Object bounding boxes}: JSON file containing oriented bounding boxes for all detected objects.
-    \item \textbf{Per-object data}: isolated partial point cloud, ground-truth complete mesh (PLY), and individual bounding box.
-    \item \textbf{Empty scene scan}: coloured point cloud and panoramic image with all objects removed.
-    \item \textbf{Scan variations}: additional point clouds and panoramic images for each configured variation.
-\end{itemize}
+\paragraph{Metadata} The two metadata files stored per scene record the scanner configuration and the procedural generation parameters respectively:
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+\begin{lstlisting}[language=json, caption={Scan parameters.}, label={lst:scan_params}]
+{
+  scannerType   : string,
+  scanDensity   : number,
+  scanRange     : number,
+  systemNoise   : number,
+  distanceNoise : number
+}
+\end{lstlisting}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\begin{lstlisting}[language=json, caption={Room parameters.}, label={lst:room_params}]
+{
+  prefabList    : string,
+  seed          : number,
+  repositionScanManager: boolean,
+  generateRoom  : boolean,
+  removeRoom    : boolean,
+  generateFurnitureOnly: boolean,
+  removeFurnitureOnly: boolean,
+  floorWidth    : number,
+  floorLength   : number
+}
+\end{lstlisting}
+\end{minipage}
+\end{figure}
+
+\paragraph{Per-object-data} For each of the detected objects in the scene, a dedicated subfolder contains the complete ground-truth mesh, the isolated partial point cloud and the \gls{OBB} (Figure~\ref{fig:3_vscan_object_outputs}).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{Dataset_object_returns}
+    \caption[V-Scan per-object outputs]{Example of the per-object outputs for a single detected object: complete ground-truth mesh (left), the isolated partial point cloud (right) and the \gls{OBB} defined by its 8 corner points (center)}
+    \label{fig:3_vscan_object_outputs}
+\end{figure}
+
+\paragraph{Pano Images} For each scan, the panoramic image captured at the scanner position is stored as a high-resolution equirectangular image, providing RGB data that can be used for colour assignment and 2D-based alignment methods(Figure~\ref{fig:3_vscan_pano_example}).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{Pano_example}
+    \caption[Pano example]{Example of a panoramic image captured at the scanner position, stored in equirectangular format.}
+    \label{fig:3_vscan_pano_example}
+\end{figure}
 
 This output structure enables evaluation at scene level (reconstructed empty scene vs.\ ground-truth empty scan), object level (completed objects vs.\ ground-truth meshes), and detection level (predicted bounding boxes vs.\ ground-truth annotations).
-
-\begin{figure}[h]
-  \centering
-  \medskip
-  \includegraphics[width=1\textwidth]{Vscan_data}
-  \caption[V-Scan Dataset]{Example scenes from the V-Scan dataset.}
-  \label{fig:3_VScan}
-\end{figure}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Dataset Comparison and Overview}
@@ -420,26 +499,30 @@ This output structure enables evaluation at scene level (reconstructed empty sce
 
 Table~\ref{tab:dataset_comparison} provides a comparative overview of all datasets used in this thesis. Real datasets provide realistic scanning characteristics but lack ground-truth completion data, while V-Scan provides comprehensive ground truth at the cost of reduced visual realism.
 
-\begin{table}[h]
+\begin{table}[htbp]
     \centering
-    \caption[Dataset comparison]{Comparative overview of datasets used in this thesis. GT = ground truth available, MT = multi-temporal captures, MS = multiple scanner types.}
+    \renewcommand{\arraystretch}{1.3}
+    \caption[Dataset comparison]{Comparative overview of datasets used in this thesis.}
     \label{tab:dataset_comparison}
-    \resizebox{\textwidth}{!}{%
-    \begin{tabular}{l c c c c c c c c}
+    \begin{tabularx}{\textwidth}{X r >{\RaggedLeft\arraybackslash}X >{\centering\arraybackslash}p{0.8cm} >{\RaggedRight\arraybackslash}p{3cm}}
         \toprule
-        \textbf{Dataset} & \textbf{Type} & \textbf{GT Compl.} & \textbf{MT} & \textbf{MS} & \textbf{\# Scenes} & \textbf{\# Objects} & \textbf{Scene Types} & \textbf{Used For} \\
+        \textbf{Dataset} & \textbf{Type} & \textbf{Scale} & \textbf{GT} & \textbf{Properties \& Use} \\
         \midrule
-        ScanNet~\cite{dai_scannet_2017}             & Real      & \texttimes & \texttimes & \texttimes & 1,513  & --      & Residential  & Qual.\ full eval. \\
-        ScanNet++~\cite{yeshwanth_scannet_2023}     & Real      & \texttimes & \texttimes & \checkmark & 1,000+ & --      & Mixed        & Qual.\ full eval. \\
-        Matterport3D~\cite{chang_matterport3d_2017} & Real      & \texttimes & \texttimes & \texttimes & 90     & --      & Residential  & Qual.\ full eval. \\
-        ARKitScenes~\cite{baruch_arkitscenes_2022}  & Real      & \texttimes & \texttimes & \texttimes & 5,047  & --      & Mixed        & Qual.\ scene eval. \\
-        ShapeNet Core~\cite{chang_shapenet_2015}    & Synthetic & \checkmark & --         & --         & --     & 51,300  & Objects only & Quant.\ object comp. \\
-        Redwood~\cite{choi_large_2016}              & Real      & \checkmark & \texttimes & \texttimes & --     & 441  & Objects only & Quant.\ object comp. \\
-        Campus captures (ours)                      & Real      & \texttimes & \checkmark & \checkmark & 10+    & --      & Industrial   & Alignment \\
-        V-Scan (ours)                               & Synthetic & \checkmark & \checkmark & \checkmark & 200    & 3,100   & Mixed        & Quant.\ full eval. \\
+        \multicolumn{5}{l}{\textit{Existing Scene datasets}} \\
+        \midrule
+        ScanNet++~\cite{yeshwanth_scannet_2023}     & Real      & 1{,}000+ scenes  & \texttimes & Multi-sensor. Used for qualitative full evaluation. \\
+        Matterport3D~\cite{chang_matterport3d_2017} & Real      & 90 scenes        & \texttimes & Residential. Used for qualitative full evaluation. \\
+        ARKitScenes~\cite{baruch_arkitscenes_2022}  & Real      & 5{,}047 scenes   & \texttimes & Mixed scenes. Used for qualitative scene evaluation. \\
+        \midrule
+        ShapeNet Core~\cite{chang_shapenet_2015}    & Synthetic & 51{,}300 objects & \checkmark & Used for quantitative object completion. \\
+        Redwood~\cite{choi_large_2016}              & Real      & 441 objects      & \checkmark & Used for quantitative object completion. \\
+        \midrule
+        \multicolumn{5}{l}{\textit{Contributed datasets}} \\
+        \midrule
+        Campus captures \newline (ours)             & Real      & 10+ scenes        & \texttimes & Multi-temporal, multi-sensor, Used for alignment evaluation. \\
+        V-Scan (ours)          & Synthetic & 200 scenes \newline 3{,}100+ objects   & \checkmark & Multi-temporal, multi-sensor, Used for quantitative full evaluation. \\
         \bottomrule
-    \end{tabular}%
-    }
+    \end{tabularx}
 \end{table}
 
 % ─────────────────────────────────────────────────────────────────────────────
