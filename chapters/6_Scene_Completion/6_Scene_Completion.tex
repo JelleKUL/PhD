@@ -6,7 +6,14 @@
 \section{Introduction}
 \label{sec:6_intro}
 
-This chapter addresses the environment completion stage of the pipeline, reconstructing the permanent structural elements of the scene. As defined in Chapter~\ref{ch:background}, these primary building elements such as walls, floors and ceilings define the room envelope and are reconstructed as a continuous background model. This stage takes the object-removed point cloud and the structural planes from Chapter~\ref{ch:5_Scene_Segmentation}, together with the scene-level occlusion grid and the panoramic image, and produces a complete textured mesh of the empty room.
+This chapter addresses the environment completion stage of the pipeline, reconstructing the permanent structural elements of the scene (Figure \ref{fig:6_intro}). As defined in Chapter~\ref{ch:background}, these primary building elements such as walls, floors and ceilings define the room envelope and are reconstructed as a continuous background model. This stage takes the object-removed point cloud and the structural planes from Chapter~\ref{ch:5_Scene_Segmentation}, together with the scene-level occlusion grid and the panoramic image, and produces a complete textured mesh of the empty room.
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_completion_intro}
+ \caption[Scene completion introduction]{The input object-removed pointcloud (left) and the output completed mesh (right) of the proposed scene completion pipeline.}
+ \label{fig:6_intro}
+\end{figure}
 
 After object isolation, the foreground furniture has been cut out of the scene, leaving large rectangular holes in the remaining environment. The geometry behind these objects, as well as the regions hidden from the scanner by sensor occlusion, is missing and must be filled in. Because indoor environments are predominantly composed of large planar surfaces, the reconstruction is performed per plane rather than over the full unstructured point cloud. This keeps the geometry constrained to physically plausible surfaces and, by reconstructing only within regions marked as occluded in the scene-level grid from Chapter~\ref{ch:5_Scene_Segmentation}, avoids hallucinating structure in observed free space. This contrasts with scene-level completion methods that treat the environment as a monolithic volume and infer missing geometry globally~\cite{hubner_voxel-based_2020, dai_scancomplete_2018, dai_spsg_2020, roldao_3d_2022}.
 
@@ -51,12 +58,12 @@ NeRFiller~\cite{weber_nerfiller_2023} completes missing portions of a 3D capture
 
 The scene completion methodology takes the object-removed point cloud, the structural planes and the scene-level occlusion grid from Chapter~\ref{ch:5_Scene_Segmentation}, together with the panoramic image of the scene, and outputs a complete textured mesh of the empty room. It proceeds in two stages: a geometric reconstruction that turns the detected planes into watertight mesh fragments (Section~\ref{sec:6_geometry}), and a textural reconstruction that projects, masks and inpaints the panorama onto these fragments (Section~\ref{sec:6_texture}). An overview of the full pipeline is shown in Figure~\ref{fig:6_method_overview}.
 
-%\begin{figure}[ht]
-%  \centering
-%  \includegraphics[width=1\textwidth]{Scene_completion_method}
-%  \caption[Scene completion pipeline]{Overview of the proposed scene completion pipeline, from the object-removed point cloud and panorama to the final textured mesh.}
-%  \label{fig:6_method_overview}
-%\end{figure}
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_completion_method}
+ \caption[Scene completion pipeline]{Overview of the proposed scene completion pipeline, from the object-removed  to the final textured mesh.}
+ \label{fig:6_method_overview}
+\end{figure}
 
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -72,18 +79,32 @@ The geometric reconstruction converts the structural planes detected in Chapter~
 
 The starting point is the iterative RANSAC plane detection introduced in Chapter~\ref{ch:5_Scene_Segmentation}, applied here to the object-removed point cloud~\cite{korman_latent_2018}. Removing the bounding box volumes of the detected objects beforehand leaves a point cloud dominated by the structural surfaces, so the dominant planes recovered correspond directly to the walls, floor and ceiling. Each plane is returned as an implicit model together with the subset of points that support it.
 
-A single plane model is infinite and overlaps with the others, so the planes must be cut into bounded, non-overlapping fragments before they can be meshed. For each detected plane, an oversized quad is first created, sized to the axis-aligned bounding box of the scene so that it more than covers the room. This quad is then recursively split by every other detected plane: at each split a Sutherland-Hodgman \cite{sutherland_reentrant_1974} clipping operation divides the current fragment into the parts in front of and behind the cutting plane, and both parts are retained with their normals oriented toward the scene centre. After cutting against all other planes, each plane is represented by a set of fragments whose edges coincide with the intersections between planes, giving tight seams where walls meet the floor and ceiling.
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_completion_plane_segmentation}
+ \caption[Plane instance segmentation]{The full detected planes (left) are cut into bounded fragments and filtered to retain only the fragments supported by the scan (right).}
+ \label{fig:6_plane_segmentation}
+\end{figure}
 
-Many of these fragments fall in regions of the room where the corresponding surface was never scanned and therefore do not represent real geometry. To remove them, each fragment is tested against the segmented plane points: a fragment is kept only if a sufficient number of points (a minimum of 1000 in the experiments) lie within a small distance of its surface, after projecting the nearby points into the fragment's plane and testing them against its 2D boundary. Fragments that contain too few supporting points are discarded as empty, leaving only the fragments that correspond to observed structural surfaces.
+A single plane model is infinite and overlaps with the others, so the planes must be cut into bounded, non-overlapping fragments before they can be meshed. For each detected plane, an oversized quad is first created, sized to the axis-aligned bounding box of the scene so that it more than covers the room (Figure \ref{fig:6_plane_segmentation} left). This quad is then recursively split by every other detected plane: at each split a Sutherland-Hodgman \cite{sutherland_reentrant_1974} clipping operation divides the current fragment into the parts in front of and behind the cutting plane, and both parts are retained with their normals oriented toward the scene centre. After cutting against all other planes, each plane is represented by a set of fragments whose edges coincide with the intersections between planes, giving tight seams where walls meet the floor and ceiling.
+
+Many of these fragments fall in regions of the room where the corresponding surface was never scanned and therefore do not represent real geometry. To remove them, each fragment is tested against the segmented plane points: a fragment is kept only if a sufficient number of points (a minimum of 1000 in the experiments) lie within a small distance of its surface, after projecting the nearby points into the fragment's plane and testing them against its 2D boundary. Fragments that contain too few supporting points are discarded as empty, leaving only the fragments that correspond to observed structural surfaces (Figure \ref{fig:6_plane_segmentation} right).
 
 
 % ── 6.3.1.2 ──────────────────────────────────────────────────────────────────
 \subsubsection{Surface Point Generation}
 \label{sec:6_point_generation}
 
-The retained plane fragments are flat and pass through the scanned surface, but the goal is a mesh that follows the real surface where it was observed while still covering the holes left by object removal and occlusion. To achieve this, the missing regions of each plane are first filled with synthetic points at the same density as the surrounding scan.
+The retained plane fragments are flat and pass through the scanned surface, but the goal is a mesh that follows the real surface where it was observed while still covering the holes left by object removal and occlusion. To achieve this, the missing regions of each plane are first filled with synthetic points at the same density as the surrounding scan(Figure \ref{fig:6_point_sampling}).
 
-For each fragment, points are sampled uniformly on its surface and voxel-downsampled to the scene voxel size of 5\,cm, matching the density of the scanned point cloud. Only the sampled points that lie further than one voxel from any existing scanned point are kept, so that the synthetic points fill the unoccupied gaps without duplicating the observed geometry. The unoccupied sampled points are then combined with the original segmented points of that plane to obtain a complete, evenly sampled point cloud for the surface.
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_completion_point_sampling}
+ \caption[Point sampling for scene completion]{Synthetic points (red) are generated to fill gaps in the scene (coloured), ensuring even sampling across the reconstructed surfaces.}
+ \label{fig:6_point_sampling}
+\end{figure}
+
+For each fragment, points are sampled uniformly on its surface and voxel-downsampled to the scene voxel size, matching the density of the scanned point cloud. Only the sampled points that lie further than one voxel from any existing scanned point are kept, so that the synthetic points fill the unoccupied gaps without duplicating the observed geometry. The unoccupied sampled points are then combined with the original segmented points of that plane to obtain a complete, evenly sampled point cloud for the surface.
 
 
 % ── 6.3.1.3 ──────────────────────────────────────────────────────────────────
@@ -92,7 +113,14 @@ For each fragment, points are sampled uniformly on its surface and voxel-downsam
 
 Each plane fragment is first remeshed into a regular grid at the voxel density. The interior of the fragment is filled with grid points spaced one voxel apart, while the boundary edges produced by the plane cutting are subdivided to the same spacing and preserved exactly, so that adjacent fragments keep their shared seams. The interior and boundary vertices are triangulated together using a constrained Delaunay triangulation \cite{delaunay_sur_1934} that respects the boundary segments.
 
-Each interior vertex of this subdivided mesh is then projected onto the scanned surface by displacing it along the plane normal to match the nearest combined surface point, found through a k-d tree query. This lets the reconstructed surface follow the small undulations and offsets present in the real scan rather than remaining perfectly flat, while the preserved boundary vertices are kept in place to ensure a tight fit against the neighbouring planes. The triangle normals are finally oriented toward the recorded scanner position so that the resulting surface faces into the room.
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_completion_mesh_projection}
+ \caption[Mesh projection for scene completion]{The subdivided mesh (left) is projected onto the scanned surface, ensuring a tight fit against the observed geometry (right).}
+ \label{fig:6_mesh_projection}
+\end{figure}
+
+Each interior vertex of this subdivided mesh is then projected onto the scanned surface by displacing it along the plane normal to match the nearest combined surface point, found through a k-d tree query (Figure \ref{fig:6_mesh_projection}). This lets the reconstructed surface follow the small undulations and offsets present in the real scan rather than remaining perfectly flat, while the preserved boundary vertices are kept in place to ensure a tight fit against the neighbouring planes. The triangle normals are finally oriented toward the recorded scanner position so that the resulting surface faces into the room.
 
 The result is a set of watertight mesh fragments that together form the closed structural shell of the empty room, conforming to the scanned surfaces where they were observed and spanning the regions that were occluded or removed.
 
@@ -108,7 +136,14 @@ With the geometry reconstructed, the second stage assigns a continuous texture t
 \subsubsection{UV Parameterisation}
 \label{sec:6_uv}
 
-Each reconstructed plane is mapped to a 2D \gls{UV} space so that it can be textured and inpainted as a regular image~\cite{vermandere_semantic_2024}. The parameterisation is built from the plane normal, oriented to point toward the scene centre, and a consistent up direction: the world vertical axis for vertical surfaces such as walls, and a horizontal axis for floors and ceilings. The horizontal texture axis is taken as the cross product of the up vector and the normal, and the vertical texture axis completes the right-handed frame, with both flipped if necessary so that the texture's up direction matches the chosen up axis. The vertices are projected onto this frame and normalised to the unit square. Keeping the up direction and the orientation toward the scanner consistent across planes ensures that the subsequent inpainting operates on an upright, logically laid out image rather than an arbitrarily rotated one, which has been shown to improve the plausibility of the inpainted texture~\cite{vermandere_semantic_2024}.
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_completion_uv_map}
+ \caption[UV parameterisation for scene completion]{An example uv texture (left) is mapped to each individual plane to visualise the texture mapping.}
+ \label{fig:6_uv_parameterisation}
+\end{figure}
+
+Each reconstructed plane is mapped to a 2D \gls{UV} space so that it can be textured and inpainted as a regular image~\cite{vermandere_semantic_2024} (Figure \ref{fig:6_uv_parameterisation}). The parameterisation is built from the plane normal, oriented to point toward the scene centre, and a consistent up direction: the world vertical axis for vertical surfaces such as walls, and a horizontal axis for floors and ceilings. The horizontal texture axis is taken as the cross product of the up vector and the normal, and the vertical texture axis completes the right-handed frame, with both flipped if necessary so that the texture's up direction matches the chosen up axis. The vertices are projected onto this frame and normalised to the unit square. Keeping the up direction and the orientation toward the scanner consistent across planes ensures that the subsequent inpainting operates on an upright, logically laid out image rather than an arbitrarily rotated one, which has been shown to improve the plausibility of the inpainted texture~\cite{vermandere_semantic_2024}.
 
 
 % ── 6.3.2.2 ──────────────────────────────────────────────────────────────────
@@ -117,17 +152,44 @@ Each reconstructed plane is mapped to a 2D \gls{UV} space so that it can be text
 
 When a panoramic image of the scene is available, it is used as the source texture so that the reconstructed surfaces carry the real appearance of the room. For each plane, a texture image is generated by sampling the panorama: a regular grid of points is laid out over the plane in its UV frame, mapped back into 3D, and projected into the equirectangular panorama through the inverse of the scanner transform to retrieve the corresponding colour. This produces one texture per plane, aligned with its UV parameterisation.
 
-The panorama still contains all the foreground objects, so the pixels that belong to removed or occluded geometry must be masked out before they are baked into the reconstructed surface. The mask is derived from the scene-level occlusion information computed in Chapter~\ref{ch:5_Scene_Segmentation}. Where a second panorama of the empty scene is available, as in the synthetic V-Scan data, the mask is obtained directly by comparing the furnished and empty panoramas: pixels whose mean per-channel difference exceeds a small threshold are marked as occluded, and the difference mask is blurred slightly to smooth its edges. Where only a single panorama is available, the same regions are identified by comparing the depth of the reconstructed planes against the captured scene depth and masking the pixels that lie closer than the reconstructed surface, equivalently to reading the occluded voxels from the scene-level occlusion grid. The masked regions are transferred onto each plane's projected texture, marking the pixels to be replaced.
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_completion_pano_occlusion}
+ \caption[Panoramic projection and occlusion masking]{The occluded voxelgrid (bottom left) is projected onto the panorama (right) to identify the pixels that belong to removed or occluded geometry. The masked pixels are marked in red (bottom right) to serve as a mask for the inpainting process.}
+ \label{fig:6_pano_occlusion}
+\end{figure}
+
+The panorama still contains all the foreground objects, so the pixels that belong to removed or occluded geometry must be masked out before they are baked into the reconstructed surface. The mask is derived from the scene-level occlusion information computed in Chapter~\ref{ch:5_Scene_Segmentation} (Figure \ref{fig:6_pano_occlusion}). The object-occluded regions are identified by comparing the depth of the reconstructed planes against the captured scene depth and masking the pixels that lie closer than the reconstructed surface, equivalently to reading the occluded voxels from the scene-level occlusion grid. The masked regions are transferred onto each plane's projected texture, marking the pixels to be replaced( Figure \ref{fig:6_to_be_inpainted}).
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_completion_to_be_inpainted}
+ \caption[Splatted projected textured mesh]{The red occluded pixels are projected onto the reconstructed mesh to visualise the regions that will be inpainted.}
+ \label{fig:6_to_be_inpainted}
+\end{figure}
 
 
 % ── 6.3.2.3 ──────────────────────────────────────────────────────────────────
 \subsubsection{Texture Inpainting}
 \label{sec:6_inpainting}
 
-Each masked plane texture is inpainted individually. Before inpainting, the mask is dilated by a fixed margin (20 pixels in the experiments) so that no fringe of clutter or movable furniture remains around the edges of the removed regions. The dilated mask and the masked texture are passed to LaMa~\cite{suvorov_resolution-robust_2022}, which fills the missing region with content consistent with the surrounding wall or floor texture. Inpainting per plane rather than on the panorama directly means the network operates on a flat, upright surface with a coherent layout, which suits the repetitive planar structures it is asked to complete and keeps the result independent of the original viewpoint.
+Each masked plane texture is inpainted individually. Before inpainting, the mask is dilated by a fixed margin (20 pixels in the experiments) so that no fringe of clutter or movable furniture remains around the edges of the removed regions. The dilated mask and the masked texture are passed to LaMa~\cite{suvorov_resolution-robust_2022}, which fills the missing region with content consistent with the surrounding wall or floor texture (Figure \ref{fig:6_plane_inpainting}). Inpainting per plane rather than on the panorama directly means the network operates on a flat, upright surface with a coherent layout, which suits the repetitive planar structures it is asked to complete and keeps the result independent of the original viewpoint.
 
-The inpainted textures are finally applied back to the corresponding UV-parameterised mesh fragments, and the textured fragments are combined into the final mesh of the completed environment, exported as a single textured model. This completed empty scene, together with the isolated objects from Chapter~\ref{ch:5_Scene_Segmentation}, forms the input to the object completion stage in Chapter~\ref{ch:7_Object_Completion} and the dynamification stage in Chapter~\ref{ch:8_Scene_Dynamification}.
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_completion_plane_inpainting}
+ \caption[Plane-based inpainting]{The inpainted textures are generated by filling the masked regions of each plane's texture with content consistent with the surrounding surface.}
+ \label{fig:6_plane_inpainting}
+\end{figure}
 
+The inpainted textures are finally applied back to the corresponding UV-parameterised mesh fragments, and the textured fragments are combined into the final mesh of the completed environment, exported as a single textured model (Figure \ref{fig:6_final_completion}). This completed empty scene, together with the isolated objects from Chapter~\ref{ch:5_Scene_Segmentation}, forms the input to the object completion stage in Chapter~\ref{ch:7_Object_Completion} and the dynamification stage in Chapter~\ref{ch:8_Scene_Dynamification}.
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_completion_result}
+ \caption[Final scene completion]{The final completed scene with inpainted textures applied to the reconstructed mesh.}
+ \label{fig:6_final_completion}
+\end{figure}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Experiments}
