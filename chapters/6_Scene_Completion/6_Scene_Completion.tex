@@ -211,7 +211,14 @@ The textural accuracy is measured by comparing the inpainted plane textures agai
 \subsection{Results on V-Scan}
 \label{sec:6_exp_vscan}
 
-Table~\ref{tab:6_completion_results} reports the geometric and textural results per environment type, averaged over all scenes of each class.
+Figure \ref{fig:6_vscan_results} shows and Table~\ref{tab:6_completion_results} reports the geometric and textural results per environment type, averaged over all scenes of each class.
+
+\begin{figure}[ht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_completion_vscan}
+ \caption[Scene completion examples on V-Scan]{Examples of completed environments for different V-Scan environment types. Left: the object-removed input point cloud. Middle: the reconstructed mesh geometry. Right: the final textured and inpainted mesh.}
+ \label{fig:6_vscan_results}
+\end{figure}
 
 \begin{table}[h]
     \centering
@@ -236,22 +243,18 @@ The geometric reconstruction is consistently accurate across all environment typ
 
 The textural results show a clearer separation between scene types. The residential scenes achieve high fidelity, with the bedroom reaching a PSNR of 59.25\,dB, an SSIM of 0.9902 and an LPIPS of 0.0121, because their walls and floors are largely uniform and the masked regions are surrounded by repetitive texture that LaMa~\cite{suvorov_resolution-robust_2022} completes reliably. The industrial and office scenes score noticeably lower, with PSNR around 43--45\,dB and higher LPIPS values, because they contain larger occluded regions and more textured, less repetitive surfaces where the inpainted content diverges more from the ground truth. This mirrors the occlusion characterisation in Chapter~\ref{ch:5_Scene_Segmentation}, where the industrial scenes showed the largest and most variable occluded volumes, confirming that textural difficulty is driven primarily by the amount of surface that has to be reconstructed from the inpainting prior rather than observed directly.
 
-%\begin{figure}[ht]
-%  \centering
-%  \includegraphics[width=1\textwidth]{Scene_completion_results}
-%  \caption[Scene completion examples on V-Scan]{Examples of completed environments for different V-Scan environment types. Left: the object-removed input point cloud. Middle: the reconstructed mesh geometry. Right: the final textured and inpainted mesh.}
-%  \label{fig:6_vscan_results}
-%\end{figure}
-
-
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Qualitative Results on Matterport3D}
 \label{sec:6_exp_matterport}
 
-To assess the applicability of the method to real-world data, the pipeline is applied to scans from the Matterport3D dataset~\cite{chang_matterport3d_2017}, which provides real captured indoor scenes with panoramic imagery but no ground-truth empty geometry. As no defurnished reference is available, the evaluation is qualitative.
+To assess the applicability of the method to real-world data, the pipeline is applied to scans from the Matterport3D dataset~\cite{chang_matterport3d_2017}, which provides real captured indoor scenes with panoramic imagery but no ground-truth empty geometry. As no defurnished reference is available, the evaluation is qualitative (Figure \ref{fig:6_matterport_results}).
 
-\todo{Add Matterport3D qualitative results and figure.}
-
+\begin{figure}[bpht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_completion_matterport}
+ \caption[Scene completion examples on Matterport3D]{Examples of completed environments for 2 Matterport scenes.}
+ \label{fig:6_matterport_results}
+\end{figure}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Conclusion}
