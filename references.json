@@ -11183,5 +11183,15 @@
     "citation_key": "wang_image_2004",
     "title": "Image quality assessment: from error visibility to structural similarity",
     "doi": "10.1109/TIP.2003.819861"
+  },
+  {
+    "citation_key": "ding_adaptive_2023",
+    "title": "Adaptive Voxel-Based Model for the Dynamic Determination of Tomographic Region",
+    "doi": "10.3390/rs15020492"
+  },
+  {
+    "citation_key": "decrocq_voxel_2025",
+    "title": "Voxel guided object completion of indoor scenes",
+    "doi": null
   }
 ]

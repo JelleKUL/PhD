@@ -397,35 +397,47 @@ Table~\ref{tab:4_alignment_results} reports the positional and rotational accura
     \centering
     \caption[Real-world alignment results]{Positional and rotational accuracy and confidence of each alignment method across the three real-world test cases. Case~1: laboratory rooms, Case~2: living lab, Case~3: Bruges renovation.}
     \label{tab:4_alignment_results}
-    \resizebox{\textwidth}{!}{%
     \renewcommand*{\arraystretch}{1.2}
-    \begin{tabular}{lr|ccccc|c}
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabularx}{\textwidth}{r|XXXXX|X}
         \hline
-        \multicolumn{2}{r|}{Method}          & Linked Ref    & Separate Ref  & Raycasting     & FPFH        & SUPER4PCS    & Combined          \\
-        \multicolumn{2}{r|}{Estimated time}  & 1--10 img/s   & 1--10 img/s   & 0.2--2 img/s   & 5s--2min/pcd & 20s--5min/pcd & 20s--15min/session \\
-        \multicolumn{2}{r|}{Method weight}   & 0.8           & 0.5           & 0.4            & 0.8         & 1            &                   \\ \hline
+        Method
+            & Linked\newline Ref
+            & Separate\newline Ref
+            & Ray-\newline casting
+            & FPFH
+            & SUPER\newline 4PCS
+            & Combined \\
+        Est.\ time
+            & 1--10\newline img/s
+            & 1--10\newline img/s
+            & 0.2--2\newline img/s
+            & 5s--2\newline min/pcd
+            & 20s--5\newline min/pcd
+            & 20s--15\newline min/ses. \\
+        Weight
+            & 0.8 & 0.5 & 0.4 & 0.8 & 1 & \\ \hline
         %
-        \multicolumn{1}{c}{\multirow{3}{*}{Case 1}}
-            & Pos.\ RMSE (m)   & 0.145 & 0.189 & 0.021 & 0.159 & 0.061 & 0.065 \\
-            & Rot.\ RMSE (°)   & 0.960 & 0.636 & 0.189 & 1.507 & 0.463 & 0.538 \\
-            & Confidence (\%)  & 30.1  & 29.9  & 52.2  & 33.9  & 77.3  & 47.0  \\ \hline
+        \multicolumn{7}{l}{\textit{Case 1}} \\ [-0.5ex]
+        \quad Pos.\ RMSE (m)  & 0.145 & 0.189 & 0.021 & 0.159 & 0.061 & 0.065 \\
+        \quad Rot.\ RMSE (°)  & 0.960 & 0.636 & 0.189 & 1.507 & 0.463 & 0.538 \\
+        \quad Conf.\ (\%)     & 30.1  & 29.9  & 52.2  & 33.9  & 77.3  & 47.0  \\ \hline
         %
-        \multicolumn{1}{c}{\multirow{3}{*}{Case 2}}
-            & Pos.\ RMSE (m)   & 0.183 & 0.133 & 0.277 & 0.059 & 0.071 & 0.035 \\
-            & Rot.\ RMSE (°)   & 0.993 & 1.207 & 0.018 & 0.156 & 0.028 & 0.074 \\
-            & Confidence (\%)  & 25.1  & 17.0  & 19.2  & 80.0  & 90.0  & 54.4  \\ \hline
+        \multicolumn{7}{l}{\textit{Case 2}} \\ [-0.5ex]
+        \quad Pos.\ RMSE (m)  & 0.183 & 0.133 & 0.277 & 0.059 & 0.071 & 0.035 \\
+        \quad Rot.\ RMSE (°)  & 0.993 & 1.207 & 0.018 & 0.156 & 0.028 & 0.074 \\
+        \quad Conf.\ (\%)     & 25.1  & 17.0  & 19.2  & 80.0  & 90.0  & 54.4  \\ \hline
         %
-        \multicolumn{1}{c}{\multirow{3}{*}{Case 3}}
-            & Pos.\ RMSE (m)   & 0.149 & 0.103 & 0.106 & 0.067 & 0.078 & 0.074 \\
-            & Rot.\ RMSE (°)   & 0.852 & 1.073 & 0.713 & 0.966 & 0.171 & 0.399 \\
-            & Confidence (\%)  & 20.2  & 21.9  & 31.4  & 67.0  & 75.0  & 48.1  \\ \hline
+        \multicolumn{7}{l}{\textit{Case 3}} \\ [-0.5ex]
+        \quad Pos.\ RMSE (m)  & 0.149 & 0.103 & 0.106 & 0.067 & 0.078 & 0.074 \\
+        \quad Rot.\ RMSE (°)  & 0.852 & 1.073 & 0.713 & 0.966 & 0.171 & 0.399 \\
+        \quad Conf.\ (\%)     & 20.2  & 21.9  & 31.4  & 67.0  & 75.0  & 48.1  \\ \hline
         %
-        \multicolumn{1}{c}{\multirow{3}{*}{Average}}
-            & Pos.\ RMSE (m)   & 0.159 & 0.141 & 0.135 & 0.095 & 0.070 & 0.058 \\
-            & Rot.\ RMSE (°)   & 0.935 & 0.972 & 0.307 & 0.886 & 0.221 & 0.337 \\
-            & Confidence (\%)  & 25.1  & 22.9  & 34.3  & 60.3  & 80.8  & 49.8  \\ \hline
-    \end{tabular}%
-    }
+        \multicolumn{7}{l}{\textit{Average}} \\ [-0.5ex]
+        \quad Pos.\ RMSE (m)  & 0.159 & 0.141 & 0.135 & 0.095 & 0.070 & 0.058 \\
+        \quad Rot.\ RMSE (°)  & 0.935 & 0.972 & 0.307 & 0.886 & 0.221 & 0.337 \\
+        \quad Conf.\ (\%)     & 25.1  & 22.9  & 34.3  & 60.3  & 80.8  & 49.8  \\ \hline
+    \end{tabularx}
 \end{table}
 
 Each of the three real-world sites poses distinct alignment challenges. The laboratory rooms test multi-temporal registration under object-level layout changes within a stable structural envelope. The living lab tests robustness when both geometry and surface appearance change drastically between epochs. The Bruges renovation tests indoor alignment in a cluttered residential environment with significant temporary storage of construction materials. The alignment was performed using the five methods described in Section~\ref{sec:4_local}, with parameters determined empirically across all sessions. The global distance threshold $t_\text{dist}$ was set to 10\,m. The correspondence function $\rho$ was set to 50 pixels for image matches and to 1.5 times the voxel size (0.05\,m) for point cloud matches.

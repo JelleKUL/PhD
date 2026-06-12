@@ -334,7 +334,9 @@ k-d trees are especially effective for nearest-neighbour and radius-search queri
 \section{Evaluation Metrics}
 \label{sec:bg_metrics}
 
-\begin{table}[]
+This section defines the quantitative metrics used to evaluate the pipeline outputs. Rather than introducing them separately in each experimental chapter, they are defined once here in a unified framework that applies across all stages. Table~\ref{tab:metrics_overview} lists the metrics used, together with their type, range and the pipeline stages in which they are applied; the remainder of this section explains each one in turn, grouped by type, beginning with geometric metrics and progressing to overlap, detection and perceptual metrics.
+
+\begin{table}[hb]
     \centering
     \caption[Evaluation metrics overview]{Overview of evaluation metrics used in this thesis. Arrows indicate the direction of improvement: $\uparrow$~higher is better, $\downarrow$~lower is better.}
     \label{tab:metrics_overview}
@@ -359,9 +361,6 @@ k-d trees are especially effective for nearest-neighbour and radius-search queri
         \bottomrule
     \end{tabularx}
 \end{table}
-
-This section defines the quantitative metrics used to evaluate the pipeline outputs. Rather than introducing them separately in each experimental chapter, they are defined once here in a unified framework that applies across all stages. Table~\ref{tab:metrics_overview} lists the metrics used, together with their type, range and the pipeline stages in which they are applied; the remainder of this section explains each one in turn, grouped by type, beginning with geometric metrics and progressing to overlap, detection and perceptual metrics.
-
 
 
 % ── Geometric ────────────────────────────────────────────────────────────────

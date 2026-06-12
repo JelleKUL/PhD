@@ -7,22 +7,25 @@
 \newglossaryentry{VAE}{name={VAE}, description={Variational Auto-Encoder}}
 \newglossaryentry{VQ-VAE}{name={VQ-VAE}, description={Vector-Quantised Variational Auto-Encoder}}
 
+% overall feedback: The text is written to sequiential a lot of the steps are written correctly, but a good explaination to why or to what end to motivate the steps often lacks, it can be simple like: to in order to get a good image from the object, the full pano needs to be cropped, or using the full pano for the object completion will result in a lot of irrelevant other objects to also be considered, so we need a focussed view og the relevant object. just some sentances to set the contexxt for why the steps are performed. look at my previous papers around these topics as they often provide this context.
+
 % ─────────────────────────────────────────────────────────────────────────────
+% feedback: this chapter addresses the object completion stage.. restructure so the overview table is addressed after the problem statement to show that these methods are introduced to solve the problems, both relying on different input sources. The problem statement can be a more direct focus on the need to complete both the geometry and the texture. and due to the more complex shapes of the object compared to the scene, we can't use the same method.
 \section{Introduction}
 \label{sec:7_intro}
 
 % Paragraph purpose: situate the chapter in the pipeline.
-This chapter reconstructs each foreground object as an independent, complete and textured mesh, using the refined oriented bounding boxes, the isolated partial point clouds, the per-object occlusion grids from Chapter~\ref{ch:5_Scene_Segmentation} and the panoramic image of the scene (Figure~\ref{fig:7_intro}). Two complementary methodologies are presented and compared at a glance in Table~\ref{tab:7_method_comparison}: a voxel-based pipeline driven by AutoSDF~\cite{mittal_autosdf_2022} (Section~\ref{sec:7_voxel}) and an image-conditioned pipeline driven by Hunyuan3D-Omni~\cite{hunyuan3d_hunyuan3d-omni_2025} (Section~\ref{sec:7_image}).
+This chapter reconstructs each isolated object as an independent, complete and textured mesh, using the refined oriented bounding boxes, the isolated partial point clouds, the per-object occlusion grids from Chapter~\ref{ch:5_Scene_Segmentation} and the panoramic image of the scene (Figure~\ref{fig:7_intro}). Two complementary methodologies are presented and compared at a glance in Table~\ref{tab:7_method_comparison}: a voxel-based pipeline driven by AutoSDF~\cite{mittal_autosdf_2022} (Section~\ref{sec:7_voxel}) and an image-conditioned pipeline driven by Hunyuan3D-Omni~\cite{hunyuan3d_hunyuan3d-omni_2025} (Section~\ref{sec:7_image}).
 
-\iffalse
+
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Object_completion_intro}
- \caption[Object completion introduction]{Each isolated partial object (left) is completed into a fully textured mesh (right) using the refined bounding box, the per-object occlusion grid and the cropped panorama view.}
+ \caption[Object completion introduction]{Each isolated partial object (left) is completed into a fully textured mesh (right) using either a voxel occlusion grid (middle top) or image view (middle bottom)}
  \label{fig:7_intro}
 \end{figure}
-\fi
 
+% feedback: remove the training data, also merge the geometry and texture input to one. the input for the voxel method is only a reconstruction partial textured mesh and the occlusion grid, for the image based one it is an image of the object (can be any type)
 \begin{table}[h]
     \centering
     \caption[Voxel-based vs.\ image-based object completion]{Comparison of the two object completion methods presented in this chapter along the axes that matter for the pipeline of this thesis.}
@@ -52,6 +55,7 @@ The technical problem is twofold. The visible geometry of each object covers onl
 
 
 % ─────────────────────────────────────────────────────────────────────────────
+% no need to state the evaluation metrics here, leave those for the experiments section
 \section{Related Work}
 \label{sec:7_related}
 
@@ -68,36 +72,50 @@ Point-based methods operate directly on a fixed-size point cloud. Point-Voxel Di
 
 Voxelised distance-field methods convert the partial geometry to an SDF or, for non-watertight scans, a UDF, both defined in Chapter~\ref{ch:background}, and complete the field directly on a regular voxel grid. AutoSDF~\cite{mittal_autosdf_2022} learns a discrete autoregressive prior over voxelised SDF grids using a \gls{VQ-VAE} and predicts the missing voxels conditioned on the observed ones. SDFusion~\cite{cheng_sdfusion_2023} extends this with multimodal conditioning such as text or images, and DiffComplete~\cite{chu_diffcomplete_2023} reformulates the problem as a diffusion process. PatchComplete~\cite{rao_patchcomplete_2022} and ShapeFormer~\cite{yan_shapeformer_2023} use multi-resolution patch priors and a sparse vector-quantised implicit representation respectively to improve generalisation to unseen categories. XCube~\cite{ren_xcube_2023} scales this idea to large scenes through a hierarchical sparse voxel latent diffusion model. Of these, AutoSDF was selected for the voxel-based method in this chapter because it explicitly supports voxel-level guidance over the to-be-completed region, which matches the per-object occlusion grid of Chapter~\ref{ch:5_Scene_Segmentation} directly. The Interactive Voxel Editor of~\cite{wegen_interactive_2022} demonstrates that such voxel-level selection can also be edited manually in a 3D interface, which is the workflow followed in~\cite{vermandere_guided_2025}.
 
+% feedback: add an image here called "Auto_SDF" that shows the full method of the original AutoSDF paper (cite)
+
+% feedback: only talk about hunyuan2.0 in the texture completion
 Image-based generative methods bypass the voxelisation step and predict 3D geometry directly from one or more images. SAM3D~\cite{team_sam_2025} combines segmentation masks with a large-scale latent flow transformer to estimate coarse geometry, pose and texture, decoded into meshes and Gaussian splats. Trellis~\cite{xiang_structured_2025} introduces a structured latent representation that can be decoded into multiple 3D formats through rectified flow transformers. Hunyuan3D-Omni~\cite{hunyuan3d_hunyuan3d-omni_2025} proposes a unified cross-modal framework that accepts an image together with optional 3D priors such as point clouds, bounding boxes or skeletons, enabling controllable generation under partial input. The companion Hunyuan3D~2.0 model~\cite{zhao_hunyuan3d_2025} provides a paired texturing pipeline for the resulting geometry. Of these, Hunyuan3D-Omni was chosen for the image-based method of this chapter because the partial point cloud produced in Chapter~\ref{ch:5_Scene_Segmentation} can be supplied as a geometric control input alongside the cropped panorama, which constrains the generation to the observed surface rather than relying on the image alone.
 
+% feedback: add an image here called "Hunyuan_3D" that shows the full method of the original Hunyuan3D-Omni paper (cite)
+
+% feedback: put this method first and highlight the shortcomings as it just replaces the object with a database object. also add some other older models from may papers
 Retrieval-based methods such as RetrievalFuse~\cite{siddiqui_retrievalfuse_2021} bypass generation entirely and replace the partial geometry with a closest match from a CAD database. They produce clean meshes but are restricted to objects with a near neighbour in the database and are therefore not well suited to the heterogeneous indoor furniture targeted in this thesis.
 
+% feedback: put the chosen methods in a seperate paragraph here
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Texture Completion}
 \label{sec:7_rw_texture}
 
+% feedback: focus here on the pure 2D inpainting methods that require a proper uv map to do anything useful
 The geometry completion methods above predict shape only, so the appearance of the completed object must be recovered separately. Classical approaches model textures as Gaussian processes and perform conditional sampling for inpainting~\cite{galerne_texture_2017}, and patch-based image quilting~\cite{efros_image_2001} synthesises new texture by stitching together blocks from a reference region. Learning-based methods such as MAT~\cite{li_mat_2022} and CM-GAN~\cite{zheng_cm-gan_2022} employ transformer architectures and cascaded modulation to handle large missing regions, while Inpaint Anything~\cite{yu_inpaint_2023} combines segmentation models with diffusion-based inpainters. LaMa~\cite{suvorov_resolution-robust_2022}, used for scene completion in Chapter~\ref{ch:6_Scene_Completion}, is particularly effective at completing wide masks on repetitive structures but is less suited to the detailed and category-specific textures of foreground objects.
 
+%feedback: add a paragraph about the difficulties of 2D nainting because the need for good uv maps and state how smantic uv mapping can help and also part wise decomposition like COACD and also the existing uv unwrapping algorithms 
+
+% feedback: state that since the if net works on vertex colors there is a detail loss that other uv based methods do not have. also TEXTure also requires a uv unwrap, just not aligned in large chuncks because the texture is projected from the 3D view
 Texture completion directly on 3D surfaces avoids the UV layout problem. IF-Net Texture~\cite{chibane_implicit_2021} extends IF-Net with per-point colour prediction so that vertex colours can be inferred together with the completed geometry, and TEXTure~\cite{richardson_texture_2023} generates multi-view renders of the completed object through a diffusion model and projects them onto the surface. Image-conditioned generative texturing such as the paint pipeline of Hunyuan3D~2.0~\cite{zhao_hunyuan3d_2025} extends this idea with a reference-net for appearance, geometry conditioning for surface adherence and multi-view attention for view consistency, producing a baked texture map directly from a single input image.
 
 For the voxel-based method, texture is recovered through the material-aware pipeline of~\cite{vermandere_geometry_2025}: the partial object is segmented into materials, the missing material indices are predicted on the completed geometry, and patch-based inpainting fills each material region individually. For the image-based method, the Hunyuan3D~2.0 paint pipeline reuses the same cropped panorama view that guided the geometry generation.
 
+%feedback: Add another subsection about material detection like my object completion paper
+
 
 % ─────────────────────────────────────────────────────────────────────────────
+% feedback: per subsection add an image that illustrates the current step
 \section{Voxel-Based Object Completion}
 \label{sec:7_voxel}
 
 The voxel-based methodology takes the refined oriented bounding box, the partial point cloud and the per-object occlusion grid of Chapter~\ref{ch:5_Scene_Segmentation} as input, and produces a fully textured completed mesh through a three-stage pipeline (Figure~\ref{fig:7_voxel_method}): a voxelised distance field is completed by AutoSDF~\cite{mittal_autosdf_2022}, the material indices are predicted on the completed surface by IF-Net~\cite{chibane_implicit_2021}, and the per-material textures are inpainted on a re-unwrapped UV map~\cite{vermandere_geometry_2025, vermandere_semantic_2024}.
 
-\iffalse
+
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Object_completion_voxel_method}
- \caption[Voxel-based object completion pipeline]{Overview of the voxel-based object completion pipeline. The partial point cloud (left) is converted to a UDF inside the refined bounding box, completed by AutoSDF using the occluded voxels as the to-be-completed selection, then textured through material segmentation and per-material inpainting.}
+ \caption[Voxel-based object completion pipeline]{Overview of the voxel-based object completion pipeline. The partial point cloud (top left) is converted to a UDF inside the refined bounding box, completed by AutoSDF using the occluded voxels as the to-be-completed selection, then textured through material segmentation and per-material inpainting resulting in a completed mesh (bottom left).}
  \label{fig:7_voxel_method}
 \end{figure}
-\fi
+
 
 
 % ── 7.3.1 ────────────────────────────────────────────────────────────────────
@@ -106,6 +124,7 @@ The voxel-based methodology takes the refined oriented bounding box, the partial
 
 The refined oriented bounding box of each object is divided into a $64^3$ voxel grid $\mathbf{G}$, matching the input resolution of AutoSDF~\cite{vermandere_guided_2025}. Because partial scans are inherently non-watertight, the partial mesh is converted to a Unsigned Distance Field $f(\mathbf{x})_\text{udf}$ rather than a standard SDF, following the rationale of Chapter~\ref{ch:background} and~\cite{vermandere_geometry_2025}: any signed convention would require an inside-outside decision that the partial surface cannot reliably provide. The UDF is sampled at the centre of each voxel to obtain a per-voxel scalar $g_{ijk} = f(\mathbf{x}_{ijk})_\text{udf}$.
 
+% feedback: state that the occlusion detection solves the problem of having to define the areas in the voxelgrid that have to be filled in as required by auto sdf and so no longer either manually using boundaries (autosdf) or handpicked voxels (vermandere guided_25) also state that the occlusoin grids are resampled to the 64 size if they are different from the previous steps
 The selection of voxels to be completed is taken directly from the per-object occlusion grid produced by the voxelised ray marching of Chapter~\ref{ch:5_Scene_Segmentation}. A voxel is added to the completion set if it was classified as \textit{occluded} (the scanner could not see through it) and is not already occupied by observed surface. This is a key change from the original AutoSDF workflow~\cite{mittal_autosdf_2022, vermandere_guided_2025}, in which the to-be-completed voxels had to be defined either through symmetry mirroring or through an interactive editor. The occlusion grid provides this information automatically and at the object's principal-axis orientation, since the grid was computed inside the oriented bounding box rather than along the world axes.
 
 
@@ -115,11 +134,15 @@ The selection of voxels to be completed is taken directly from the per-object oc
 
 The completion network treats the UDF voxel grid as a sequence of tokens. AutoSDF first encodes the grid into a discrete latent representation through a \gls{VQ-VAE}, then a transformer autoregressively predicts the latent codes for the to-be-completed voxels conditioned on the observed ones~\cite{mittal_autosdf_2022}. Because the prediction is sampled rather than deterministic, the network returns multiple candidate completions per input; the candidate with the smallest mean Euclidean distance between its decoded surface and the input UDF zero-level set is retained as the final shape, following the selection criterion of~\cite{vermandere_geometry_2025}. The completed SDF is converted back to a mesh through Marching Cubes~\cite{lorensen_marching_1998}, yielding a watertight surface that fills the previously occluded region while remaining consistent with the observed geometry at the boundary.
 
+%feedback: add an image showing the multiple outputs
+
 
 % ── 7.3.3 ────────────────────────────────────────────────────────────────────
+%feedback: expand the uv mapping section (using COACD to create semi convex parts that can be unwrapped much easier and still retain the spacial proximity) for the IF net state that the material indexes don't need as much detail as the full texture so sampling them to the vertex is good enough. then each new vertex color is remapped to the 2D uv plane so the image inpainter can paint in the materials one by one, using the existing material part as reference and the material index mask as to be inpainted.
 \subsection{Texture Completion}
 \label{sec:7_voxel_texture}
 
+% feedback no need to state that this follows the procedure of my paper as this is a rewriting in thesis form.
 Texturing follows the three-step material-aware procedure of~\cite{vermandere_geometry_2025}. First, the partial textured mesh is re-unwrapped using the semantic UV mapping of~\cite{vermandere_semantic_2024} so that adjacent 3D faces remain adjacent in 2D, and the resulting UV image is segmented into material patches using SAM~\cite{kirillov_segment_2023}. The patches are grouped into a maximum of eight material sets through the cosine similarity of EfficientNet~\cite{tan_efficientnet_2019} features:
 
 \begin{equation}
@@ -146,6 +169,7 @@ with $e_{ij} = f(B_i, B_j)$ the boundary cost between blocks $B_i$ and $B_j$. Ea
 
 
 % ── 7.3.4 ────────────────────────────────────────────────────────────────────
+% feedback: introduce the new mini dataset as a paragraph first with the pipes, as an image and some metrics from the source thesis, also cite it (decrocq_voxel_2025)
 \subsection{Experiments}
 \label{sec:7_voxel_exp}
 
@@ -183,6 +207,7 @@ Figure~\ref{fig:7_voxel_matterport} shows representative completions from Matter
 \end{figure}
 \fi
 
+% feedback: so this paragraph comes before the matterport one
 \paragraph{Quantitative results on industrial objects.}
 A second evaluation targets the failure regime hinted at on Matterport3D: object categories that are not represented in the AutoSDF training prior. A dataset of 22 pipe segments (round and rectangular) and 9 storage barrels was captured with a Leica P30 and Leica BLK as part of a Scan-to-BIM exercise, and a matching synthetic counterpart of 59 objects was modelled in Revit. Both sets are voxelised to $64^3$ UDFs at twelve orientations.
 
@@ -203,6 +228,7 @@ These results highlight the two structural limitations of the voxel-based method
 
 
 % ─────────────────────────────────────────────────────────────────────────────
+% feedback: introduce the image based on as a fundamentally different approach using the image as the main output and the pointcloud as extra guidance, the cropped view is not seen as the input as it is created in this section (chapter 6 does not create this so remove this assumption.)
 \section{Image-Based Object Completion}
 \label{sec:7_image}
 
@@ -219,6 +245,7 @@ The image-based methodology replaces the voxelised distance field with two input
 
 
 % ── 7.4.1 ────────────────────────────────────────────────────────────────────
+% feedback: first indicate that we will use the boundingbox corners as cropping bounds to get a good view of the object, this is where this is explained for the first time, so It can be a little more descriptive
 \subsection{Image Cropping}
 \label{sec:7_image_crop}
 
@@ -242,20 +269,26 @@ and finally mapped to equirectangular pixel coordinates for an image of width $W
     \end{gathered}
 \end{equation}
 
+% feedback: this step creates a pinhole camera image by finding the fov bounds in all directions using the boundingbox 2d coordinates, so the rest of the image is not made black, the full images is simply remapped to a new camera model by making the fov much smaller and using a different projection method (no longer equirectangular) that way we get an image that is perfectly zommed in to the object as if it was taken from the scanner position.
 The convex hull of the resulting pixel coordinates $\mathbf{c}_i = (u_i, v_i)$ defines the 2D footprint of the bounding box on the panorama, which is rasterised into a binary mask and used to crop the image around the object. Background pixels outside the mask are removed using a standard alpha-matting background remover so that the completion network receives an image dominated by the target object. Because the panorama is already aligned with the scan in Chapter~\ref{ch:6_Scene_Completion}, no additional calibration step is required.
 
 
 % ── 7.4.2 ────────────────────────────────────────────────────────────────────
+% feedback: no need to re-introduce the network as this is done in related works, explain how we use it.
 \subsection{Geometry Generation}
 \label{sec:7_image_geom}
 
 Hunyuan3D-Omni~\cite{hunyuan3d_hunyuan3d-omni_2025} is a multimodal conditional generator that combines a \gls{DiT} backbone with a \gls{VAE} decoder. The cropped image is encoded with a DINO-based image encoder, the partial point cloud is encoded through a positional embedding followed by a linear projection, and the two condition features are concatenated and fed into the DiT. The decoded latent is converted into an SDF representation of the complete object, from which a mesh is extracted at the zero level set using Marching Cubes~\cite{lorensen_marching_1998}. Floater removal and degenerate-face removal are applied to clean up small disconnected components left by the decoder.
 
+% feedback: it is essential for this step, not thesis
 The use of the partial point cloud as a geometric control input is essential for this thesis. Without it, the network would generate a plausible object from the image alone but with no guarantee that the result matches the scanned surface. With the partial point cloud as a control signal, the generated shape is anchored to the observed geometry, much as the occlusion-grid voxel selection anchored the AutoSDF output in Section~\ref{sec:7_voxel_geom}, while the image supplies the high-level shape and category cues that AutoSDF had to learn from its training prior alone.
+
+% feedback: explain the output of this step
 
 
 % ── 7.4.3 ────────────────────────────────────────────────────────────────────
 \subsection{Texture Generation}
+% feedback: also uses the generated mesh
 \label{sec:7_image_texture}
 
 Texturing reuses the same cropped image through the Hunyuan3D~2.0 paint pipeline~\cite{zhao_hunyuan3d_2025}, which proceeds in three stages. The image is first passed through a delighting module that removes baked-in highlights and shadows, producing a uniformly lit reference texture. A geometry-conditioned multi-view synthesis module then renders the delit image onto the completed mesh from a series of learned camera viewpoints, using a reference-net to preserve appearance details, geometry conditioning to ensure that the textures adhere to the surface structure, and multi-view attention to maintain consistency across views. Finally, the generated multi-view images are baked into a single texture map, with an inpainting step that fills small uncovered regions by propagating information from nearby textured patches.

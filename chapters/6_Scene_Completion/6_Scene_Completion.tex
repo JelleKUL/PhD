@@ -189,6 +189,7 @@ The inpainted textures are applied back to their UV-parameterised fragments, and
 
 \begin{figure}[hbht]
  \centering
+ \vspace{-10pt}
  \includegraphics[width=1\textwidth]{Scene_completion_result}
  \caption[Final scene completion]{The final completed empty scene with inpainted textures applied to the reconstructed mesh.}
  \label{fig:6_final_completion}
@@ -205,19 +206,27 @@ The completion is evaluated quantitatively on the V-Scan synthetic dataset (Sect
     \centering
     \caption[Scene completion results per environment type]{Scene completion results per V-Scan environment type. Geometric accuracy is reported as Chamfer distance and F-score at 5\,cm against the ground-truth empty geometry; textural accuracy is reported as PSNR, SSIM and LPIPS against the ground-truth empty panorama reprojected onto the reconstructed planes. Values are mean $\pm$ standard deviation across all scenes of each type.}
     \label{tab:6_completion_results}
-    \resizebox{\textwidth}{!}{%
-    \begin{tabular}{l c c c c c}
+    \newcolumntype{R}{>{\raggedleft\arraybackslash}X}
+    \begin{tabularx}{\textwidth}{l R R R R R}
         \toprule
-        \textbf{Environment} & \textbf{Chamfer $\downarrow$ (m)} & \textbf{F-score @5cm $\uparrow$} & \textbf{PSNR $\uparrow$ (dB)} & \textbf{SSIM $\uparrow$} & \textbf{LPIPS $\downarrow$} \\
+        \textbf{Environment} & \textbf{Chamfer Dist. $\downarrow$ (cm)} & \textbf{F-score @5cm $\uparrow$ (\%)} & \textbf{PSNR $\uparrow$ (dB)} & \textbf{SSIM $\uparrow$ (\%)} & \textbf{LPIPS $\downarrow$} \\
         \midrule
-        Bedroom     & $0.0161 \pm 0.0022$ & $0.9756 \pm 0.0109$ & $59.25 \pm 11.91$ & $0.9902 \pm 0.0049$ & $0.0121 \pm 0.0054$ \\
-        Dining room & $0.0152 \pm 0.0013$ & $0.9807 \pm 0.0074$ & $51.25 \pm 10.70$ & $0.9833 \pm 0.0077$ & $0.0231 \pm 0.0114$ \\
-        Industrial  & $0.0183 \pm 0.0016$ & $0.9823 \pm 0.0064$ & $44.62 \pm 5.47$  & $0.9345 \pm 0.0215$ & $0.0497 \pm 0.0121$ \\
-        Living room & $0.0153 \pm 0.0013$ & $0.9798 \pm 0.0074$ & $48.30 \pm 12.36$ & $0.9822 \pm 0.0094$ & $0.0208 \pm 0.0143$ \\
-        Office      & $0.0182 \pm 0.0013$ & $0.9842 \pm 0.0037$ & $42.79 \pm 3.56$  & $0.9246 \pm 0.0356$ & $0.0449 \pm 0.0081$ \\
+        Bedroom          & $1.61$ & $97.6$ & $59.25$ & $99.0$ & $0.012$ \\
+                         & $\pm 0.22$ & $\pm 1.1$ & $\pm 11.91$ & $\pm 0.5$ & $\pm 0.005$ \\
+        \addlinespace
+        Dining room      & $1.52$ & $98.1$ & $51.25$ & $98.3$ & $0.023$ \\
+                         & $\pm 0.13$ & $\pm 0.7$ & $\pm 10.70$ & $\pm 0.8$ & $\pm 0.011$ \\
+        \addlinespace
+        Industrial       & $1.83$ & $98.2$ & $44.62$ & $93.5$ & $0.050$ \\
+                         & $\pm 0.16$ & $\pm 0.6$ & $\pm 5.47$  & $\pm 2.2$ & $\pm 0.012$ \\
+        \addlinespace
+        Living room      & $1.53$ & $98.0$ & $48.30$ & $98.2$ & $0.021$ \\
+                         & $\pm 0.13$ & $\pm 0.7$ & $\pm 12.36$ & $\pm 0.9$ & $\pm 0.014$ \\
+        \addlinespace
+        Office           & $1.82$ & $98.4$ & $42.79$ & $92.5$ & $0.045$ \\
+                         & $\pm 0.13$ & $\pm 0.4$ & $\pm 3.56$  & $\pm 3.6$ & $\pm 0.008$ \\
         \bottomrule
-    \end{tabular}%
-    }
+    \end{tabularx}
 \end{table}
 
 \begin{figure}[ht]
@@ -254,31 +263,48 @@ This pattern mirrors the occlusion characterisation in Chapter~\ref{ch:5_Scene_S
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Qualitative Results on Matterport3D}
 \label{sec:6_exp_matterport}
-
-To assess applicability to real-world data, the pipeline is applied to scans from the Matterport3D dataset~\cite{chang_matterport3d_2017}, which provides real captured indoor scenes with panoramic imagery but no ground-truth empty geometry. As no defurnished reference is available, the evaluation is qualitative (Figure~\ref{fig:6_matterport_results}).
-
+ 
+To assess applicability to real-world data, the pipeline is applied to scans from the Matterport3D dataset~\cite{chang_matterport3d_2017}, which provides real captured indoor scenes with panoramic imagery but no ground-truth empty geometry. As no defurnished reference is available, the evaluation is qualitative and focused on identifying the failure modes that appear on real captures and that V-Scan, by construction, cannot expose (Figure~\ref{fig:6_matterport_results}).
+ 
 \begin{figure}[bpht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_completion_matterport}
  \caption[Scene completion examples on Matterport3D]{Completed environments for two Matterport3D scenes. Left: the input scan. Middle: the reconstructed mesh. Right: the final textured and inpainted result.}
  \label{fig:6_matterport_results}
 \end{figure}
+ 
+The overall behaviour of the pipeline transfers to real captures: the structural shell is recovered as a closed planar mesh, and large uniform regions of wall and floor are inpainted convincingly enough that no seam is visible between observed and reconstructed texture. The recurring failure modes, however, are different from those seen on V-Scan and trace back to either the upstream detection or the assumptions of the per-plane inpainting.
+ 
+\paragraph{Detection-propagated artefacts.}
+Objects that the upstream detector from Chapter~\ref{ch:5_Scene_Segmentation} misses are not removed from the panorama, so their pixels are never masked and propagate through the inpainting unchanged. The result is that residual furniture, picture frames or wall-mounted fixtures remain baked into the reconstructed surface, sometimes with their projection slightly distorted by the per-plane UV layout. This is the dominant artefact on real data and a direct consequence of the moderate detection recall reported in Chapter~\ref{ch:5_Scene_Segmentation}.
+ 
+\paragraph{Smearing of partially occluded graphical elements.}
+When a wall-mounted graphical element (a poster, a painting, a sign) is only partially covered by a removed object, the visible part of the element falls into the LaMa~\cite{suvorov_resolution-robust_2022} context window while the rest must be invented. The inpainting does not commit to either continuing the element coherently or terminating it cleanly, and instead smears the visible content into the masked region. This is a limitation of the inpainting prior rather than of the masking: the network is biased toward repetitive surroundings, so localised graphical content within a large mask cannot be reconstructed faithfully.
+ 
+\paragraph{Over-infilling in large occluded regions.}
+Where a large continuous portion of the scene is occluded, typically behind a large piece of furniture against a corner, the geometric boundaries of the underlying structure are no longer constrained by enough scanned points to recover the correct extent. The plane cutting in Section~\ref{sec:6_plane_segmentation} then includes fragments that should have been trimmed at a wall or recess, and the mesh extends past the true structural boundary. This is the geometric counterpart to the textural smearing above: in both cases the result follows the inpainting or extension prior rather than the actual geometry, because the actual geometry is not observed.
+ 
+\paragraph{Oblique stretching at doors and windows.}
+Doors and windows are intentionally filled in by the meshing stage, since they are reintroduced as dynamic elements in Chapter~\ref{ch:8_Scene_Dynamification}. Texturally, however, these openings are seen by the scanner at very oblique angles and from a single viewpoint, so the panorama samples that fall on the reconstructed wall fragment behind the opening are heavily foreshortened. The projected texture therefore appears stretched along the grazing direction, and the inpainting cannot recover sharp detail at these locations. This artefact is benign in the present chapter, since the affected regions will be replaced when the openings are restored, but it sets a quality ceiling on the static result.
+ 
+\paragraph{Light and shadow residue.}
+Real captures contain strong directional lighting that is baked into the panorama. When a light source or a strongly lit object is removed, the geometric extent is masked correctly, but the light spill and cast shadows on the surrounding walls and floor are not part of the mask and remain visible in the inpainted texture. The inpainting continues the lit and shadowed regions outward as if they were ordinary wall texture, producing a residual lobe of brightness or darkness without an obvious causal object. Addressing this would require either a lighting-aware mask (which is outside the present mask definition) or a shadow-removal step prior to inpainting~\cite{slavcheva_empty_2024}.
+ 
+Overall, the Matterport3D experiment confirms that the methodology generalises from the synthetic V-Scan setting to real captures for the dominant structural surfaces, but it also shows that the residual quality is set by the upstream detection recall and by the inpainting prior, both of which surface more aggressively on real photographic textures than on the procedurally textured V-Scan rooms.
 
-\todo{Add narrative analysis of Matterport3D results: which scenes were tested, where the geometric reconstruction succeeds or struggles compared to V-Scan (e.g.\ non-planar walls, noisier scans, missing ceiling coverage), how the per-plane inpainting behaves on real photographic textures (lighting variation, more complex wall textures), and whether the failure modes match those of the related work (Slavcheva~\cite{slavcheva_empty_2024}, Dolhasz~\cite{dolhasz_defurnishing_2025}). At least two contrasting scenes (one residential, one larger/open) would mirror the breadth of the V-Scan analysis.}
 
-
-% ─────────────────────────────────────────────────────────────────────────────
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Conclusion}
 \label{sec:6_conclusion}
  
 This chapter presented a per-plane scene completion methodology that turns the object-removed point cloud, the structural planes and the scene-level occlusion grid from Chapter~\ref{ch:5_Scene_Segmentation} into a closed textured mesh of the empty room, combining a constrained per-plane geometric reconstruction with a per-plane LaMa~\cite{suvorov_resolution-robust_2022} inpainting in flattened UV space~\cite{vermandere_semantic_2024}.
  
-On V-Scan, the geometry is reconstructed within a Chamfer distance of 1.5--1.9\,cm and an F-score above 0.975 across all environment types, with the tightest values on residential scenes and the largest on industrial and office scenes. Texturally, the same ordering holds: residential rooms reach up to 59.25\,dB PSNR and 0.012 LPIPS, while industrial and office scenes drop to 43--45\,dB and 0.045--0.050 LPIPS, confirming that textural difficulty is driven primarily by the amount of surface that has to be filled from the inpainting prior rather than by the geometric reconstruction itself.
+On V-Scan, the geometry is reconstructed within a Chamfer distance of 1.5--1.9\,cm and an F-score above 0.975 across all environment types, with the tightest values on residential scenes and the largest on industrial and office scenes. Texturally, the same ordering holds: residential rooms reach up to 59.25\,dB PSNR and 0.012 LPIPS, while industrial and office scenes drop to 43--45\,dB and 0.045--0.050 LPIPS, confirming that textural difficulty is driven primarily by the amount of surface that has to be filled from the inpainting prior rather than by the geometric reconstruction itself. The qualitative Matterport3D experiment confirms that this behaviour transfers to real captures for the dominant structural surfaces, with residual quality bounded by upstream detection recall and by the inpainting prior, both of which surface more aggressively on real photographic textures.
  
-The main limitations are the planarity assumption, which excludes curved structural surfaces, and the dependence on a single aligned panorama, which limits textural recovery when occluded regions are large or highly textured. The closed-wall assumption is intentional: openings such as windows and doors are reintroduced as interactive elements in Chapter~\ref{ch:8_Scene_Dynamification}.
+The main limitations are the planarity assumption, which excludes curved structural surfaces, and the dependence on a single aligned panorama, which limits textural recovery in large occluded regions and bakes in residual lighting where light sources are removed. The closed-wall assumption is intentional: openings such as windows and doors are reintroduced as interactive elements in Chapter~\ref{ch:8_Scene_Dynamification}.
  
 Together with the isolated objects from Chapter~\ref{ch:5_Scene_Segmentation}, the completed environment forms the input to Chapter~\ref{ch:7_Object_Completion}, where the reconstructed planes also act as the physical boundary constraints that resolve the mutual dependency between scene-level and object-level completion identified in Chapter~\ref{ch:introduction}~\cite{vermandere_guided_2025}.
+ 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
