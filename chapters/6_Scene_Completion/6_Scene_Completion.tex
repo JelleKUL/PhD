@@ -59,14 +59,16 @@ NeRFiller~\cite{weber_nerfiller_2023} completes missing portions of a 3D capture
 \section{Methodology}
 \label{sec:6_methodology}
 
-The scene completion methodology proceeds in two stages (Figure~\ref{fig:6_method_overview}). The geometric stage (Section~\ref{sec:6_geometry}) turns each detected plane into a watertight mesh fragment, and the textural stage (Section~\ref{sec:6_texture}) projects, masks and inpaints the panorama onto these fragments.
-
 \begin{figure}[hbht]
  \centering
+ \vspace{-10pt}
  \includegraphics[width=1\textwidth]{Scene_completion_method}
  \caption[Scene completion pipeline]{Overview of the scene completion pipeline, from the object-removed point cloud to the final textured mesh.}
  \label{fig:6_method_overview}
 \end{figure}
+
+The scene completion methodology proceeds in two stages (Figure~\ref{fig:6_method_overview}). The geometric stage (Section~\ref{sec:6_geometry}) turns each detected plane into a watertight mesh fragment, and the textural stage (Section~\ref{sec:6_texture}) projects, masks and inpaints the panorama onto these fragments.
+
 
 
 % ─────────────────────────────────────────────────────────────────────────────

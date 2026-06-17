@@ -27,17 +27,17 @@ This chapter outlines the data used throughout the thesis. The pipeline introduc
         \midrule
         \multicolumn{5}{l}{\textit{Existing public datasets}} \\
         \midrule
-        ScanNet++~\cite{yeshwanth_scannet_2023}     & Real      & 1{,}000+ scenes  & \texttimes & Multi-sensor. Used for qualitative full evaluation. \\
-        Matterport3D~\cite{chang_matterport3d_2017} & Real      & 90 scenes        & \texttimes & Residential. Used for qualitative full evaluation. \\
-        ARKitScenes~\cite{baruch_arkitscenes_2022}  & Real      & 5{,}047 scenes   & \texttimes & Mixed scenes. Used for qualitative scene evaluation. \\
+        ScanNet++~\cite{yeshwanth_scannet_2023}     & Real      & 1{,}000+ scenes  & \texttimes & Multi-sensor. Qualitative full evaluation. \\
+        Matterport3D~\cite{chang_matterport3d_2017} & Real      & 90 scenes        & \texttimes & Residential. Qualitative full evaluation. \\
         \midrule
-        ShapeNet Core~\cite{chang_shapenet_2015}    & Synthetic & 51{,}300 objects & \checkmark & Used for quantitative object completion. \\
-        Redwood~\cite{choi_large_2016}              & Real      & 441 objects      & \checkmark & Used for quantitative object completion. \\
+        ShapeNet Core~\cite{chang_shapenet_2015}    & Synthetic & 51{,}300 objects & \checkmark & Quantitative object completion. \\
+        Redwood~\cite{choi_large_2016}              & Real      & 441 objects      & \checkmark & Quantitative object completion. \\
         \midrule
         \multicolumn{5}{l}{\textit{Contributed datasets}} \\
         \midrule
-        Campus captures (ours)                      & Real      & 10+ scenes       & \texttimes & Multi-temporal, multi-sensor. Used for alignment evaluation. \\
-        V-Scan (ours)                               & Synthetic & 200 scenes \newline 3{,}100+ objects & \checkmark & Multi-temporal, multi-sensor. Used for quantitative full evaluation. \\
+        Campus captures (ours)                      & Real      & 10+ scenes       & \texttimes & Multi-temporal, multi-sensor. Alignment evaluation. \\
+        Chemistry building (ours)                   & Real/Synth& 59 objects        & \checkmark & Industrial pipes \& vessels. Quantitative object completion. \\
+        V-Scan (ours)                               & Synthetic & 200 scenes \newline 3{,}100+ objects & \checkmark & Multi-temporal, multi-sensor. Quantitative full evaluation. \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -112,7 +112,9 @@ Together, ShapeNet and Redwood provide complementary object-level benchmarks: Sh
 \section{Real-World Data Capture}
 \label{sec:3_realworld}
 
-Real-world captures were performed at the KU~Leuven Technology Campus in Ghent and at a residential renovation site in Bruges, using a combination of high-end terrestrial laser scanners and consumer-grade \gls{XR} devices. The resulting collection (Table~\ref{tab:3_captured_scenes_metrics}) spans three categories of indoor environments and more than three orders of magnitude in per-session point count, providing the multi-temporal and multi-sensory data required for the alignment experiments in Chapter~\ref{ch:4_Alignment_Updating}.
+Real-world captures were performed at multiple sites on the KU~Leuven Technology Campus in Ghent and at a residential renovation site in Bruges, using a combination of high-end terrestrial laser scanners and consumer-grade \gls{XR} devices. The resulting collection (Table~\ref{tab:3_captured_scenes_metrics}) spans three categories of indoor environments and more than three orders of magnitude in per-session point count, providing the multi-temporal and multi-sensory data required for the alignment experiments in Chapter~\ref{ch:4_Alignment_Updating}. In addition, a dedicated industrial object dataset was derived from scans and \gls{BIM} modelling of the campus chemistry building (Section~\ref{sec:3_chemistry}), supplying ground-truth geometry for industrial piping and vessels that are absent from public object-level benchmarks.
+ 
+The sensors used to capture this data are described in Section~\ref{sec:3_sensors}, the multi-temporal environments in Section~\ref{sec:3_captured_scenes}, and the industrial object dataset in Section~\ref{sec:3_chemistry}.
 
 \begin{table}[htbp]
     \centering
@@ -238,23 +240,60 @@ In each environment every sensor was deployed according to its intended use case
 
 \begin{figure}[htbp]
   \centering
-  \vspace{-10pt}
+  \vspace{-5pt}
   \includegraphics[width=1\textwidth]{LivingLab_Dataset}
   \includegraphics[width=1\textwidth]{LivingLab_Image_Dataset}
   \caption[Living Lab datasets]{The living lab datasets, captured at different phases of construction.}
   \label{fig:3_livinglab_dataset}
+  \vspace{-10pt}
 \end{figure}
 
 \paragraph{Bruges Renovation.} The Bruges renovation is a four-storey residential building captured during interior refurbishment (Figure~\ref{fig:3_house_dataset}), where the structural envelope is largely fixed but the interior is cluttered with construction materials and temporary storage that change position between visits.
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
   \centering
-  \vspace{-10pt}
+  \vspace{-5pt}
   \includegraphics[width=1\textwidth]{House_Dataset}
   \includegraphics[width=1\textwidth]{House_Image_Dataset}
   \caption[House datasets]{The house datasets, captured at different phases of construction.}
   \label{fig:3_house_dataset}
+  \vspace{-10pt}
 \end{figure}
+
+\subsection{Industrial Object Dataset}
+\label{sec:3_chemistry}
+
+The public object-level datasets described in Section~\ref{sec:3_object_datasets} primarily cover common residential furniture categories such as chairs, tables and sofas. Industrial objects, including piping, ductwork and storage vessels, are largely absent from both ShapeNet and Redwood yet are central to the AECO applications targeted in this thesis. To fill this gap, a dedicated industrial object dataset was created from the chemistry building (M-blok) on the KU~Leuven campus in Ghent (Figure~\ref{fig:3_chemistry_building}).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=1\textwidth]{Chemistry_Dataset}
+  \caption[Chemistry building dataset]{The industrial object dataset derived from the chemistry building. Left: the full Revit model of the pilot brewery. Top right: isolated rectangular pipe sections. Bottom right: isolated round pipe sections.}
+  \label{fig:3_chemistry_building}
+\end{figure}
+
+The building houses a pilot brewery containing a variety of round and rectangular piping sections connected through bends, junctions and transitions, as well as storage vessels of different sizes and shapes. The environment was scanned using a Leica ScanStation P30 and a Leica BLK360. From the captured point clouds, 22 distinct pipe configurations and 9 vessels were identified. An as-built \gls{BIM} model of the facility was subsequently created in Autodesk Revit, modelling the vessels and piping.
+
+To complement the scanned objects with a broader set of controlled industrial geometry, 50 additional pipe elements were manually constructed as parametric Revit families. These cover rectangular and round cross-sections with varying bends, junctions and transitions, representing the most common configurations encountered in industrial indoor environments. Together with the 9 modelled vessels, the dataset comprises 59 synthetic industrial objects spanning three classes not present in standard benchmarks: round pipe sections, rectangular pipe sections, and industrial vessels. Table~\ref{tab:3_chemistry_metrics} summarises the dataset composition.
+
+\begin{table}[htbp]
+    \centering
+    \caption[Industrial object dataset]{Composition of the industrial object dataset derived from the chemistry building.}
+    \label{tab:3_chemistry_metrics}
+    \begin{tabular}{l r r}
+        \toprule
+        \textbf{Object Class} & \textbf{Scanned} & \textbf{Modelled (Revit)} \\
+        \midrule
+        Round pipe sections       & 12 & 25 \\
+        Rectangular pipe sections & 10 & 25 \\
+        Industrial vessels        &  9 &  9 \\
+        \midrule
+        \textbf{Total}            & \textbf{31} & \textbf{59} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+This dataset is used in Chapter~\ref{ch:7_Object_Completion} to evaluate the object completion pipeline on industrial geometry that differs substantially from the residential furniture categories covered by ShapeNet and Redwood.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Synthetic Data Creation}

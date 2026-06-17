@@ -31,23 +31,18 @@ Two complementary methodologies are proposed in response, summarised at a glance
     \centering
     \caption[Voxel-based vs.\ image-based object completion]{Comparison of the two object completion methods presented in this chapter along the axes that matter for the pipeline of this thesis.}
     \label{tab:7_method_comparison}
-    \resizebox{\textwidth}{!}{%
-    \begin{tabular}{l l l}
+    \begin{tabularx}{\textwidth}{l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
         \toprule
         \textbf{Aspect} & \textbf{Voxel-based (AutoSDF)} & \textbf{Image-based (Hunyuan3D-Omni)} \\
         \midrule
         Main input               & Partial textured mesh + occlusion grid       & Image of the object (any type) \\
         Auxiliary input          & Refined oriented bounding box                & Partial point cloud as geometric guide \\
         Resolution               & $64^3$ voxel grid (fixed)                    & Octree up to $256^3$ at decoding \\
-        Out-of-distribution      & Requires fine-tuning per category            & Generalises from a single image \\
         Alignment sensitivity    & High; relies on Chapter~\ref{ch:5_Scene_Segmentation} OBB refinement & Lower; image provides global cues \\
-        Noise tolerance          & Low; reconstructs around scan noise          & Higher; image complements partial scan \\
-        Material limit           & Up to 8 materials per object                 & No explicit material limit \\
         Texture detail           & Patch-quilted from observed regions          & Generated from image with delighting \\
         Preserves observed parts & Partial (\gls{VQ-VAE} alters input)          & Yes (point cloud acts as direct control) \\
         \bottomrule
-    \end{tabular}%
-    }
+    \end{tabularx}
 \end{table}
 
 
@@ -103,7 +98,14 @@ Once the geometry is complete, the missing texture can be recovered by treating 
 A common assumption of all of these methods is that adjacent regions in the texture image correspond to adjacent regions on the surface, since the inpainting decisions are driven entirely by the local pixel neighbourhood. This assumption breaks for scanned objects, whose UV maps are typically optimised to maximise the use of texture-image space and therefore scatter neighbouring 3D faces across disconnected 2D patches~\cite{maggiordomo_texture_2021}. Several remedies have been proposed. Semantic UV mapping~\cite{vermandere_semantic_2024} re-unwraps the object in semantically meaningful chunks so that connected 3D regions remain connected in 2D. Part-aware approaches go further by first decomposing the mesh into geometrically simpler parts, for which standard unwrapping algorithms such as \gls{ABF}~\cite{maggiordomo_texture_2021} produce low-distortion charts. \gls{COACD}~\cite{wei_approximate_2022} performs this decomposition through collision-aware approximate convex decomposition and a tree search, producing nearly convex parts that each unwrap cleanly while preserving spatial proximity.
 
 % Paragraph purpose: 3D vertex-color methods (IF-Net Texture) - state limitation
-A different family avoids the UV problem entirely by predicting colour directly in 3D. IF-Net Texture~\cite{chibane_implicit_2021} extends IF-Net with per-vertex colour prediction so that the geometry and the appearance are produced together. Because the colour is stored per vertex, the achievable resolution is bounded by the vertex density of the mesh, which on scanned objects is often coarser than the texture-image resolution of UV-based methods, so fine surface detail such as small patterns or sharp colour boundaries is smoothed out.
+A different family avoids the UV problem entirely by predicting colour directly in 3D. IF-Net Texture~\cite{chibane_implicit_2021} extends IF-Net with per-vertex colour prediction so that the geometry and the appearance are produced together. Because the colour is stored per vertex, the achievable resolution is bounded by the vertex density of the mesh, which on scanned objects is often coarser than the texture-image resolution of UV-based methods, so fine surface detail such as small patterns or sharp colour boundaries is smoothed out (Figure~\ref{fig:7_ifnet_texture}).
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{IF-Net}
+ \caption[IF-Net Texture method overview]{IF-Net Texture~\cite{chibane_implicit_2021}: per-vertex colour is predicted alongside the implicit surface by extending IF-Net with a colour decoder head. The geometry and appearance are produced together, but the resolution of the colour is bounded by the vertex density of the mesh. From \cite{chibane_implicit_2021}}
+ \label{fig:7_ifnet_texture}
+\end{figure}
 
 % Paragraph purpose: TEXTure - also needs UV but smaller patches
 TEXTure~\cite{richardson_texture_2023} sits between the two families: it generates 2D renders of the completed object through a diffusion model and projects them back onto the surface. The projection step still writes into a UV map, but because each render covers only the geometry visible from one view, the texture is composed of many small UV-aligned chunks rather than a single object-wide chart, which lifts the alignment requirement on the unwrap.
@@ -162,14 +164,14 @@ In earlier voxel-based completion workflows, the to-be-completed mask had to be 
 % Motivation: the completion is probabilistic; multiple candidates are generated, the best one matching the observed surface is kept
 With the UDF and the mask in place, AutoSDF treats the voxel grid as a sequence of tokens, autoregressively predicting the latent codes for the masked voxels conditioned on the observed ones, and decoding the result back to a complete SDF. Because the prediction is sampled rather than deterministic, the network returns a number of candidate completions per input (Figure~\ref{fig:7_voxel_candidates}). This variability is useful for objects with ambiguous geometry (for instance a partially scanned chair whose back is hidden), but it requires a selection step to commit to a single output.
 
-\iffalse
+
 \begin{figure}[hbht]
  \centering
- \includegraphics[width=1\textwidth]{Object_completion_voxel_candidates}
+ \includegraphics[width=1\textwidth]{Object_completion_multi_outputs}
  \caption[Multiple candidate completions from AutoSDF]{AutoSDF returns multiple candidate completions per input (top: input UDF, bottom: four candidate completions). The candidate whose decoded surface lies closest to the input UDF zero-level set is retained.}
  \label{fig:7_voxel_candidates}
 \end{figure}
-\fi
+
 
 The candidate with the smallest mean Euclidean distance between its decoded surface and the input UDF zero-level set is retained, since this is the candidate whose observed parts have been altered the least by the \gls{VQ-VAE} encoding.
  
@@ -195,6 +197,12 @@ The completed mesh produced in Section~\ref{sec:7_voxel_geom} has no UV map and 
  
 \paragraph{Part-aware UV unwrapping.}
 % Motivation: completed mesh has no UVs; standard unwrapping gives a poor layout; COACD into parts solves this
+\begin{wrapfigure}{r}{0.33\textwidth}
+ \centering
+ \includegraphics[width=0.33\textwidth]{Half_chair_decomposition}
+ \caption[COACD convex decomposition]{Convex decomposition of a completed chair mesh with \gls{COACD}; each part is shown in a random colour.}
+ \label{fig:7_coacd}
+\end{wrapfigure}
 A standard global UV unwrap of the completed mesh would produce a scattered layout with many small charts and arbitrary seams, which is exactly the situation that the texture stages of state-of-the-art inpainters do not handle well. To give the downstream steps a UV layout in which adjacency is meaningful, the completed mesh is first decomposed into nearly convex parts with \gls{COACD}~\cite{wei_approximate_2022}. Each part is geometrically simple enough to be unwrapped without large distortion or arbitrary cuts, so a standard \gls{ABF} unwrap~\cite{maggiordomo_texture_2021} produces a chart in which faces that are adjacent on the 3D part remain adjacent in the UV image. Combined across all parts, the result is a semantic UV layout~\cite{vermandere_semantic_2024} that preserves the spatial proximity of the original mesh, at the cost of a slightly larger texture footprint than a fully optimised packing.
  
 \paragraph{Partial texture baking.}
@@ -213,10 +221,24 @@ The baked partial texture on the completed mesh is segmented into patches using 
 \end{equation}
  
 The similarity threshold $t_c$ is tuned so that no more than eight groups remain, since the next step encodes the material index in three binary channels and can therefore carry $2^3 = 8$ labels. The boundaries of each group are baked into the mesh as new edges so that every face carries a single material index throughout the rest of the pipeline.
- 
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Material_segmentation}
+ \caption[Material segmentation pipeline]{Material segmentation: UV unwrapping of the completed mesh (left), full SAM patch segmentation on the baked partial texture (centre), and the final material grouping after EfficientNet feature clustering (right).}
+ \label{fig:7_material_segmentation}
+\end{figure}
+
 % Motivation: now extend the partial labelling to the newly created faces
 The faces produced by AutoSDF still need a material label, since the baking step left them empty. IF-Net~\cite{chibane_implicit_2021} is used for this prediction. Material indices are coarser than the eventual texture: they only need to identify which patch a face belongs to, not what its colour is. A per-vertex prediction is therefore sufficient, and the resolution limitation that made IF-Net unsuitable for full texture recovery does not affect material indices. The completed mesh is sampled as a coloured point cloud where each existing point carries its material index colour, voxelised at the AutoSDF resolution, and passed through the IF-Net encoder. The decoder predicts the material index at every query point, extending the observed labelling onto the previously unseen regions.
- 
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Material_prediction}
+ \caption[IF-Net material index prediction]{Material index prediction: partial material indices projected onto the completed mesh (left) and the full material labelling after IF-Net extension to the unobserved geometry (right).}
+ \label{fig:7_material_prediction}
+\end{figure}
+
 \paragraph{Per-material 2D inpainting.}
 % Motivation: now that we have material masks, we can inpaint each material independently from a clean reference
 The per-vertex material indices are projected back to the UV plane, producing a 2D material mask aligned with the baked partial texture. For each material set $S_i$, the observed patches $P \in S_i$ act as the reference texture and all other regions are masked out, so the inpainter receives a clean single-material reference instead of a mixed one. The missing texture is then synthesised through patch-based image quilting~\cite{efros_image_2001}: square blocks $\{B_1, B_2, \ldots, B_n\}$ from $S_i$ are stitched together with overlap, and the cut between adjacent blocks is chosen to minimise the cumulative neighbour-contrast error
@@ -227,6 +249,13 @@ The per-vertex material indices are projected back to the UV plane, producing a 
     \end{gathered}
 \end{equation}
 with $e_{ij} = f(B_i, B_j)$ the boundary cost between blocks $B_i$ and $B_j$. Each material is inpainted independently, which keeps the boundaries sharp and prevents textures from one material bleeding into another. The result is a fully textured completed mesh.
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Object_inpainting}
+ \caption[Per-material texture inpainting]{Per-material texture inpainting: the completed mesh with the partial texture baked onto the observed geometry and material indices on the new geometry (left); the re-unwrapped UV map before inpainting (top centre) and after patch-based quilting per material (bottom centre); the final fully textured completed mesh (right).}
+ \label{fig:7_object_inpainting}
+\end{figure}
  
 
 % ── 7.3.4 ────────────────────────────────────────────────────────────────────
