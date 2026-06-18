@@ -11193,5 +11193,10 @@
     "citation_key": "decrocq_voxel_2025",
     "title": "Voxel guided object completion of indoor scenes",
     "doi": null
+  },
+  {
+    "citation_key": "liu_grounding_2024",
+    "title": "Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection",
+    "doi": "10.48550/arXiv.2303.05499"
   }
 ]
