@@ -345,14 +345,14 @@ The goal of the industrial experiment was to verify whether the voxel-based meth
 % Motivation: a fundamentally different approach. The image carries the high-level shape and category cues; the partial point cloud anchors the result to the observed surface; the voxel-based pipeline's failure modes come from relying on geometry alone, which the image side fixes.
 The image-based methodology is a fundamentally different approach to the same problem. Instead of treating the partial geometry as the primary signal and inferring the rest from a learned voxel prior, it treats an image of the object as the primary signal and uses the partial point cloud only as a geometric anchor. The image carries the category, the shape and the appearance in a single dense representation, which lets the generator reason about parts that the scan could not capture at all. The pipeline (Figure~\ref{fig:7_image_method}) has three stages: a cropped pinhole image of the object is rendered from the panorama, Hunyuan3D-Omni~\cite{hunyuan3d_hunyuan3d-omni_2025} produces the completed mesh from the image and the partial point cloud, and the Hunyuan3D~2.0 paint pipeline~\cite{zhao_hunyuan3d_2025} adds the texture from the same image.
 
-\iffalse
+
 \begin{figure}[hbht]
  \centering
- \includegraphics[width=1\textwidth]{Object_completion_image_method}
+ \includegraphics[width=1\textwidth]{Object_completion_image_method.pdf}
  \caption[Image-based object completion pipeline]{Overview of the image-based object completion pipeline. A pinhole view of the object is rendered from the panorama using the bounding-box corners as field-of-view bounds, then fed together with the partial point cloud to Hunyuan3D-Omni for geometry generation and to Hunyuan3D-Paint for texturing.}
  \label{fig:7_image_method}
 \end{figure}
-\fi
+
 
 
 % ── 7.4.1 ────────────────────────────────────────────────────────────────────
@@ -384,14 +384,14 @@ and finally to equirectangular pixel coordinates for an image of width $W$ and h
 % Step 2: convert footprint to pinhole FoV and reproject
 The eight projected coordinates $\mathbf{c}_i = (u_i, v_i)$ form a polygon on the panorama; a simple axis-aligned crop of this polygon would still produce an equirectangular-distorted image, which is not how natural views are taken and not what the completion network was trained on. Instead, the angular bounds of the eight corners define the horizontal and vertical \gls{FoV} of a pinhole camera placed at the scanner position and oriented towards the centre of the object. The panorama is then resampled through this pinhole model, producing an undistorted image that frames the object as if it had been photographed in isolation by a virtual camera at the scanner location (Figure~\ref{fig:7_pinhole_crop}). This view is paired with a transparency mask derived from the projected bounding-box polygon to suppress what remains of the surrounding scene at the edges of the crop.
 
-\iffalse
+
 \begin{figure}[hbht]
  \centering
- \includegraphics[width=1\textwidth]{Object_completion_pinhole_crop}
+ \includegraphics[width=1\textwidth]{Image_completion_pano_projection}
  \caption[Pinhole view from the panorama]{The bounding-box corners (left, projected onto the equirectangular panorama) define the field-of-view of a virtual pinhole camera, through which the panorama is resampled to produce an undistorted close-up view of the object (right) suitable for image-based completion.}
  \label{fig:7_pinhole_crop}
 \end{figure}
-\fi
+
 
 
 % ── 7.4.2 ────────────────────────────────────────────────────────────────────
@@ -399,7 +399,14 @@ The eight projected coordinates $\mathbf{c}_i = (u_i, v_i)$ form a polygon on th
 \label{sec:7_image_geom}
 
 % Motivation: how we use the network, not what the network is
-The cropped pinhole view and the partial point cloud of the object are passed to Hunyuan3D-Omni as the image condition and the point condition respectively. The point cloud is downsampled to the network's expected input size and re-oriented to the canonical frame used during training, since the network assumes a fixed up-axis. The image is fed unaltered.
+The cropped pinhole view and the partial point cloud of the object are passed to Hunyuan3D-Omni as the image condition and the point condition respectively (Figure \ref{fig:7_image_completion_geometry}). The point cloud is downsampled to the network's expected input size and re-oriented to the canonical frame used during training, since the network assumes a fixed up-axis. The image is fed unaltered.
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Image_completion_geometry}
+ \caption[Image-based geometry generation]{The cropped pano (left) and the partial point cloud (centre) are used as input for the Hunyuan3D-Omni network, resulting in a complete mesh (right).}
+ \label{fig:7_image_completion_geometry}
+\end{figure}
 
 % Motivation: why the point cloud is essential here, not in the thesis as a whole
 The role of the partial point cloud is to anchor the generated geometry to the observed surface. Without the point condition the network would still produce a plausible object from the image alone, but the result would not be aligned with the scanned data and could drift in scale, position or proportion. With the point condition, the generated SDF is conditioned to pass through the observed points, which plays the same role that the occluded-voxel mask played for AutoSDF: it tells the network which part of the answer is already fixed.
@@ -413,7 +420,14 @@ The network outputs an SDF on an adaptive octree at up to $256^3$ resolution, fr
 \label{sec:7_image_texture}
 
 % Motivation: same image, used twice
-The Hunyuan3D~2.0 paint pipeline~\cite{zhao_hunyuan3d_2025} takes two inputs: the completed mesh from the previous step and the same cropped pinhole image used for geometry generation. Reusing the image keeps the texture consistent with the geometry it produced, and removes the need to find a separate appearance reference.
+The Hunyuan3D~2.0 paint pipeline~\cite{zhao_hunyuan3d_2025} takes two inputs: the completed mesh from the previous step and the same cropped pinhole image used for geometry generation. Reusing the image keeps the texture consistent with the geometry it produced, and removes the need to find a separate appearance reference (Figure \ref{fig:7_image_completion_texture}).
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Image_completion_texture}
+ \caption[Image-based geometry generation]{The completed geometry (left) and the cropped pano (centre) are used as input for the Hunyuan3D~2.0 paint network, resulting in a textured mesh (right).}
+ \label{fig:7_image_completion_texture}
+\end{figure}
 
 The pipeline proceeds in three stages. The image is first passed through a delighting module that removes baked-in highlights and shadows, producing a uniformly lit reference that is independent of the original scanner lighting. A geometry-conditioned multi-view synthesis module then renders the delit image onto the completed mesh from a series of learned camera viewpoints, using a reference-net to preserve appearance details across views, geometry conditioning to ensure that the textures adhere to the surface structure, and multi-view attention to maintain consistency between viewpoints. Finally, the generated multi-view images are baked into a single texture map, with an inpainting step that fills small uncovered regions by propagating information from nearby textured patches.
 
@@ -425,10 +439,87 @@ The completed and textured object is generated in the canonical frame used by Hu
 \subsection{Experiments}
 \label{sec:7_image_exp}
 
-\todo{Add quantitative evaluation on V-Scan. The image-based pipeline is implemented (notebook available, generates the cropped panorama view, runs Hunyuan3D-Omni with the partial point cloud as the point control, runs Hunyuan3D-Paint on the result), but the full evaluation on V-Scan is not yet complete. Planned metrics, in line with Chapter~\ref{ch:6_Scene_Completion} and Chapter~\ref{ch:background}: Chamfer distance and F-score at 5\,cm against ground-truth object meshes from V-Scan~\cite{vermandere_synthetic_2026}, volumetric IoU at $64^3$, and image-quality metrics (PSNR, SSIM, LPIPS~\cite{zhang_unreasonable_2018}) computed on renders of the textured object from the original panorama viewpoint compared to ground-truth renders.}
+% Motivation for the eval choice: V-Scan provides ground truth for the quantitative numbers; Matterport mirrors the voxel-based figure so the two methods can be compared directly.
+The image-based method is evaluated on two datasets: a quantitative evaluation on the synthetic V-Scan dataset of Chapter~\ref{ch:3_Data_Acquisition}~\cite{vermandere_synthetic_2026} to measure reconstruction fidelity against ground-truth geometry and texture, and a qualitative evaluation on Matterport3D~\cite{chang_matterport3d_2017} that mirrors the per-stage layout of Figure~\ref{fig:7_voxel_matterport} so the two methods can be compared directly.
 
-\todo{Add qualitative results on Matterport3D~\cite{chang_matterport3d_2017} for the same object types shown in Figure~\ref{fig:7_voxel_matterport}, so a direct side-by-side comparison with the voxel-based method becomes possible. The notebook already produces single-object completions from cropped panorama views; results for multiple representative scenes (residential furniture, larger pieces, partially occluded objects) need to be collected and inserted here.}
 
+\paragraph{Quantitative evaluation on V-Scan.}
+% Show first: tables and figure, then discussion.
+The V-Scan dataset provides ground-truth meshes and rendered views for objects drawn from five room categories: industrial, office, bedroom, dining room and living room. Each object is completed with the image-based pipeline, and the result is compared to its ground-truth twin along two axes: the geometry through Chamfer distance (\gls{CD-L1} and \gls{CD-L2}) and precision, recall and F-score at $5$\,cm (Table~\ref{tab:7_vscan_geom}, defined in Chapter~\ref{ch:background}), and the texture through PSNR, SSIM and LPIPS~\cite{zhang_unreasonable_2018} computed on renders of the completed object from the original panorama viewpoint against ground-truth renders (Table~\ref{tab:7_vscan_tex}).
+
+\begin{table}[h]
+    \centering
+    \caption[Geometry evaluation of the image-based completion on V-Scan]{Geometry evaluation of the image-based completion on V-Scan~\cite{vermandere_synthetic_2026}, broken down by room category. Chamfer distances are reported in metres; precision, recall and F-score are evaluated at a $5$\,cm threshold.}
+    \label{tab:7_vscan_geom}
+    \begin{tabularx}{\textwidth}{l >{\centering\arraybackslash}X >{\centering\arraybackslash}X >{\centering\arraybackslash}X >{\centering\arraybackslash}X >{\centering\arraybackslash}X}
+        \toprule
+        \textbf{Category} & \textbf{CD-L1 $\downarrow$} & \textbf{CD-L2 $\downarrow$} & \textbf{Prec.@5cm $\uparrow$} & \textbf{Rec.@5cm $\uparrow$} & \textbf{F@5cm $\uparrow$} \\
+        \midrule
+        Industrial   & $0.0516$ & $0.0151$ & $0.920$ & $0.687$ & $0.756$ \\
+        Office       & $0.0432$ & $0.0120$ & $0.911$ & $0.766$ & $0.811$ \\
+        Bedroom      & $0.0229$ & $0.0025$ & $0.974$ & $0.816$ & $0.876$ \\
+        Dining room  & $0.0353$ & $0.0069$ & $0.959$ & $0.746$ & $0.807$ \\
+        Living room  & $0.0229$ & $0.0024$ & $0.965$ & $0.816$ & $0.872$ \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \caption[Texture evaluation of the image-based completion on V-Scan]{Texture evaluation of the image-based completion on V-Scan~\cite{vermandere_synthetic_2026}, broken down by room category. PSNR is reported in dB. SSIM and LPIPS are unitless.}
+    \label{tab:7_vscan_tex}
+    \begin{tabularx}{\textwidth}{l >{\centering\arraybackslash}X >{\centering\arraybackslash}X >{\centering\arraybackslash}X}
+        \toprule
+        \textbf{Category} & \textbf{PSNR (dB) $\uparrow$} & \textbf{SSIM $\uparrow$} & \textbf{LPIPS $\downarrow$} \\
+        \midrule
+        Industrial   & $19.04$ & $0.929$ & $0.138$ \\
+        Office       & $19.60$ & $0.913$ & $0.124$ \\
+        Bedroom      & $17.65$ & $0.889$ & $0.152$ \\
+        Dining room  & $17.12$ & $0.872$ & $0.176$ \\
+        Living room  & $19.06$ & $0.913$ & $0.155$ \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{V-Scan_object_completion}
+ \caption[Image-based completion on V-Scan]{Image-based completion of four V-Scan~\cite{vermandere_synthetic_2026} objects. From top to bottom: the cropped pinhole input image, the partial point cloud, the geometry generated by Hunyuan3D-Omni, and the final textured mesh produced by the Hunyuan3D~2.0 paint pipeline.}
+ \label{fig:7_image_vscan}
+\end{figure}
+
+% Discussion: numbers and failure modes from the figure
+The numbers split the five categories into two regimes. Bedroom and living room reach F-score@5cm above $0.87$ and CD-L2 around $0.0025$\,m, indicating that the completed surface lies very close to the ground truth on most of the object. Industrial and dining room sit lower, with F-score@5cm at $0.76$ and $0.81$ respectively, while office sits in between. The texture metrics order the categories differently: industrial and office objects, which carry few distinct materials and few sharp colour features, reach PSNR values close to $19$\,dB and LPIPS below $0.14$; the more visually complex bedroom, dining room and living room objects, with patterned fabrics, wood grain and printed decorations, score lower on PSNR and higher on LPIPS even though their geometry is the most accurate.
+
+% Failure modes
+Two failure modes explain the gaps and are both visible in Figure~\ref{fig:7_image_vscan}. On the geometry side, when the partial point cloud is sparse on the far side of the object the network occasionally fits the generated SDF tightly to the observed shell rather than producing a volumetric reconstruction. The precision@5cm stays high (e.g.\ $0.920$ on industrial), so the surface that is produced is close to the ground truth, but the recall drops (e.g.\ $0.687$ on industrial), indicating that a large fraction of the ground-truth surface is not covered. This behaviour is consistent with mild overfitting to the point-condition signal, which dominates the image cue in regions where the image alone would have suggested more volume. On the texture side, the pipeline occasionally hallucinates plausible-looking but spurious detail on unobserved sides of furniture, such as drawer fronts on the back panel of a cabinet, which inflates the LPIPS distance even when the geometry is correct.
+
+
+\paragraph{Qualitative results on Matterport3D.}
+% Show first: figure, then discussion that explicitly compares to the voxel Matterport figure.
+Figure~\ref{fig:7_image_matterport} shows the per-stage output of the image-based pipeline on Matterport3D, laid out to mirror Figure~\ref{fig:7_voxel_matterport} so the two methods can be compared on the same object types.
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Image_completion_matterport_experiments}
+ \caption[Image-based completion on Matterport3D]{Image-based completion of four Matterport3D~\cite{chang_matterport3d_2017} objects. From top to bottom: the input panorama, the cropped pinhole image, the partial point cloud, and the final textured mesh.}
+ \label{fig:7_image_matterport}
+\end{figure}
+
+% Comparison with the voxel method
+Compared to the voxel results of Figure~\ref{fig:7_voxel_matterport}, the reconstructions are markedly more detailed and stay much more faithful to the input where the scanned points are present. The point-condition keeps the observed surface in place, removing the \gls{VQ-VAE}-induced alteration of observed regions that the voxel method exhibits, and the image carries enough category-level information for the network to add plausible details on the unobserved sides that the voxel pipeline, lacking an appearance cue, could not produce.
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Industrial_object_completion.pdf}
+ \caption[Image-based completion on indutrial data]{Image-based completion of objects in a industrial setting. Objects are highlighted in the panorama (top), resulting in the final textured meshes (bottom).}
+ \label{fig:7_image_industrial}
+\end{figure}
+
+Furthermore, we can see that the image based method also provides good results for industrial objects falling outside the standard furniture style data (Figure \ref{fig:7_image_industrial}). Compared to the voxel-based method, the overall shape is much better retained and due to the detailed image, the texture can also be more faithfully recreated.
+
+% Two characteristic deviations
+Two characteristic deviations remain. First, the cropped pinhole image still contains foreground clutter that sits inside the bounding-box footprint of the object, such as flowers and vases placed on tables or on top of cabinets. The transparency mask of Section~\ref{sec:7_image_crop} suppresses background pixels but cannot separate such props from the object behind them, so the generator occasionally treats the clutter as part of the target and reconstructs geometry that does not exist in the scan. Second, when the bounding box is close enough to the scanner for the panorama projection to introduce noticeable distortion or stitching seams, the cropped image inherits these artefacts, producing locally off-looking surfaces or textures in the regions affected by the seam.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Conclusion}

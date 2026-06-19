@@ -12,6 +12,8 @@
 \newglossaryentry{IoU}{name={IoU}, description={Intersection over Union}}
 \newglossaryentry{LOA}{name={LOA}, description={Level of Accuracy}}
 \newglossaryentry{CD}{name={CD}, description={Chamfer Distance}}
+\newglossaryentry{CD-L1}{name={CD-L1}, description={Chamfer Distance measured as sum of the absolute point-to-point distances}}
+\newglossaryentry{CD-L2}{name={CD-L1}, description={Chamfer Distance measured as sum of the squared point-to-point distances}}
 \newglossaryentry{PSNR}{name={PSNR}, description={Peak Signal-to-Noise Ratio}}
 \newglossaryentry{SSIM}{name={SSIM}, description={Structural Similarity Index Measure}}
 \newglossaryentry{LPIPS}{name={LPIPS}, description={Learned Perceptual Image Patch Similarity}}
@@ -368,12 +370,16 @@ This section defines the quantitative metrics used to evaluate the pipeline outp
 \label{sec:bg_metrics_geometric}
 
 \paragraph{Chamfer Distance.}
-The Chamfer Distance (\gls{CD}) measures the average closest-point distance between two point sets and is the most widely used metric for evaluating 3D shape reconstruction quality. Given two point sets $P$ and $Q$, it is defined as
+The Chamfer Distance (\gls{CD}) measures the average closest-point distance between two point sets and is the most widely used metric for evaluating 3D shape reconstruction quality. Two variants are common, distinguished by the norm applied to the per-point distances. Given two point sets $P$ and $Q$, the $\ell_1$ (CD-L1) and $\ell_2$ (CD-L2) Chamfer Distances are defined as
 \begin{equation}
-\label{eq:chamfer}
-\text{CD}(P, Q) = \frac{1}{|P|} \sum_{\mathbf{p} \in P} \min_{\mathbf{q} \in Q} \|\mathbf{p} - \mathbf{q}\|^2 \;+\; \frac{1}{|Q|} \sum_{\mathbf{q} \in Q} \min_{\mathbf{p} \in P} \|\mathbf{q} - \mathbf{p}\|^2 .
+\label{eq:chamfer_l1}
+\text{CD-L1}(P, Q) = \frac{1}{|P|} \sum_{\mathbf{p} \in P} \min_{\mathbf{q} \in Q} \|\mathbf{p} - \mathbf{q}\|_2 \;+\; \frac{1}{|Q|} \sum_{\mathbf{q} \in Q} \min_{\mathbf{p} \in P} \|\mathbf{q} - \mathbf{p}\|_2 ,
 \end{equation}
-The first term measures the \textit{accuracy} of the prediction, while the second measures its \textit{completeness}. A lower Chamfer Distance indicates a better geometric match. The metric is symmetric and captures both missing and excessive geometry, but is sensitive to outliers and does not account for surface normals or topology. It is used to evaluate the geometric accuracy of completed objects (Chapter~\ref{ch:7_Object_Completion}) and reconstructed scene elements (Chapter~\ref{ch:6_Scene_Completion}).
+\begin{equation}
+\label{eq:chamfer_l2}
+\text{CD-L2}(P, Q) = \frac{1}{|P|} \sum_{\mathbf{p} \in P} \min_{\mathbf{q} \in Q} \|\mathbf{p} - \mathbf{q}\|_2^2 \;+\; \frac{1}{|Q|} \sum_{\mathbf{q} \in Q} \min_{\mathbf{p} \in P} \|\mathbf{q} - \mathbf{p}\|_2^2 .
+\end{equation}
+In both formulations, the first term measures the \textit{accuracy} of the prediction and the second measures its \textit{completeness}. \gls{CD-L1} sums absolute Euclidean distances and is more robust to outliers, while \gls{CD-L2} sums squared distances and penalises large deviations more heavily. Unless otherwise specified, this thesis reports CD-L1 values, as is standard in the shape completion literature. Both variants are symmetric and capture missing as well as excessive geometry, but neither accounts for surface normals or topology. The Chamfer Distance is used to evaluate the geometric accuracy of completed objects (Chapter~\ref{ch:7_Object_Completion}) and reconstructed scene elements (Chapter~\ref{ch:6_Scene_Completion}).
 
 % ── LOA ──────────────────────────────────────────────────────────────────────
 \paragraph{Level of Accuracy.}
