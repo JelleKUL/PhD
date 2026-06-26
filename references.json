@@ -11198,5 +11198,15 @@
     "citation_key": "liu_grounding_2024",
     "title": "Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection",
     "doi": "10.48550/arXiv.2303.05499"
+  },
+  {
+    "citation_key": "everingham_pascal_2010",
+    "title": "The Pascal Visual Object Classes (VOC) Challenge",
+    "doi": "10.1007/s11263-009-0275-4"
+  },
+  {
+    "citation_key": "fan_point_2017",
+    "title": "A Point Set Generation Network for 3D Object Reconstruction from a Single Image",
+    "doi": "10.1109/CVPR.2017.264"
   }
 ]

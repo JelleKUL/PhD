@@ -6,14 +6,14 @@
 \newglossaryentry{UDF}{name={UDF}, description={Unsigned Distance Field}}
 \newglossaryentry{CSDF}{name={CSDF}, description={Coloured Signed Distance Field}}
 \newglossaryentry{NeRF}{name={NeRF}, description={Neural Radiance Field}}
-\newglossaryentry{UV}{name={UV}, description={UV coordinates}}
+\newglossaryentry{UV}{name={UV}, description={Texture coordinates in 2D space}}
 \newglossaryentry{CAD}{name={CAD}, description={Computer-Aided Design}}
 \newglossaryentry{CI/SFB}{name={CI/SFB}, description={Classification and Information System for Building Elements}}
 \newglossaryentry{IoU}{name={IoU}, description={Intersection over Union}}
 \newglossaryentry{LOA}{name={LOA}, description={Level of Accuracy}}
 \newglossaryentry{CD}{name={CD}, description={Chamfer Distance}}
 \newglossaryentry{CD-L1}{name={CD-L1}, description={Chamfer Distance measured as sum of the absolute point-to-point distances}}
-\newglossaryentry{CD-L2}{name={CD-L1}, description={Chamfer Distance measured as sum of the squared point-to-point distances}}
+\newglossaryentry{CD-L2}{name={CD-L2}, description={Chamfer Distance measured as sum of the squared point-to-point distances}}
 \newglossaryentry{PSNR}{name={PSNR}, description={Peak Signal-to-Noise Ratio}}
 \newglossaryentry{SSIM}{name={SSIM}, description={Structural Similarity Index Measure}}
 \newglossaryentry{LPIPS}{name={LPIPS}, description={Learned Perceptual Image Patch Similarity}}
@@ -45,25 +45,6 @@ In summary, while components of the proposed pipeline exist in the literature, n
 \label{sec:bg_drm_requirements}
 
 This section formalises what a \gls{DRM} must provide and what inputs it operates on, before the representations that realise these requirements are discussed in Section~\ref{sec:bg_representations}. The requirements connect the pipeline design and the occlusion typology established in Chapter~\ref{ch:introduction} to the concrete data types used in each stage.
-
-% ── Inputs ───────────────────────────────────────────────────────────────────
-\subsection{Inputs}
-\label{sec:bg_inputs}
-
-The pipeline takes as input heterogeneous, multi-source data captured from real indoor environments. Two primary modalities are considered (Figure~\ref{fig:Pointcloud_Pano}).
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=1\textwidth]{Pointcloud_Pano}
-  \caption[Pointcloud and panoramic images]{Example of the input data: an incomplete point cloud (left) and a panoramic image (right) captured at the same scanner position. The point cloud provides geometric information, while the panoramic image provides complementary appearance information that can be projected onto the point cloud for colour assignment.}
-  \label{fig:Pointcloud_Pano}
-\end{figure}
-
-\paragraph{Point clouds.}
-Incomplete point clouds form the geometric backbone of the input data. These may originate from high-end terrestrial laser scanners, which provide millimetre-level accuracy over large ranges, or from lower-end mobile and \gls{XR}-based devices with lower accuracy but faster acquisition speeds. Per-point colour information may optionally be present. Multiple scans of the same scene can be captured at different times or with different devices to provide complementary coverage and to enable temporal updates~\cite{vermandere_two-step_2022, vermandere_automatic_2022}.
-
-\paragraph{Image data.}
-Panoramic images or localised pinhole camera images provide complementary appearance information. Panoramic images, captured at the scanner positions, enable dense colour assignment to the point cloud through angular projection. Localised images from mobile devices provide additional texture cues and support 2D-based alignment and inpainting operations. Co-registration of images within the same coordinate system as the point cloud is a prerequisite for cross-modal processing~\cite{bassier_geomapi_2024}.
 
 % ── Output requirements ──────────────────────────────────────────────────────
 \subsection{Output Requirements}
@@ -99,6 +80,25 @@ Individual objects must be represented as separate entities rather than as part 
 
 \paragraph{Part awareness and scalability.}
 To support realistic manipulation, completed objects must carry a notion of their internal part structure. This enables part-aware scaling operations in which individual structural components can be scaled independently or repeated rather than applying a uniform deformation to the entire object~\cite{vermandere_adaptive_2026}.
+
+% ── Inputs ───────────────────────────────────────────────────────────────────
+\subsection{Inputs}
+\label{sec:bg_inputs}
+
+To produce such an output, the pipeline takes as input heterogeneous, multi-source data captured from real indoor environments. Two complementary modalities are considered (Figure~\ref{fig:Pointcloud_Pano}): geometric data, which provides the spatial backbone of the scene, and image data, which provides its appearance.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=1\textwidth]{Pointcloud_Pano}
+  \caption[Pointcloud and panoramic images]{Example of the input data: an incomplete point cloud (left) and a panoramic image (right) captured at the same scanner position. The point cloud provides geometric information, while the panoramic image provides complementary appearance information that can be projected onto the point cloud for colour assignment.}
+  \label{fig:Pointcloud_Pano}
+\end{figure}
+
+\paragraph{Geometric data.}
+Incomplete geometric measurements form the spatial backbone of the input data. These may originate from high-end terrestrial laser scanners, which provide millimetre-level accuracy over large ranges, or from lower-end mobile and \gls{XR}-based devices with lower accuracy but faster acquisition speeds. Per-point colour information may optionally be present. Multiple captures of the same scene can be acquired at different times or with different devices to provide complementary coverage and to enable temporal updates~\cite{vermandere_two-step_2022, vermandere_automatic_2022}. The specific representations in which this geometric data is stored and processed are discussed in Section~\ref{sec:bg_representations}.
+
+\paragraph{Image data.}
+Panoramic images or localised pinhole camera images provide complementary appearance information. Panoramic images, captured at the scanner positions, enable dense colour assignment to the geometry through angular projection. Localised images from mobile devices provide additional texture cues and support 2D-based alignment and inpainting operations. Co-registration of images within the same coordinate system as the geometric data is a prerequisite for cross-modal processing~\cite{bassier_geomapi_2024}.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{3D Scene Representations}
@@ -370,14 +370,14 @@ This section defines the quantitative metrics used to evaluate the pipeline outp
 \label{sec:bg_metrics_geometric}
 
 \paragraph{Chamfer Distance.}
-The Chamfer Distance (\gls{CD}) measures the average closest-point distance between two point sets and is the most widely used metric for evaluating 3D shape reconstruction quality. Two variants are common, distinguished by the norm applied to the per-point distances. Given two point sets $P$ and $Q$, the $\ell_1$ (CD-L1) and $\ell_2$ (CD-L2) Chamfer Distances are defined as
+The Chamfer Distance (\gls{CD})~\cite{fan_point_2017} measures the average closest-point distance between two point sets and is the most widely used metric for evaluating 3D shape reconstruction quality. Two variants are common, distinguished by the power to which the per-point Euclidean distances are raised. Given two point sets $P$ and $Q$, the $\ell_1$ (CD-L1) and $\ell_2$ (CD-L2) Chamfer Distances are defined as
 \begin{equation}
 \label{eq:chamfer_l1}
-\text{CD-L1}(P, Q) = \frac{1}{|P|} \sum_{\mathbf{p} \in P} \min_{\mathbf{q} \in Q} \|\mathbf{p} - \mathbf{q}\|_2 \;+\; \frac{1}{|Q|} \sum_{\mathbf{q} \in Q} \min_{\mathbf{p} \in P} \|\mathbf{q} - \mathbf{p}\|_2 ,
+\text{CD-L1}(P, Q) = \frac{1}{|P|} \sum_{\mathbf{p} \in P} \min_{\mathbf{q} \in Q} \|\mathbf{p} - \mathbf{q}\| \;+\; \frac{1}{|Q|} \sum_{\mathbf{q} \in Q} \min_{\mathbf{p} \in P} \|\mathbf{q} - \mathbf{p}\| ,
 \end{equation}
 \begin{equation}
 \label{eq:chamfer_l2}
-\text{CD-L2}(P, Q) = \frac{1}{|P|} \sum_{\mathbf{p} \in P} \min_{\mathbf{q} \in Q} \|\mathbf{p} - \mathbf{q}\|_2^2 \;+\; \frac{1}{|Q|} \sum_{\mathbf{q} \in Q} \min_{\mathbf{p} \in P} \|\mathbf{q} - \mathbf{p}\|_2^2 .
+\text{CD-L2}(P, Q) = \frac{1}{|P|} \sum_{\mathbf{p} \in P} \min_{\mathbf{q} \in Q} \|\mathbf{p} - \mathbf{q}\|^2 \;+\; \frac{1}{|Q|} \sum_{\mathbf{q} \in Q} \min_{\mathbf{p} \in P} \|\mathbf{q} - \mathbf{p}\|^2 .
 \end{equation}
 In both formulations, the first term measures the \textit{accuracy} of the prediction and the second measures its \textit{completeness}. \gls{CD-L1} sums absolute Euclidean distances and is more robust to outliers, while \gls{CD-L2} sums squared distances and penalises large deviations more heavily. Unless otherwise specified, this thesis reports CD-L1 values, as is standard in the shape completion literature. Both variants are symmetric and capture missing as well as excessive geometry, but neither accounts for surface normals or topology. The Chamfer Distance is used to evaluate the geometric accuracy of completed objects (Chapter~\ref{ch:7_Object_Completion}) and reconstructed scene elements (Chapter~\ref{ch:6_Scene_Completion}).
 
@@ -404,7 +404,7 @@ A higher LOA percentage indicates that more points fall within the tighter accur
 \label{sec:bg_metrics_overlap}
 
 \paragraph{Intersection over Union.}
-The Intersection over Union (\gls{IoU}) measures the ratio of shared space (the intersection) to total occupied space (the union) between 2 volumes. Given two spatial regions $A$ and $B$,
+The Intersection over Union (\gls{IoU}) measures the ratio of shared space (the intersection) to total occupied space (the union) between two volumes. Given two spatial regions $A$ and $B$,
 \begin{equation}
 \label{eq:iou}
 \text{IoU}(A, B) = \frac{|A \cap B|}{|A \cup B|} .
@@ -416,7 +416,7 @@ An \gls{IoU} of 1 indicates perfect agreement, while 0 indicates no overlap. Thi
 \label{sec:bg_metrics_detection}
 
 \paragraph{Precision and Recall.}
-Precision and recall characterise the trade-off between false positives and false negatives in detection tasks. Given a set of detections, each classified as a true positive (TP), false positive (FP) or false negative (FN) based on the \gls{IoU} threshold defined above,
+Precision and recall characterise the trade-off between false positives and false negatives in detection tasks, and are the standard pair of detection-quality measures in object detection benchmarks~\cite{everingham_pascal_2010}. Given a set of detections, each classified as a true positive (TP), false positive (FP) or false negative (FN) based on the \gls{IoU} threshold defined above,
 \begin{equation}
 \label{eq:precision_recall}
 \text{Precision} = \frac{\text{TP}}{\text{TP} + \text{FP}}, \qquad
@@ -431,7 +431,7 @@ Precision measures the proportion of detections that correspond to actual object
 The texture completion and inpainting stages of the pipeline produce visual outputs whose quality cannot be fully captured by geometric metrics alone. Four complementary metrics are used, progressing from pixel-level accuracy to increasingly perceptually meaningful comparisons.
 
 \paragraph{Peak Signal-to-Noise Ratio.}
-The Peak Signal-to-Noise Ratio (\gls{PSNR}) quantifies the pixel-level reconstruction accuracy of a predicted image $I^*$ relative to a reference image $I$. It is defined in terms of the Mean Squared Error (MSE):
+The Peak Signal-to-Noise Ratio (\gls{PSNR}) quantifies the pixel-level reconstruction accuracy of a predicted image $I^*$ relative to a reference image $I$. It is defined in terms of the Mean Squared Error (MSE)~\cite{wang_image_2004}:
 \begin{equation}
 \label{eq:psnr}
 \text{PSNR}(I^*, I) = 10 \cdot \log_{10} \left( \frac{L^2}{\text{MSE}(I^*, I)} \right),

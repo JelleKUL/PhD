@@ -1,0 +1,31 @@
+% !TeX root = ../../thesis.tex
+% This file is included via \includenomenclature{nomenclaturechapter} in thesis.tex.
+% The adsphd class requires the file to start with \chapter{...}; the class
+% macro converts this into an unnumbered chapter automatically.
+% Source of truth: notation_standard.md, Section 1 (General Conventions).
+% Requires \usepackage{longtable} in the preamble.
+\chapter{Nomenclature}
+\label{ch:notation}
+
+
+\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{@{} l p{0.30\textwidth} p{0.35\textwidth} @{}}
+\toprule
+\textbf{Convention} & \textbf{Meaning} & \textbf{Example} \\
+\midrule
+\endhead
+Lowercase italic, e.g.\ $t_d$ & Scalar & $t_\text{dist}$, $\sigma_\text{glob}$, $o_i$, $w$ \\
+Bold lowercase, e.g.\ $\mathbf{p}_i$ & 3D point (a position in space) & $\mathbf{p}_i$, $\mathbf{q}_j$, $\mathbf{v}_i$ \\
+Bold lowercase with an arrow, e.g.\ $\vec{\mathbf{n}}_i$ & 3D vector (a direction or displacement) & $\vec{\mathbf{n}}_i$, $\vec{\mathbf{u}}$, $\vec{\mathbf{d}}$, $\vec{\mathbf{t}}$ \\
+Bold uppercase, e.g.\ $\mathbf{T}$, $\mathbf{R}$ & Matrix & $\mathbf{T}_\text{ses}$, $\mathbf{R} \in SO(3)$, $\mathbf{G}$ \\
+Uppercase italic, e.g.\ $P$, $Q$ & Any collection or set & $P = \{\mathbf{p}_i\}_{i=1}^{N}$, $S = \{S_i\}_{i=1}^{N}$ \\
+Subscript index, e.g.\ $i$, $j$, $k$ & Running element index & $\mathbf{p}_i$, $g_{ijk}$ \\
+Subscript label, e.g.\ $\text{ref}$, $\text{ses}$ & Named role, set in upright text (2--4 letters) & $P_\text{ref}$, $P_\text{ses}$, $\mathbf{T}_\text{img}$ \\
+Single prime, e.g.\ $P'$ & A selected subset of the unprimed quantity & $P'$, $P_\text{ref}'$ \\
+Double prime, e.g.\ $P''$ & A further reduced subset of $P'$ & $P''$ \\
+$|\cdot|$ & Cardinality of a set & $|P|$, $|A \cap B|$ \\
+$\|\cdot\|$ & Euclidean norm & $\|\mathbf{p}_i - \mathbf{q}_j\|$ \\
+$\mathbb{R}^n$ & $n$-dimensional real space & $\mathbf{p}_i \in \mathbb{R}^3$ \\
+$\argmin$, $\argmax$ & Argument of the minimum / maximum & $\argmin_{\mathbf{T}} \sum \rho(\cdot)$ \\
+\bottomrule
+\end{longtable}

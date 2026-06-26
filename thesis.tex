@@ -99,6 +99,8 @@
 \makeglossaries%
 
 
+
+
 % BibLaTeX
 %\usepackage[utf8]{inputenc}
 %\usepackage{csquotes}
@@ -119,10 +121,12 @@
 \usepackage{multirow}
 \usepackage{amsmath}
 \DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator*{\argmax}{argmax}
 \usepackage{array}
 \usepackage{caption}
 \usepackage{graphicx}
 \usepackage{tabularx}
+\usepackage{longtable}
 \usepackage{wrapfig}
 
 \setlength{\textfloatsep}{10pt plus 4pt minus 2pt} % space between float at top/bottom and text
@@ -172,10 +176,10 @@
 
 % To create a list of symbols, there are 2 options
 % 1. include a manually created nomenclature as a chapter
-%    \includenomenclature{nomenclaturechapter}
+\includenomenclature{nomenclaturechapter}
 % 2. automatic generation via the nomencl package
 %    \nomenclature[cB]{$c_B(\vec{x})$}{Characteristic function of $B$}
-%\myprintnomenclature
+%    \myprintnomenclature
 
 
 \listoffigures
