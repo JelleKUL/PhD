@@ -70,8 +70,6 @@ The dynamification is organised into a scene-level stage and an object-level sta
 \subsection{Scene Dynamification}
 \label{sec:8_scene}
 
-The scene completion of Chapter~\ref{ch:6_Scene_Completion} reconstructs each room as a set of closed walls whose surface is projected onto the scanned points, so a window or door is reconstructed with the geometry of the wall plane fitted to its surrounding points and is distinguishable only by its texture. Scene dynamification recovers these openings as independent, manipulable geometry. Each opening is detected in the wall texture and cut out as a separate surface, which therefore already carries the projected geometry of the opening. It is then turned into a dynamic element with its own frame and panels, and the wall surface behind it is reconstructed as a flat plane so that the structural shell stays complete (Figure~\ref{fig:8_method_scene_overview}).
-
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_dynamification_scene_method}
@@ -79,18 +77,24 @@ The scene completion of Chapter~\ref{ch:6_Scene_Completion} reconstructs each ro
  \label{fig:8_method_scene_overview}
 \end{figure}
 
+The scene completion of Chapter~\ref{ch:6_Scene_Completion} reconstructs each room as a set of closed walls whose surface is projected onto the scanned points, so a window or door is reconstructed with the geometry of the wall plane fitted to its surrounding points and is distinguishable only by its texture. Scene dynamification recovers these openings as independent, manipulable geometry. Each opening is detected in the wall texture and cut out as a separate surface, which therefore already carries the projected geometry of the opening. It is then turned into a dynamic element with its own frame and panels, and the wall surface behind it is reconstructed as a flat plane so that the structural shell stays complete (Figure~\ref{fig:8_method_scene_overview}).
+
+
+
 % ── 8.3.1.1 ──────────────────────────────────────────────────────────────────
 \subsubsection{Opening Detection}
 \label{sec:8_opening_detection}
 
-Each wall fragment $M_k$ produced in Chapter~\ref{ch:6_Scene_Completion} carries a flattened texture in its own \gls{UV} space, which already presents the surface upright and free of perspective distortion~\cite{vermandere_semantic_2024}. This is the ideal input for a 2D detector, because each window and door appears as a flat, front-facing rectangle rather than a tilted and stretched shape seen from an angle. The base-colour texture of each fragment is extracted and passed to the Grounding DINO~\cite{liu_grounding_2024} open-vocabulary detector, prompted with the phrases \emph{window} and \emph{door}, which returns a bounding box and class label per opening. Each box is then refined into a tight binary mask by SAM~\cite{kirillov_segment_2023}, prompted with that box, and the largest external contour of the mask is traced and simplified into a pixel-space polygon $\{(x_l, y_l)\}$ describing the opening outline (Figure~\ref{fig:8_opening_detection}).
-
-\begin{wrapfigure}{l}{0.4\textwidth}
+\begin{wrapfigure}{l}{0.5\textwidth}
  \centering
- \includegraphics[width=0.4\textwidth]{Scene_dynamification_opening_detection}
+ \vspace{-10pt}
+ \includegraphics[width=0.5\textwidth]{Scene_dynamification_opening_detection}
  \caption[Window and door detection on wall textures]{The final detection polygon traced on a flattened wall texture, annotated with its class label and confidence score.}
  \label{fig:8_opening_detection}
 \end{wrapfigure}
+
+Each wall fragment $M_k$ produced in Chapter~\ref{ch:6_Scene_Completion} carries a flattened texture in its own \gls{UV} space, which already presents the surface upright and free of perspective distortion~\cite{vermandere_semantic_2024}. This is the ideal input for a 2D detector, because each window and door appears as a flat, front-facing rectangle rather than a tilted and stretched shape seen from an angle. The base-colour texture of each fragment is extracted and passed to the Grounding DINO~\cite{liu_grounding_2024} open-vocabulary detector, prompted with the phrases \emph{window} and \emph{door}, which returns a bounding box and class label per opening. Each box is then refined into a tight binary mask by SAM~\cite{kirillov_segment_2023}, prompted with that box, and the largest external contour of the mask is traced and simplified into a pixel-space polygon $\{(x_l, y_l)\}$ describing the opening outline (Figure~\ref{fig:8_opening_detection}).
+
 
 Operating per fragment, in its canonical \gls{UV} orientation, keeps the detection robust: each wall is seen in isolation and upright, so the detector is not confused by adjacent surfaces or by the curvature of the original panorama. A small padding is applied to each detection so that window and door frames, which sit at the very edge of the detected box, are included in the subsequent cutout.
 
@@ -149,20 +153,22 @@ Because windows and doors are now treated as separate, movable elements, the wal
 \subsection{Object Dynamification}
 \label{sec:8_object}
 
+\begin{figure}[h]
+ \centering
+ \vspace{-10pt}
+ \includegraphics[width=1\textwidth]{Scene_dynamification_object_method}
+ \caption[Object dynamification pipeline]{Overview of the object-level dynamification. The completed object is decomposed into convex parts, after which user-defined scaling zones are deformed by interpolation or by repetition of modular parts.}
+ \label{fig:8_method_object_overview}
+\vspace{-10pt}
+\end{figure}
+
 Depending on the completion method of Chapter~\ref{ch:7_Object_Completion}, each completed object arrives either as a textured mesh or as a mesh extracted from a completed \gls{SDF} with a texture applied. Object dynamification first brings both forms into a single deformable representation, the \gls{CSDF}, then turns it into a part-aware, selectively scalable field through convex decomposition, scaling-zone definition, joint interpolation, and, for large deformations, repetition of modular parts (Figure~\ref{fig:8_method_object_overview}).
 
-\begin{figure}[hbht]
- \centering
- \includegraphics[width=1\textwidth]{Scene_dynamification_object_method}
- \caption[Object dynamification pipeline]{Overview of the object-level dynamification. The completed object is decomposed into convex parts and packed into a \gls{CSDF}, after which user-defined scaling zones are deformed by joint interpolation or by repetition of modular parts.}
- \label{fig:8_method_object_overview}
-\end{figure}
+
 
 % ── 8.3.2.1 ──────────────────────────────────────────────────────────────────
 \subsubsection{Part Segmentation}
 \label{sec:8_part_segmentation}
-
-Part segmentation is performed first on the completed mesh, because it produces an extra per-voxel attribute that is stored in the \gls{CSDF} alongside geometry and colour. The mesh is decomposed into approximately convex components using CoACD~\cite{wei_approximate_2022}, which recursively cuts the mesh with planes selected through a tree search that minimises a collision-aware concavity metric (Figure~\ref{fig:8_decomposition}). Adjacent components are merged where their union remains convex, reducing redundant cuts. Because the decomposition is purely geometric, it generalises to arbitrary reconstructed objects without relying on a class label, at the cost of parts that do not always coincide with semantic components~\cite{vermandere_adaptive_2026}.
 
 \begin{wrapfigure}{r}{0.4\textwidth}
  \centering
@@ -170,6 +176,10 @@ Part segmentation is performed first on the completed mesh, because it produces 
  \caption[Convex decomposition of a completed object]{The approximately convex decomposition produced by CoACD~\cite{wei_approximate_2022}, with each part shown in a random colour.}
  \label{fig:8_decomposition}
 \end{wrapfigure}
+
+Part segmentation is performed first on the completed mesh, because it produces an extra per-voxel attribute that is stored in the \gls{CSDF} alongside geometry and colour. The mesh is decomposed into approximately convex components using CoACD~\cite{wei_approximate_2022}, which recursively cuts the mesh with planes selected through a tree search that minimises a collision-aware concavity metric (Figure~\ref{fig:8_decomposition}). Adjacent components are merged where their union remains convex, reducing redundant cuts. Because the decomposition is purely geometric, it generalises to arbitrary reconstructed objects without relying on a class label, at the cost of parts that do not always coincide with semantic components~\cite{vermandere_adaptive_2026}.
+
+
 
 Each component is assigned a discrete part index $i$, which is later sampled onto the voxel grid so that every voxel knows which structural component it belongs to. These indices drive the part-aware deformation in Section~\ref{sec:8_interpolation}.
 
@@ -192,14 +202,15 @@ The completed mesh, its texture and its part labels are unified into a single \g
 \subsubsection{Scaling-Zone Definition}
 \label{sec:8_scaling_zone}
 
-Selective scaling is controlled by a simple planar constraint. A scaling zone is delimited by two parallel planes along a chosen axis, a start plane and an end plane, and the end plane is translated along that axis to set the target extent of the zone (Figure~\ref{fig:8_scaling_zone}). Voxels before the start plane stay fixed, voxels beyond the end plane are rigidly translated to keep the rest of the object intact, and the voxels between the two planes are the ones that are deformed. This planar control is intuitive and behaves identically across objects, independent of their shape or class.
-
-\begin{wrapfigure}{r}{0.4\textwidth}
+\begin{wrapfigure}[16]{r}{0.5\textwidth}
  \centering
+ \vspace{-40pt}
  \includegraphics[width=0.4\textwidth]{Scene_dynamification_scaling_zone}
  \caption[Scaling-zone definition]{A scaling zone defined on a chair by a start plane (blue) and an end plane (red) along the scaling axis.}
  \label{fig:8_scaling_zone}
 \end{wrapfigure}
+
+Selective scaling is controlled by a simple planar constraint. A scaling zone is delimited by two parallel planes along a chosen axis, a start plane and an end plane, and the end plane is translated along that axis to set the target extent of the zone (Figure~\ref{fig:8_scaling_zone}). Voxels before the start plane stay fixed, voxels beyond the end plane are rigidly translated to keep the rest of the object intact, and the voxels between the two planes are the ones that are deformed. This planar control is intuitive and behaves identically across objects, independent of their shape or class.
 
 
 % ── 8.3.2.4 ──────────────────────────────────────────────────────────────────
@@ -240,6 +251,14 @@ where $\delta x$ is a small sampling offset used to detect the label change.
 \subsubsection{Repetition-Based Scaling}
 \label{sec:8_repetition}
 
+\begin{wrapfigure}{r}{0.4\textwidth}
+ \centering
+ \vspace{-30pt}
+ \includegraphics[width=0.4\textwidth]{Scene_dynamification_repetition}
+ \caption[Repetition-based scaling]{For repeating structures, the selected region (left) is duplicated rather than stretched (right), preserving the proportions of each component during large deformations.}
+ \label{fig:8_repetition}
+\end{wrapfigure}
+
 For large deformations, stretching a region introduces visible distortion: shelves grow too tall, cushions become elongated, and repeated elements lose their proportions. For regions whose parts form a repeating pattern, the components are duplicated instead of stretched (Figure~\ref{fig:8_repetition}). Given an original repeatable length $L$ and a target length $L'$, the number of repetitions is
 
 \[
@@ -247,13 +266,6 @@ n = \left\lfloor \frac{L'}{L} \right\rfloor,
 \]
 
 and the region is duplicated $n$ times along the scaling axis. The residual difference between $n L$ and $L'$ is absorbed by slightly scaling each repeated section using the interpolation scheme of Section~\ref{sec:8_interpolation}, and the boundary layers between adjacent repetitions are blended to avoid visible seams. This preserves the size of individual components while still reaching the target dimension~\cite{vermandere_adaptive_2026}.
-
-\begin{wrapfigure}{r}{0.4\textwidth}
- \centering
- \includegraphics[width=0.4\textwidth]{Scene_dynamification_repetition}
- \caption[Repetition-based scaling]{For repeating structures, the selected region (left) is duplicated rather than stretched (right), preserving the proportions of each component during large deformations.}
- \label{fig:8_repetition}
-\end{wrapfigure}
 
 All of these deformations are applied in real time. The packed \gls{CSDF} is never edited destructively; it serves as the interpolation source from which the deformed field is sampled on the fly, and the result is continuously visualised as a surface extracted with Marching Cubes~\cite{lorensen_marching_1998}. The deformed grid is only written back to a 3D texture, optionally resampled to a fixed output resolution, when the object is exported.
 
@@ -296,14 +308,17 @@ Figure~\ref{fig:8_scaling_comparison} compares the scaling strategies on two cle
 
 Global scaling resizes the whole object uniformly, so every part distorts: chair legs thicken and structural members lose their proportions. Part-aware selective scaling improves on this by confining the deformation to the scaling zone, so parts outside the zone, such as the legs of a chair, keep their original proportions while only the targeted region changes. Inside the zone, however, the selected parts are still stretched, and for repeating structures this produces the same elongation that global scaling causes elsewhere. The repetition strategy resolves this by preserving the proportions of the parts within the zone: each repeatable component is stretched by at most a factor of $1.5$ before a new repetition is inserted, so the components stay close to their original size while the region still reaches the target length. This works best for straight parts, where successive repetitions can be placed seamlessly along the scaling axis; small deviations at the seams are absorbed by the Marching Cubes~\cite{lorensen_marching_1998} meshing step, which always produces a watertight surface.
 
-The same behaviour holds on reconstructed objects. Figure~\ref{fig:8_matterport_object_scaling} shows three objects completed from Matterport3D scans, each with its selectively scaled and repeated versions. As with the clean models, selective scaling preserves the proportions outside the zone while repetition keeps the repeating elements consistent inside it, confirming that the method transfers from optimised geometry to the noisier completed objects of Chapter~\ref{ch:7_Object_Completion}.
-
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_dynamification_matterport_object_scaling}
  \caption[Scaling of reconstructed Matterport3D objects]{Three objects completed from Matterport3D scans (rows): the completed object, the selectively scaled version, and the repeated version.}
  \label{fig:8_matterport_object_scaling}
+ \vspace{-10pt}
 \end{figure}
+
+The same behaviour holds on reconstructed objects. Figure~\ref{fig:8_matterport_object_scaling} shows three objects completed from Matterport3D scans, each with its selectively scaled and repeated versions. As with the clean models, selective scaling preserves the proportions outside the zone while repetition keeps the repeating elements consistent inside it, confirming that the method transfers from optimised geometry to the noisier completed objects of Chapter~\ref{ch:7_Object_Completion}.
+
+
 
 These results confirm the structure-aware ordering of the strategies: global scaling is the least faithful, selective scaling preserves proportions outside the deformed region, and repetition is required to keep repeating structure consistent inside it. Two limitations carry over from the underlying representation. The $128^3$ \gls{CSDF} resolution trades detail against memory, so fine geometry can be lost during interpolation or resampling, and the convex decomposition is geometry-based, so its parts do not always align with semantic components, which occasionally places scaling-zone boundaries at non-intuitive locations~\cite{vermandere_adaptive_2026}.
 
@@ -312,18 +327,17 @@ These results confirm the structure-aware ordering of the strategies: global sca
 \subsection{Scene-Level Results}
 \label{sec:8_exp_scene}
 
-Figure~\ref{fig:8_vscan} shows the dynamification on two V-Scan~\cite{vermandere_synthetic_2026} scenes, with the scans on top and the resulting dynamic scenes below.
-
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_dynamification_vscan}
  \caption[Dynamification of V-Scan scenes]{Two V-Scan scenes: the original scans (top) and the resulting dynamic scenes (bottom), with separated objects and movable windows and doors.}
  \label{fig:8_vscan}
+ \vspace{-10pt}
 \end{figure}
 
-The results are very good across both scenes. This is partly due to the simple geometry of the V-Scan environments, which are essentially boxes with clearly defined edges and cleanly delineated windows and doors, making the openings straightforward to detect and cut out. It is also due to the objects being synthetic, so they are clean, well-structured and mostly symmetrical, which suits both the convex decomposition and the repetition-based scaling. We therefore treat V-Scan as the best-case scenario for the pipeline.
+Figure~\ref{fig:8_vscan} shows the dynamification on two V-Scan~\cite{vermandere_synthetic_2026} scenes, with the scans on top and the resulting dynamic scenes below.
 
-Figure~\ref{fig:8_matterport_scenes} shows two Matterport3D scans alongside their complete dynamification, with the objects separated and the windows and doors recovered as movable elements. Combined with the draggable structural shell, the result is a scene whose primary, secondary and tertiary elements can all be manipulated after reconstruction.
+The results are very good across both scenes. This is partly due to the simple geometry of the V-Scan environments, which are essentially boxes with clearly defined edges and cleanly delineated windows and doors, making the openings straightforward to detect and cut out. It is also due to the objects being synthetic, so they are clean, well-structured and mostly symmetrical, which suits both the convex decomposition and the repetition-based scaling. We therefore treat V-Scan as the best-case scenario for the pipeline.
 
 \begin{figure}[hbht]
  \centering
@@ -331,6 +345,8 @@ Figure~\ref{fig:8_matterport_scenes} shows two Matterport3D scans alongside thei
  \caption[Dynamification of Matterport3D scenes]{Two Matterport3D scans (left) and their complete dynamification (right), with separated objects and movable windows and doors.}
  \label{fig:8_matterport_scenes}
 \end{figure}
+
+Figure~\ref{fig:8_matterport_scenes} shows two Matterport3D scans alongside their complete dynamification, with the objects separated and the windows and doors recovered as movable elements. Combined with the draggable structural shell, the result is a scene whose primary, secondary and tertiary elements can all be manipulated after reconstruction.
 
 The detection behaves reliably for closed openings, but a few failure modes appear. Open doors are difficult to detect, because the corridor visible behind them is reconstructed in a distorted view that does not present as a clean opening on the wall plane. The regions inpainted to fill object occlusions do not always have clear borders, so the detected polygons can pick up messy boundaries where the inpainted texture blends into the surrounding wall. Some built-in elements such as fitted cabinets are identified as doors, which is technically correct given their appearance but may not always be the intended interpretation. These three cases, open doors, occlusion-inpainted regions with unclear borders, and ambiguous built-in elements, are the main sources of scene-level error and stem from the planarity assumption of Chapter~\ref{ch:6_Scene_Completion} and the quality of the flattened wall texture.
 
@@ -341,6 +357,7 @@ Once the elements are separated, the scene can be freely rearranged. Figure~\ref
  \includegraphics[width=1\textwidth]{Scene_dynamification_matterport_variations}
  \caption[Layout variations of dynamified scenes]{Two alternative layouts (columns) of each of the two scenes from Figure~\ref{fig:8_matterport_scenes}, with objects moved and scaled and windows and doors repositioned along the walls.}
  \label{fig:8_matterport_variations}
+ \vspace{-20pt}
 \end{figure}
 
 

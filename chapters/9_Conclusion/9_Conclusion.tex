@@ -1,14 +1,111 @@
 % !TeX root = ../../thesis.tex
+\chapter{Conclusions and Future Work}
+\label{ch:conclusion}
 
-\chapter{Conclusion and future works}\label{ch:conclusion}
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusions}
+\label{sec:9_conclusions}
 
-\section{Conclusion}
+% Paragraph purpose: restate the closed loop and frame the chapter as a synthesis, not a re-explanation.
+This thesis set out to transform partially scanned indoor environments into complete, structured and dynamically editable \glspl{DRM}. The preceding chapters followed a single artefact through the full modular pipeline of Figure~\ref{fig:1_Research_Aim}: a heterogeneous, partial and out-of-date scan is aligned and updated, decomposed into structural elements and objects with their occlusion maps, completed at both scene and object level, and finally made dynamic. This chapter does not repeat those stage-level results, which are established in the respective chapter conclusions, but synthesises them against the research aim of Chapter~\ref{ch:introduction}, draws out the cross-cutting findings, and states the limitations that define the future work.
 
-\section{Future works}
+Table~\ref{tab:9_synthesis} summarises the pipeline as a whole: for each stage it records the input it consumes, the artefact it produces, the principal quantitative result on V-Scan, and the dominant limitation carried into the next stage. The discussion that follows expands on these entries rather than restating them.
+
+\begin{table}[hbtp]
+\centering
+\caption[Pipeline synthesis]{Synthesis of the pipeline stages, their inputs, outputs, principal results on V-Scan and dominant limitations. Detailed results and experimental conditions are given in the corresponding chapter.}
+\label{tab:9_synthesis}
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}p{2cm}X@{}}
+\toprule
+\multicolumn{2}{@{}l}{\textbf{Alignment \& updating (Ch.~\ref{ch:4_Alignment_Updating})}} \\
+\cmidrule(r){1-1}
+Input & Heterogeneous multi-temporal scans \\
+Output & Aligned, up-to-date point cloud \\
+Results & 0.058\,m average accuracy; 97.5\% empty-scene recovery from two scans. \\
+Limitations & Structural geometry aligns more reliably than furnished scenes; scanner changes with low overlap remain hardest. \\
+\midrule
+\multicolumn{2}{@{}l}{\textbf{Object \& occlusion detection (Ch.~\ref{ch:5_Scene_Segmentation})}} \\
+\cmidrule(r){1-1}
+Input & Aligned point cloud \\
+Output & Objects, refined oriented boxes, occlusion grids \\
+Results & Primary symmetry axis at $8.01^{\circ}$ error, 94\% rate; occluded volume 7.97--22.07\% per class. \\
+Limitations & Detection precision of 0.310 propagates false positives downstream. \\
+\midrule
+\multicolumn{2}{@{}l}{\textbf{Scene completion (Ch.~\ref{ch:6_Scene_Completion})}} \\
+\cmidrule(r){1-1}
+Input & Object-removed cloud, planes, occlusion grid \\
+Output & Closed textured mesh of the empty room \\
+Results & Chamfer 1.5--1.9\,cm, F-score $>$0.975; PSNR up to 59\,dB. \\
+Limitations & Planarity assumption and single-panorama texture limit large or curved occluded regions. \\
+\midrule
+\multicolumn{2}{@{}l}{\textbf{Object completion (Ch.~\ref{ch:7_Object_Completion})}} \\
+\cmidrule(r){1-1}
+Input & Partial object meshes, per-object grids, panorama \\
+Output & Fully textured object meshes \\
+Results & Voxel method IoU 61.8--72.2\%; image method generalises without per-category tuning. \\
+Limitations & Voxel material cap and image-method occlusion-grid decoupling remain. \\
+\midrule
+\multicolumn{2}{@{}l}{\textbf{Scene dynamification (Ch.~\ref{ch:8_Scene_Dynamification})}} \\
+\cmidrule(r){1-1}
+Input & Static scene and object meshes \\
+Output & Interactive part-aware \gls{DRM} \\
+Results & Selective scaling preserves proportions; openings separated and rendered interactively in Unity. \\
+Limitations & Geometry-only part decomposition and planar-wall opening detection remain. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% Paragraph purpose: contribution 1 — alignment and updating, the need for more data and its integration.
+The first contribution responds directly to the observation, motivating this thesis, that buildings are scanned extensively but the resulting data is slow to produce, quickly out of date and rarely reusable. The two-step alignment and updating framework of Chapter~\ref{ch:4_Alignment_Updating} treats new data not as a fresh full survey but as an incremental observation to be fused into an existing reference frame~\cite{vermandere_two-step_2022, vermandere_automatic_2022}. By combining complementary 2D and 3D estimates in a weighted vote it tolerates the heterogeneous, low-cost sensors that make fast capture possible, and by distinguishing outdated, occluded and current observations it maintains a scene without re-documenting it. The principal finding is that no single registration method is reliable across all conditions but their combination is, and that incremental fusion of two partial captures recovers substantially more of the true environment than any single scan. This establishes the practical premise of the whole pipeline: faster data iteration through reuse rather than repetition.
+
+% Paragraph purpose: contribution 2a — object and occlusion detection, decomposition and the coupling premise.
+The second contribution is the decomposition of the aligned cloud into the components on which all later reasoning depends. Chapter~\ref{ch:5_Scene_Segmentation} separates structure from objects, refines detection boxes into oriented boxes using symmetry and the surrounding planes, and characterises what is genuinely missing through voxelised occlusion grids at both scene and object level~\cite{vermandere_guided_2025, vermandere_synthetic_2026}. The key conceptual result is that occlusion can be measured rather than assumed: distinguishing unobserved-but-occupied regions from genuinely empty ones is precisely the information that lets scene and object completion proceed without overwriting one another. This stage therefore supplies the shared geometric substrate for the coupling of scene-level and object-level completion that is the central scientific objective of the thesis.
+
+% Paragraph purpose: contribution 2b — scene completion.
+The environment completion of Chapter~\ref{ch:6_Scene_Completion} reconstructs the static room envelope from the object-removed cloud, the structural planes and the scene-level occlusion grid, recovering both geometry and plausible texture per plane in a flattened UV space~\cite{vermandere_semantic_2024, suvorov_resolution-robust_2022}. The reconstruction is geometrically accurate and degrades gracefully in texture as the unobserved surface area grows, confirming that the residual difficulty lies in the inpainting prior rather than in the geometric fit. By reconstructing closed walls and deferring openings, this stage also produces the boundary surfaces that constrain object completion, operationalising one half of the scene-object coupling.
+
+% Paragraph purpose: contribution 2c — object completion and the two-method comparison.
+Object completion in Chapter~\ref{ch:7_Object_Completion} closes the other half. Two methods were developed and compared: a voxel-based approach that consumes the per-object occlusion grid directly and a state-of-the-art SDF prior~\cite{mittal_autosdf_2022, vermandere_guided_2025}, and an image-based approach that conditions a large-scale generator on a panorama-derived view anchored by the partial scan~\cite{hunyuan3d_hunyuan3d-omni_2025, vermandere_geometry_2025}. The comparison yields a clear methodological finding: the voxel method links most tightly to the measured occlusion but is bounded by its category prior, its material cap and its alteration of observed geometry, whereas the image-conditioned method generalises across far more object types without per-category tuning at the cost of a looser link to the occlusion grid. Together with the completed environment, the result is a full static reconstruction in which every movable element exists as a complete, reusable asset rather than a fragment.
+
+% Paragraph purpose: contribution 4 — dynamification, closing the loop to interactivity.
+The final contribution, scene dynamification in Chapter~\ref{ch:8_Scene_Dynamification}, converts this static reconstruction into a single interactive \gls{DRM} acting on all three classes of building element: the structural shell is made adjustable, windows and doors are recovered from the inpainted wall textures as separable openings, and objects are decomposed into convex parts and selectively scaled so that overall dimensions adapt while parts keep their proportions~\cite{wei_approximate_2022, vermandere_adaptive_2026}. This delivers the defining property of a \gls{DRM}: a representation that combines the visual fidelity of a detailed reconstruction with the editability of a hand-made model, rendered interactively rather than fixed to a single captured moment.
+
+% Paragraph purpose: methodological contribution — V-Scan as the evaluation backbone.
+Underpinning all of these is the methodological contribution that made their quantitative evaluation possible. Because the surfaces most relevant to completion are exactly those absent from real scans, conventional datasets cannot supply ground truth for the regions to be reconstructed. The V-Scan synthetic dataset of Chapter~\ref{ch:3_Data_Acquisition} resolves this by pairing realistic partial scans with complete scene- and object-level ground truth~\cite{vermandere_synthetic_2026, de_geyter_automated_2022}, and served as the common benchmark across the alignment, detection, scene completion and object completion experiments. Its consistent use is what allows the stage results in Table~\ref{tab:9_synthesis} to be read as one coherent evaluation rather than a collection of separate experiments.
+
+% Paragraph purpose: cross-cutting conclusion synthesising the recurring findings.
+Read together, the chapters share three cross-cutting findings. First, robustness emerges from combination rather than from any single best method: the alignment vote, the coupling of complementary completion priors and the routing of building elements to different treatments all outperform their strongest individual component. Second, structure is more recoverable than appearance: across alignment, scene completion and dynamification, planar and geometrically regular surfaces are handled reliably, while the residual difficulty consistently concentrates in texture synthesis and in irregular geometry. Third, explicit occlusion reasoning is the mechanism that makes modular, independently validated completion possible without the stages conflicting, which is the concrete realisation of the coupled scene-object completion posed as the central objective.
+
+% Paragraph purpose: honest limitations at the thesis level.
+These results are bounded by limitations that the individual chapters identify and that compound at the system level. The scope is restricted to single-room, largely planar indoor environments, so curved structures, multi-room layouts and outdoor scenes fall outside the validated range. Errors propagate forward in the modular design: the moderate detection precision introduces false positives that no later stage corrects, and the planarity and single-panorama assumptions of scene completion limit textural recovery where occlusion is large. Part decomposition for scaling is geometry-only, opening detection depends on planar well-textured walls, and the voxel-resolution trade-off recurs in both occlusion detection and dynamification. Most importantly, the gap towards general deployment in the construction industry remains: the sheer variety of real building contents, materials and capture conditions exceeds what a single furnished-room pipeline, however complete, can yet absorb.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Future Work}
+\label{sec:9_future_work}
+
+% Paragraph purpose: direction 1 — robustness and scope expansion.
+The most immediate direction is increasing robustness and expanding the scope beyond the single furnished room. Replacing the current detector with a more recent architecture, or fine-tuning it on V-Scan, would reduce the false positives that currently propagate through the pipeline, and extending the planar assumptions of scene completion and opening detection to curved and non-Manhattan structures would broaden the range of buildings the method can handle. Scaling from single rooms to connected multi-room and eventually building-scale environments is the natural next step, and would require the alignment and updating framework to manage inter-room consistency and loop closure rather than a single reference frame.
+
+% Paragraph purpose: direction 2 — fidelity, texture and part awareness.
+A second direction is increasing fidelity, particularly in the two areas the cross-cutting analysis identified as residually hard. Texture synthesis under large occlusion would benefit from multi-view and learned scene-level priors rather than a single aligned panorama, and the geometry-only part decomposition used for scaling could be enriched with appearance and learned semantic cues so that part-aware editing reflects function as well as shape. Tightening the link between the image-based object completion and the measured per-object occlusion grid would combine the generality of the image-conditioned generator with the occlusion-awareness of the voxel method, addressing the principal trade-off found in Chapter~\ref{ch:7_Object_Completion}.
+
+% Paragraph purpose: direction 3 — evaluation and the construction-industry gap.
+A third direction concerns evaluation and the path towards real deployment. V-Scan establishes controlled ground truth, but closing the gap to the construction industry calls for larger and more varied real-world benchmarks with reliable completion ground truth, captured across the diversity of materials, clutter and sensing conditions encountered in practice. Narrowing the synthetic-to-real domain gap observed in detection and object completion, and validating the full pipeline on such data, is the decisive step from a demonstrated single-room methodology towards the faster, reusable digitisation of existing buildings that motivated this work.
+
+% Paragraph purpose: direction 4 — interaction and downstream use of the DRM.
+A fourth direction builds on the interactivity unlocked in Chapter~\ref{ch:8_Scene_Dynamification}. The current dynamification supports repositioning, removal and part-aware scaling, but the editable \gls{DRM} invites richer interaction: physically grounded behaviour, semantic constraints that keep edits plausible, and bidirectional updating in which manual edits and freshly captured scans are reconciled through the alignment and updating framework of Chapter~\ref{ch:4_Alignment_Updating}. Coupling the pipeline to the downstream applications surveyed in Chapter~\ref{ch:Valorisation}, from renovation planning to facility management, would also turn the methodological evaluation used here into task-level evaluation, measuring the \gls{DRM} by the decisions it supports rather than by reconstruction accuracy alone.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Concluding Remarks}
+\label{sec:9_remarks}
+
+% Paragraph purpose: final synthesis tying contributions back to the thesis statement.
+This thesis proposed an occlusion-aware pipeline for transforming partial indoor scans into complete, interactive and dynamic environments, and demonstrated each of its stages on a common synthetic benchmark with reliable ground truth. Its central argument is that the transformation from a partial scan to an editable \gls{DRM} is best treated not as a single end-to-end reconstruction but as a sequence of independently validated stages bound together by explicit occlusion reasoning, which lets scene-level and object-level completion proceed without conflict. The remaining gap towards general construction-industry deployment is real and is set by the variety of the built environment rather than by any single unsolved stage, and the future directions above describe how that gap can be narrowed. Within its stated scope, the work establishes scene dynamification as a coherent research problem and provides a modular, reusable foundation for building digital representations that are at once realistic, complete and editable.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Keep the following \cleardoublepage at the end of this file, 
+% Keep the following \cleardoublepage at the end of this file,
 % otherwise \includeonly includes empty pages.
 \cleardoublepage
-
-% vim: tw=70 nocindent expandtab foldmethod=marker foldmarker={{{}{,}{}}}
