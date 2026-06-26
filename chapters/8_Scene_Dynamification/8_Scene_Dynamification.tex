@@ -116,6 +116,7 @@ The union of all clipped triangles forms a new textured mesh containing only the
  \label{fig:8_opening_cutout}
 \end{figure}
 
+
 % ── 8.3.1.3 ──────────────────────────────────────────────────────────────────
 \subsubsection{Dynamic Opening Construction}
 \label{sec:8_opening_dynamic}
@@ -129,6 +130,7 @@ The cutout already carries the projected geometry of the opening, but its outer 
  \label{fig:8_opening_dynamic}
 \end{figure}
 
+
 % ── 8.3.1.4 ──────────────────────────────────────────────────────────────────
 \subsubsection{Wall Re-Reconstruction}
 \label{sec:8_wall_reinpaint}
@@ -141,6 +143,7 @@ Because windows and doors are now treated as separate, movable elements, the wal
  \caption[Wall re-reconstruction behind openings]{After the opening is removed (left), the wall surface behind it is flattened and re-inpainted (right) so that the structural shell remains complete when the opening is moved or removed.}
  \label{fig:8_wall_reinpaint}
 \end{figure}
+
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Object Dynamification}
@@ -184,6 +187,7 @@ The completed mesh, its texture and its part labels are unified into a single \g
  \label{fig:8_csdf}
 \end{figure}
 
+
 % ── 8.3.2.3 ──────────────────────────────────────────────────────────────────
 \subsubsection{Scaling-Zone Definition}
 \label{sec:8_scaling_zone}
@@ -196,6 +200,7 @@ Selective scaling is controlled by a simple planar constraint. A scaling zone is
  \caption[Scaling-zone definition]{A scaling zone defined on a chair by a start plane (blue) and an end plane (red) along the scaling axis.}
  \label{fig:8_scaling_zone}
 \end{wrapfigure}
+
 
 % ── 8.3.2.4 ──────────────────────────────────────────────────────────────────
 \subsubsection{Joint Field Interpolation}
@@ -273,50 +278,70 @@ All three element classes are manipulated interactively from this interface. The
 \section{Experiments}
 \label{sec:8_experiments}
 
-The dynamification is evaluated in two parts. The scene-level results show complete dynamic environments assembled from the preceding pipeline stages, demonstrating openings that can be moved and objects that can be scaled in place. The object-level results compare the three scaling strategies on representative objects, focusing on the visual and structural quality of the deformation. The scene-level experiments use the completed environments of Chapter~\ref{ch:6_Scene_Completion} on the V-Scan~\cite{vermandere_synthetic_2026} and Matterport3D~\cite{chang_matterport3d_2017} datasets introduced in Chapter~\ref{ch:3_Data_Acquisition}, since these provide the reconstructed wall fragments with flattened textures required for opening detection. The object-level experiments use objects reconstructed and completed through Chapter~\ref{ch:7_Object_Completion}, together with a set of high-quality models with well-defined repeating structures to test the repetition strategy on clean geometry~\cite{vermandere_adaptive_2026}. All objects are represented as $128^3$ \glspl{CSDF}, and all scaling is performed and rendered interactively in the Unity environment of Section~\ref{sec:8_recombination}.
-
-
-% ─────────────────────────────────────────────────────────────────────────────
-\subsection{Scene-Level Results}
-\label{sec:8_exp_scene}
-
-Figure~\ref{fig:8_dynamic_scenes} shows complete dynamic environments produced by the full pipeline. The openings detected and cut from the walls behave as independent surfaces, and the re-reconstructed walls remain continuous when an opening is moved or removed. Combined with the in-place scalable objects and the draggable structural shell, the result is a scene whose primary, secondary and tertiary elements can all be manipulated after reconstruction.
-
-\iffalse
-\begin{figure}[hbht]
- \centering
- \includegraphics[width=1\textwidth]{Scene_dynamification_dynamic_scenes}
- \caption[Dynamic environments from the full pipeline]{Complete dynamic scenes assembled from the pipeline. Top: a V-Scan environment with separable openings and scalable objects. Bottom: a Matterport3D environment processed through the same stages.}
- \label{fig:8_dynamic_scenes}
-\end{figure}
-\fi
-
-\todo{Add quantitative scene-level evaluation of opening detection on V-Scan, where the ground-truth window and door locations are known from the procedural room generator (Chapter~\ref{ch:3_Data_Acquisition}). Report detection precision, recall and IoU of the detected opening polygons against the ground-truth openings, broken down by environment type, mirroring the table format used in Chapters~\ref{ch:5_Scene_Segmentation} and~\ref{ch:6_Scene_Completion}. The current paper does not contain this experiment, so the data still needs to be generated.}
+The dynamification is evaluated at the object level and at the scene level. The object-level results (Section~\ref{sec:8_exp_object}) compare the three scaling strategies on individual objects, and the scene-level results (Section~\ref{sec:8_exp_scene}) show complete dynamic environments in which those objects, together with the structural shell and the openings, can all be manipulated. The object-level experiments use both high-quality models with well-defined repeating structures and objects reconstructed and completed through Chapter~\ref{ch:7_Object_Completion}, while the scene-level experiments use the completed V-Scan~\cite{vermandere_synthetic_2026} and Matterport3D~\cite{chang_matterport3d_2017} environments of Chapter~\ref{ch:6_Scene_Completion}, since these provide the reconstructed wall fragments with flattened textures required for opening detection. All objects are represented as $128^3$ \glspl{CSDF}, and all scaling is performed and rendered interactively in the Unity environment of Section~\ref{sec:8_recombination}.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Object-Level Results}
 \label{sec:8_exp_object}
 
-Figure~\ref{fig:8_scaling_comparison} compares the three scaling strategies on representative objects. Global scaling uniformly resizes the whole object, so structural elements distort: chair legs become disproportionately wide and shelf spacings grow unnaturally. Selective scaling restricts the deformation to the scaling zone, preserving the proportions of components outside it, and performs well on simple parts such as legs or a tabletop. On objects with repeating structure, however, selective scaling stretches the repeated elements and produces visibly elongated, inconsistent geometry. Selective tiling resolves this by duplicating the repeating components instead of stretching them, so that shelves, cushions and similar elements keep their original size while the object reaches the target dimension.
+Figure~\ref{fig:8_scaling_comparison} compares the scaling strategies on two clean objects, showing for each the complete object, the globally scaled version, the part-aware scaled version and the repeated version.
 
-\iffalse
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_dynamification_scaling_comparison}
- \caption[Comparison of scaling strategies]{Comparison of global scaling, selective scaling and selective tiling on reconstructed and high-quality objects. Global scaling distorts structural proportions, selective scaling stretches repeated parts, and selective tiling preserves component proportions by duplication.}
+ \caption[Comparison of scaling strategies]{Two objects (rows) under each scaling strategy (columns): the complete object, global scaling, part-aware selective scaling, and repetition-based scaling. Part-aware scaling keeps the proportions of parts outside the scaling zone but stretches the parts inside it, which repetition resolves by duplicating components instead.}
  \label{fig:8_scaling_comparison}
 \end{figure}
-\fi
 
-\todo{Add the empirical object-level comparison promised in the thesis outline: quantify the three scaling methods rather than only showing them. The adaptive scaling paper~\cite{vermandere_adaptive_2026} is qualitative, so a metric needs to be chosen and computed, for example surface-distance or proportion-preservation of individual parts before and after scaling, or a user study on visual plausibility. State explicitly which metric is used and on how many objects per dataset.}
+Global scaling resizes the whole object uniformly, so every part distorts: chair legs thicken and structural members lose their proportions. Part-aware selective scaling improves on this by confining the deformation to the scaling zone, so parts outside the zone, such as the legs of a chair, keep their original proportions while only the targeted region changes. Inside the zone, however, the selected parts are still stretched, and for repeating structures this produces the same elongation that global scaling causes elsewhere. The repetition strategy resolves this by preserving the proportions of the parts within the zone: each repeatable component is stretched by at most a factor of $1.5$ before a new repetition is inserted, so the components stay close to their original size while the region still reaches the target length. This works best for straight parts, where successive repetitions can be placed seamlessly along the scaling axis; small deviations at the seams are absorbed by the Marching Cubes~\cite{lorensen_marching_1998} meshing step, which always produces a watertight surface.
+
+The same behaviour holds on reconstructed objects. Figure~\ref{fig:8_matterport_object_scaling} shows three objects completed from Matterport3D scans, each with its selectively scaled and repeated versions. As with the clean models, selective scaling preserves the proportions outside the zone while repetition keeps the repeating elements consistent inside it, confirming that the method transfers from optimised geometry to the noisier completed objects of Chapter~\ref{ch:7_Object_Completion}.
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_dynamification_matterport_object_scaling}
+ \caption[Scaling of reconstructed Matterport3D objects]{Three objects completed from Matterport3D scans (rows): the completed object, the selectively scaled version, and the repeated version.}
+ \label{fig:8_matterport_object_scaling}
+\end{figure}
+
+These results confirm the structure-aware ordering of the strategies: global scaling is the least faithful, selective scaling preserves proportions outside the deformed region, and repetition is required to keep repeating structure consistent inside it. Two limitations carry over from the underlying representation. The $128^3$ \gls{CSDF} resolution trades detail against memory, so fine geometry can be lost during interpolation or resampling, and the convex decomposition is geometry-based, so its parts do not always align with semantic components, which occasionally places scaling-zone boundaries at non-intuitive locations~\cite{vermandere_adaptive_2026}.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
-\subsection{Discussion}
-\label{sec:8_exp_discussion}
+\subsection{Scene-Level Results}
+\label{sec:8_exp_scene}
 
-The experiments confirm the structure-aware ordering of the three strategies: global scaling is the least faithful, selective scaling improves proportionality outside the deformed region, and selective tiling is required once repeated structure is involved. Two limitations carry over from the underlying representation. The $128^3$ \gls{CSDF} resolution trades detail against memory, so fine geometry can be lost during interpolation or resampling, and the convex decomposition is geometry-based, so its parts do not always align with semantic components, which occasionally places scaling-zone boundaries at non-intuitive locations~\cite{vermandere_adaptive_2026}. At the scene level, opening detection inherits the planarity assumption of Chapter~\ref{ch:6_Scene_Completion} and the quality of the flattened wall texture: openings on curved or poorly inpainted walls are detected less reliably. These limitations are revisited in Chapter~\ref{ch:conclusion}.
+Figure~\ref{fig:8_vscan} shows the dynamification on two V-Scan~\cite{vermandere_synthetic_2026} scenes, with the scans on top and the resulting dynamic scenes below.
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_dynamification_vscan}
+ \caption[Dynamification of V-Scan scenes]{Two V-Scan scenes: the original scans (top) and the resulting dynamic scenes (bottom), with separated objects and movable windows and doors.}
+ \label{fig:8_vscan}
+\end{figure}
+
+The results are very good across both scenes. This is partly due to the simple geometry of the V-Scan environments, which are essentially boxes with clearly defined edges and cleanly delineated windows and doors, making the openings straightforward to detect and cut out. It is also due to the objects being synthetic, so they are clean, well-structured and mostly symmetrical, which suits both the convex decomposition and the repetition-based scaling. We therefore treat V-Scan as the best-case scenario for the pipeline.
+
+Figure~\ref{fig:8_matterport_scenes} shows two Matterport3D scans alongside their complete dynamification, with the objects separated and the windows and doors recovered as movable elements. Combined with the draggable structural shell, the result is a scene whose primary, secondary and tertiary elements can all be manipulated after reconstruction.
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_dynamification_matterport_scenes}
+ \caption[Dynamification of Matterport3D scenes]{Two Matterport3D scans (left) and their complete dynamification (right), with separated objects and movable windows and doors.}
+ \label{fig:8_matterport_scenes}
+\end{figure}
+
+The detection behaves reliably for closed openings, but a few failure modes appear. Open doors are difficult to detect, because the corridor visible behind them is reconstructed in a distorted view that does not present as a clean opening on the wall plane. The regions inpainted to fill object occlusions do not always have clear borders, so the detected polygons can pick up messy boundaries where the inpainted texture blends into the surrounding wall. Some built-in elements such as fitted cabinets are identified as doors, which is technically correct given their appearance but may not always be the intended interpretation. These three cases, open doors, occlusion-inpainted regions with unclear borders, and ambiguous built-in elements, are the main sources of scene-level error and stem from the planarity assumption of Chapter~\ref{ch:6_Scene_Completion} and the quality of the flattened wall texture.
+
+Once the elements are separated, the scene can be freely rearranged. Figure~\ref{fig:8_matterport_variations} shows two alternative layouts of each of the same two scenes, with objects moved and scaled and windows and doors repositioned along their walls. The same reconstructed scene therefore supports many distinct configurations, which is the central goal of the dynamification stage.
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_dynamification_matterport_variations}
+ \caption[Layout variations of dynamified scenes]{Two alternative layouts (columns) of each of the two scenes from Figure~\ref{fig:8_matterport_scenes}, with objects moved and scaled and windows and doors repositioned along the walls.}
+ \label{fig:8_matterport_variations}
+\end{figure}
 
 
 % ─────────────────────────────────────────────────────────────────────────────
