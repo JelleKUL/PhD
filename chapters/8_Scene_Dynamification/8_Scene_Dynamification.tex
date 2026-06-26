@@ -9,14 +9,12 @@
 % Paragraph purpose: situate the chapter as the final pipeline stage and frame it by building-element class.
 This chapter addresses the final stage of the pipeline, in which the static reconstructions produced by the preceding chapters are turned into a single interactive \gls{DRM}. The completed environment of Chapter~\ref{ch:6_Scene_Completion} and the completed objects of Chapter~\ref{ch:7_Object_Completion} are geometrically accurate but rigid: their walls are closed, their openings are baked into flat texture, and their objects cannot be resized without distorting their structural proportions~\cite{vermandere_adaptive_2026}. Dynamification removes this rigidity across the three classes of building element introduced in Chapter~\ref{ch:background}. The primary elements, the structural shell of walls, floor and ceiling, are made adjustable so the room envelope can be reshaped. The secondary elements, the windows and doors that the scene completion left hidden inside the inpainted wall textures, are recovered as separable, movable components. The tertiary elements, the furniture and loose objects, are converted into part-aware, selectively scalable entities. The result is a scene in which every element can be manipulated after reconstruction rather than a fixed reconstruction of a single moment (Figure~\ref{fig:8_intro}).
 
-\iffalse
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_dynamification_intro}
  \caption[Scene dynamification introduction]{The static reconstructed scene (left) is converted into a dynamic representation (right) in which the structural shell is adjustable, openings are separable, and objects support part-aware scaling.}
  \label{fig:8_intro}
 \end{figure}
-\fi
 
 % Paragraph purpose: state scope, what is reused and what is newly created.
 The scene-level dynamification reuses the per-plane reconstructed and inpainted meshes of Chapter~\ref{ch:6_Scene_Completion}, and the object-level dynamification reuses the completion-network output of Chapter~\ref{ch:7_Object_Completion}. Beyond recombining these into one coherent dynamic scene, the chapter introduces two pieces of new geometry and texture. At the scene level, windows and doors are separated from the walls and the surface behind them is reconstructed and re-inpainted, so the wall stays complete when an opening is moved. At the object level, the static completion output is converted into the \gls{CSDF} representation on which the deformation operates. These steps are detailed in the methodology.
@@ -26,14 +24,14 @@ The scene-level dynamification reuses the per-plane reconstructed and inpainted 
 \section{Related Work}
 \label{sec:8_related}
 
-This section reviews the four areas specific to dynamification: window and door detection, part segmentation, surface-based deformation, and implicit-field deformation. The representations and completion methods underlying the chapter were covered in Chapter~\ref{ch:background} and Chapter~\ref{ch:7_Object_Completion} and are not repeated here.
+This section reviews the four areas specific to dynamification: window and door detection, part segmentation, surface-based deformation and implicit-field deformation.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Window and Door Detection}
 \label{sec:8_rw_detection}
 
-Recovering the openings hidden in the wall textures requires detecting windows and doors in an image without a fixed, pre-trained class set, since the texture content varies widely across rooms and datasets. Open-vocabulary detectors address this by conditioning detection on a free-text prompt. Grounding DINO~\cite{liu_grounding-dino_2023} couples a transformer detector with grounded language pre-training, so that arbitrary phrases such as \emph{window} or \emph{door} can be localised in an image without category-specific training. To turn a detected box into a precise region outline, the Segment Anything Model (SAM)~\cite{kirillov_segment_2023} produces a tight mask from a box or point prompt and generalises across domains without fine-tuning. Combining a prompt-driven detector with a promptable segmenter gives the class-agnostic, mask-level localisation needed to cut openings out of the reconstructed walls, which is the combination adopted in this chapter.
+Recovering the openings hidden in the wall textures requires detecting windows and doors in an image without a fixed, pre-trained class set, since the texture content varies widely across rooms and datasets. Open-vocabulary detectors address this by conditioning detection on a free-text prompt. Grounding DINO~\cite{liu_grounding_2024} couples a transformer detector with grounded language pre-training, so that arbitrary phrases such as \emph{window} or \emph{door} can be localised in an image without category-specific training. To turn a detected box into a precise region outline, the Segment Anything Model (SAM)~\cite{kirillov_segment_2023} produces a tight mask from a box or point prompt and generalises across domains without fine-tuning. Combining a prompt-driven detector with a promptable segmenter gives the class-agnostic, mask-level localisation needed to cut openings out of the reconstructed walls, which is the combination adopted in this chapter.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -49,53 +47,50 @@ Approximate convex decomposition (ACD) sidesteps the semantic question by splitt
 \subsection{Surface-Based Deformation}
 \label{sec:8_rw_surface}
 
-A second family of methods deforms the explicit surface directly. Nine-slicing~\cite{w3_css-backgrounds-3border-image-slice_2024} divides a 2D image into a grid so that corner regions stay fixed while edge and centre regions stretch, and its 3D extension, 27-slicing~\cite{deftly_27_2021}, applies the same idea to a bounding box so that an object can be scaled without distorting its corners. Both rely on manually defined zones and impose no constraint on the deformed region, which restricts them to regular, box-like shapes. This makes them a natural fit for the rectangular framing of windows and doors, where the frame should keep its thickness while the panels stretch, and 27-slicing is used for exactly that purpose in this chapter. KeypointDeformer~\cite{jakab_keypointdeformer_2021} replaces the manual zones with automatically detected keypoints that drive a cage deformation, producing more natural transformations for moderate edits but degrading under large deformations. Skeleton-driven procedural methods such as that of Getto et al.~\cite{getto_automatic_2020} detect object components from a skeleton to bound the deformation regions, improving results on more complex shapes, but they share the limitation that a stretched part is simply rescaled to fit the target size with no notion of part-size consistency. Proc-GS~\cite{li_proc-gs_2024} instead handles large deformations by treating buildings as assemblies of modular components that can be repeated rather than stretched, but it depends on a predefined library of parts. The repetition-based strategy used in this chapter borrows the idea of repeating modular components from Proc-GS while removing the dependence on a curated part library, deriving the repeatable units directly from the convex decomposition of the object instead~\cite{vermandere_adaptive_2026}.
+A second family of methods deforms the explicit surface directly. Nine-slicing~\cite{w3_css-backgrounds-3border-image-slice_2024} divides a 2D image into a grid so that corner regions stay fixed while edge and centre regions stretch, and its 3D extension, 27-slicing~\cite{deftly_27_2021}, applies the same idea to a bounding box so that an object can be scaled without distorting its corners. Both rely on manually defined zones and impose no constraint on the deformed region, which restricts them to regular, box-like shapes. This makes them a natural fit for the rectangular framing of windows and doors, where the frame should keep its thickness while the panels stretch, and 27-slicing is used for exactly that purpose in this chapter.
+
+KeypointDeformer~\cite{jakab_keypointdeformer_2021} replaces the manual zones with automatically detected keypoints that drive a cage deformation, producing more natural transformations for moderate edits but degrading under large deformations. Skeleton-driven procedural methods such as that of Getto et al.~\cite{getto_automatic_2020} detect object components from a skeleton to bound the deformation regions, improving results on more complex shapes, but they share the limitation that a stretched part is simply rescaled to fit the target size with no notion of part-size consistency. Proc-GS~\cite{li_proc-gs_2024} instead handles large deformations by treating buildings as assemblies of modular components that can be repeated rather than stretched, but it depends on a predefined library of parts. The repetition-based strategy used in this chapter borrows the idea of repeating modular components from Proc-GS while removing the dependence on a curated part library, deriving the repeatable units directly from the convex decomposition of the object instead~\cite{vermandere_adaptive_2026}.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Implicit-Field Deformation}
 \label{sec:8_rw_implicit}
 
-Because the objects of Chapter~\ref{ch:7_Object_Completion} are represented as \glspl{SDF}, the deformation must ultimately act on the implicit field. DIF-Net~\cite{deng_deformed_2021} represents a category of shapes with a shared template field together with per-instance deformation and correction fields, enabling non-destructive editing within a learned shape space. SALAD~\cite{koo_salad_2023} uses a part-level latent diffusion model for generating and editing shapes, DualSDF~\cite{hao_dualsdf_2020} exposes a coarse and a fine level of the same \gls{SDF} for semantic manipulation, and HybridSDF~\cite{vasu_hybridsdf_2022} combines implicit shapes with parametric primitives to balance flexibility against structural coherence. For part-level editing, SPAGHETTI~\cite{hertz_spaghetti_2022} supports affine transformations of implicit parts such as rotation and translation with smooth blending, and SENS~\cite{binninger_sens_2024} extends it with sketch-based control, but free scaling at the sub-part level, in particular large scaling that should preserve rather than stretch repeated structure, remains difficult and typically depends on category-specific priors. The method in this chapter targets exactly this gap: it deforms the \gls{CSDF} field of an arbitrary completed object through direct interpolation and repetition, without requiring a learned shape space or a predefined part database~\cite{vermandere_adaptive_2026}.
+The objects of Chapter~\ref{ch:7_Object_Completion} are completed as \glspl{SDF} and only meshed in a later stage, so the deformation can act directly on the implicit field before that meshing step, avoiding a detour through an explicit surface. DIF-Net~\cite{deng_deformed_2021} represents a category of shapes with a shared template field together with per-instance deformation and correction fields, enabling non-destructive editing within a learned shape space. SALAD~\cite{koo_salad_2023} uses a part-level latent diffusion model for generating and editing shapes, DualSDF~\cite{hao_dualsdf_2020} exposes a coarse and a fine level of the same \gls{SDF} for semantic manipulation, and HybridSDF~\cite{vasu_hybridsdf_2022} combines implicit shapes with parametric primitives to balance flexibility against structural coherence. For part-level editing, SPAGHETTI~\cite{hertz_spaghetti_2022} supports affine transformations of implicit parts such as rotation and translation with smooth blending, and SENS~\cite{binninger_sens_2024} extends it with sketch-based control, but free scaling at the sub-part level, in particular large scaling that should preserve rather than stretch repeated structure, remains difficult and typically depends on category-specific priors. The method in this chapter targets exactly this gap: it deforms the \gls{CSDF} field of an arbitrary completed object through direct interpolation and repetition, without requiring a learned shape space or a predefined part database~\cite{vermandere_adaptive_2026}.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Methodology}
 \label{sec:8_methodology}
 
-The dynamification is organised into a scene-level stage and an object-level stage (Figure~\ref{fig:8_method_overview}). The scene-level stage (Section~\ref{sec:8_scene}) reopens the closed structural shell by detecting windows and doors, separating them as dynamic elements and reconstructing the surface behind them. The object-level stage (Section~\ref{sec:8_object}) converts each completed object into a \gls{CSDF}, decomposes it into convex parts, and scales user-defined regions of the field. The recombination of both into a single interactive scene is described in Section~\ref{sec:8_recombination}.
-
-\iffalse
-\begin{figure}[hbht]
- \centering
- \includegraphics[width=1\textwidth]{Scene_dynamification_method}
- \caption[Scene dynamification pipeline]{Overview of the dynamification pipeline. The completed scene (top) is reopened at its detected windows and doors, while the completed objects (bottom) are decomposed and selectively scaled, before both are recombined into a single interactive scene.}
- \label{fig:8_method_overview}
-\end{figure}
-\fi
+The dynamification is organised into a scene-level stage and an object-level stage. The scene-level stage (Section~\ref{sec:8_scene}, Figure~\ref{fig:8_method_scene_overview}) reopens the closed structural shell by detecting windows and doors, separating them as dynamic elements and reconstructing the surface behind them. The object-level stage (Section~\ref{sec:8_object}, Figure~\ref{fig:8_method_object_overview}) converts each completed object into a \gls{CSDF}, decomposes it into convex parts, and scales user-defined regions of the field. The recombination of both into a single interactive scene is described in Section~\ref{sec:8_recombination}.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Scene Dynamification}
 \label{sec:8_scene}
 
-The scene completion of Chapter~\ref{ch:6_Scene_Completion} deliberately reconstructs each room as a set of closed, solid walls, so that openings such as windows and doors appear only as flat regions painted into the wall texture by the inpainting step. Scene dynamification recovers these openings as independent, manipulable geometry. Each opening is detected in the wall texture, cut out as a separate surface, turned into a dynamic element with its own frame and panels, and the wall surface behind it is reconstructed so that the structural shell stays complete.
+The scene completion of Chapter~\ref{ch:6_Scene_Completion} reconstructs each room as a set of closed walls whose surface is projected onto the scanned points, so a window or door is reconstructed with the geometry of the wall plane fitted to its surrounding points and is distinguishable only by its texture. Scene dynamification recovers these openings as independent, manipulable geometry. Each opening is detected in the wall texture and cut out as a separate surface, which therefore already carries the projected geometry of the opening. It is then turned into a dynamic element with its own frame and panels, and the wall surface behind it is reconstructed as a flat plane so that the structural shell stays complete (Figure~\ref{fig:8_method_scene_overview}).
 
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_dynamification_scene_method}
+ \caption[Scene dynamification pipeline]{Overview of the scene-level dynamification. Each opening is detected in the flattened wall texture, cut out as a separate surface, constructed into a dynamic framed element, and the wall behind it is reconstructed and re-inpainted.}
+ \label{fig:8_method_scene_overview}
+\end{figure}
 
 % ── 8.3.1.1 ──────────────────────────────────────────────────────────────────
 \subsubsection{Opening Detection}
 \label{sec:8_opening_detection}
 
-Each wall fragment $M_k$ produced in Chapter~\ref{ch:6_Scene_Completion} carries a flattened texture in its own \gls{UV} space, which already presents the surface upright and free of perspective distortion~\cite{vermandere_semantic_2024}. This is the ideal input for a 2D detector, because each window and door appears as a flat, front-facing rectangle rather than a tilted and stretched shape seen from an angle. The base-colour texture of each fragment is extracted and passed to the Grounding DINO~\cite{liu_grounding-dino_2023} open-vocabulary detector, prompted with the phrases \emph{window} and \emph{door}, which returns a bounding box and class label per opening. Each box is then refined into a tight binary mask by SAM~\cite{kirillov_segment_2023}, prompted with that box, and the largest external contour of the mask is traced and simplified into a pixel-space polygon $\{(x_l, y_l)\}$ describing the opening outline (Figure~\ref{fig:8_opening_detection}).
+Each wall fragment $M_k$ produced in Chapter~\ref{ch:6_Scene_Completion} carries a flattened texture in its own \gls{UV} space, which already presents the surface upright and free of perspective distortion~\cite{vermandere_semantic_2024}. This is the ideal input for a 2D detector, because each window and door appears as a flat, front-facing rectangle rather than a tilted and stretched shape seen from an angle. The base-colour texture of each fragment is extracted and passed to the Grounding DINO~\cite{liu_grounding_2024} open-vocabulary detector, prompted with the phrases \emph{window} and \emph{door}, which returns a bounding box and class label per opening. Each box is then refined into a tight binary mask by SAM~\cite{kirillov_segment_2023}, prompted with that box, and the largest external contour of the mask is traced and simplified into a pixel-space polygon $\{(x_l, y_l)\}$ describing the opening outline (Figure~\ref{fig:8_opening_detection}).
 
-\iffalse
-\begin{figure}[hbht]
+\begin{wrapfigure}{l}{0.4\textwidth}
  \centering
- \includegraphics[width=1\textwidth]{Scene_dynamification_opening_detection}
- \caption[Window and door detection on wall textures]{The flattened wall texture (left) is processed by Grounding DINO~\cite{liu_grounding-dino_2023} and SAM~\cite{kirillov_segment_2023} to produce a polygonal outline of each window and door (right).}
+ \includegraphics[width=0.4\textwidth]{Scene_dynamification_opening_detection}
+ \caption[Window and door detection on wall textures]{The final detection polygon traced on a flattened wall texture, annotated with its class label and confidence score.}
  \label{fig:8_opening_detection}
-\end{figure}
-\fi
+\end{wrapfigure}
 
 Operating per fragment, in its canonical \gls{UV} orientation, keeps the detection robust: each wall is seen in isolation and upright, so the detector is not confused by adjacent surfaces or by the curvature of the original panorama. A small padding is applied to each detection so that window and door frames, which sit at the very edge of the detected box, are included in the subsequent cutout.
 
@@ -104,9 +99,9 @@ Operating per fragment, in its canonical \gls{UV} orientation, keeps the detecti
 \subsubsection{Opening Cutout}
 \label{sec:8_opening_cutout}
 
-Each detected polygon is lifted from texture space back onto the wall mesh to extract the opening as a separate surface. The pixel polygon is first converted to \gls{UV} coordinates by normalising each vertex by the texture dimensions, $\mathbf{c}_l = (x_l / W,\, y_l / H)$, with the vertical axis flipped to match the glTF texture convention where required. The polygon is optionally expanded by a fixed margin in texture space so that the cut includes the full frame.
+Each detected polygon is lifted from texture space back onto the wall mesh to extract the opening as a separate surface. The pixel polygon is first converted to \gls{UV} coordinates by normalising each vertex by the texture dimensions, $\mathbf{c}_l = (x_l / W,\, y_l / H)$. The polygon is expanded by a small margin in texture space so that the cut includes the full frame.
 
-The wall fragment is then clipped against this \gls{UV} polygon triangle by triangle. For each mesh triangle, its three \gls{UV} coordinates define a triangle in texture space; this triangle is intersected with the opening polygon, and the intersection is re-triangulated. Each new vertex, given by its \gls{UV} position, is mapped back to 3D using the barycentric coordinates of that position within the original triangle, so that the extracted surface still samples the original wall texture and lies exactly on the wall plane. For an interior point with barycentric weights $(b_0, b_1, b_2)$ relative to the original triangle vertices $\mathbf{v}_0, \mathbf{v}_1, \mathbf{v}_2$, the 3D position is
+The polygon is then used to slice every triangle of the wall fragment in \gls{UV} space: each mesh triangle is intersected with the opening polygon and the part falling inside is re-triangulated. The new vertices created along the cut receive interpolated \gls{UV} coordinates from the original triangle, so the extracted surface still samples the original wall texture and lies exactly on the wall plane. Concretely, a new vertex with barycentric weights $(b_0, b_1, b_2)$ relative to the original triangle vertices $\mathbf{v}_0, \mathbf{v}_1, \mathbf{v}_2$ takes the 3D position
 
 \[
 \mathbf{x} = b_0\,\mathbf{v}_0 + b_1\,\mathbf{v}_1 + b_2\,\mathbf{v}_2 .
@@ -114,31 +109,25 @@ The wall fragment is then clipped against this \gls{UV} polygon triangle by tria
 
 The union of all clipped triangles forms a new textured mesh containing only the opening region, separated from the wall but geometrically and texturally consistent with it (Figure~\ref{fig:8_opening_cutout}). All geometric detail of the opening, such as the recess of the frame and the glazing, is retained on this cutout surface rather than on the wall.
 
-\iffalse
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_dynamification_opening_cutout}
  \caption[Opening cutout from a wall mesh]{The detected opening polygon (left) is clipped out of the wall mesh triangle by triangle, producing a separate window or door surface (right) that keeps the original texture and plane.}
  \label{fig:8_opening_cutout}
 \end{figure}
-\fi
-
 
 % ── 8.3.1.3 ──────────────────────────────────────────────────────────────────
 \subsubsection{Dynamic Opening Construction}
 \label{sec:8_opening_dynamic}
 
-The extracted surface is still a flat patch coincident with the wall. To behave as a real, movable opening, it is given thickness and split into independently scalable parts (Figure~\ref{fig:8_opening_dynamic}). First, the outer perimeter of the cutout is extruded back toward the wall by a fixed depth, so the opening sits flush in the surface and gains the volume of a frame rather than reading as a decal. A boolean bounding box is then built around this volume and used to procedurally remove the part of the wall it intersects: rather than re-meshing the wall, the intersection is carved at render time through a screen-space stencil-buffer boolean~\cite{hecomi_screenspaceboolean_2018}, which keeps the operation interactive and free of geometric artefacts as the opening is moved or resized. Finally, the opening itself is separated into its framing and its panels or panes and 27-sliced~\cite{deftly_27_2021}, so that resizing stretches only the glazing and infill while the frame keeps its real thickness, matching how a physical window or door scales.
+The cutout already carries the projected geometry of the opening, but its outer edge sits exactly on the wall plane, which would leave a gap when the element is moved or scaled. To make it behave as a real, movable opening, its outer perimeter is extruded back toward the wall so the edges meet the surface cleanly and the element gains the volume of a frame (Figure~\ref{fig:8_opening_dynamic}). A boolean bounding box is then built around this volume and used to procedurally remove the part of the wall it intersects: rather than re-meshing the wall, the intersection is carved at render time through a screen-space stencil-buffer boolean~\cite{hecomi_screenspaceboolean_2018}, which keeps the operation interactive and free of geometric artefacts as the opening is moved or resized. Finally, the opening is 27-sliced~\cite{deftly_27_2021} using user-defined boundaries that can be placed to follow the framing and glazing, so that resizing stretches only the panes and infill while the frame keeps its real thickness, matching how a physical window or door scales.
 
-\iffalse
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_dynamification_opening_dynamic}
- \caption[Construction of a dynamic opening]{The flat cutout (left) is extruded to gain frame depth, carves the wall through a stencil-buffer boolean, and is 27-sliced into frame and panels (right) so it can be moved and scaled while the frame keeps its thickness.}
+ \caption[Construction of a dynamic opening]{A 27-sliced window cutout (left) and the same opening after scaling (right): the panes stretch to the new size while the framing keeps its original thickness.}
  \label{fig:8_opening_dynamic}
 \end{figure}
-\fi
-
 
 % ── 8.3.1.4 ──────────────────────────────────────────────────────────────────
 \subsubsection{Wall Re-Reconstruction}
@@ -146,22 +135,25 @@ The extracted surface is still a flat patch coincident with the wall. To behave 
 
 Because windows and doors are now treated as separate, movable elements, the wall must be complete underneath them so that an opening can be repositioned or removed without exposing a gap. The wall surface behind each opening is reconstructed as a flat region flush with the surrounding wall: rather than reproducing the recessed geometry of the original opening, which now lives entirely on the cutout, the patch is kept planar so it matches the neighbouring wall and floor surfaces. Its texture is completed with the same per-plane strategy used in Chapter~\ref{ch:6_Scene_Completion}: the opening polygons are rasterised into an alpha mask on the wall texture, marking the opening interior as the region to fill, and the masked texture is completed by LaMa~\cite{suvorov_resolution-robust_2022} so that the wall continues plausibly behind the removed opening (Figure~\ref{fig:8_wall_reinpaint}). The wall mesh is closed across the hole using the same constrained triangulation as in Chapter~\ref{ch:6_Scene_Completion}, leaving a continuous structural surface with the opening represented as an independent overlay on top of it.
 
-\iffalse
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_dynamification_wall_reinpaint}
  \caption[Wall re-reconstruction behind openings]{After the opening is removed (left), the wall surface behind it is flattened and re-inpainted (right) so that the structural shell remains complete when the opening is moved or removed.}
  \label{fig:8_wall_reinpaint}
 \end{figure}
-\fi
-
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Object Dynamification}
 \label{sec:8_object}
 
-Depending on the completion method of Chapter~\ref{ch:7_Object_Completion}, each completed object arrives either as a textured mesh or as a mesh extracted from a completed \gls{SDF} with a texture applied. Object dynamification first brings both forms into a single deformable representation, the \gls{CSDF}, then turns it into a part-aware, selectively scalable field through convex decomposition, scaling-zone definition, joint interpolation, and, for large deformations, repetition of modular parts.
+Depending on the completion method of Chapter~\ref{ch:7_Object_Completion}, each completed object arrives either as a textured mesh or as a mesh extracted from a completed \gls{SDF} with a texture applied. Object dynamification first brings both forms into a single deformable representation, the \gls{CSDF}, then turns it into a part-aware, selectively scalable field through convex decomposition, scaling-zone definition, joint interpolation, and, for large deformations, repetition of modular parts (Figure~\ref{fig:8_method_object_overview}).
 
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_dynamification_object_method}
+ \caption[Object dynamification pipeline]{Overview of the object-level dynamification. The completed object is decomposed into convex parts and packed into a \gls{CSDF}, after which user-defined scaling zones are deformed by joint interpolation or by repetition of modular parts.}
+ \label{fig:8_method_object_overview}
+\end{figure}
 
 % ── 8.3.2.1 ──────────────────────────────────────────────────────────────────
 \subsubsection{Part Segmentation}
@@ -169,14 +161,12 @@ Depending on the completion method of Chapter~\ref{ch:7_Object_Completion}, each
 
 Part segmentation is performed first on the completed mesh, because it produces an extra per-voxel attribute that is stored in the \gls{CSDF} alongside geometry and colour. The mesh is decomposed into approximately convex components using CoACD~\cite{wei_approximate_2022}, which recursively cuts the mesh with planes selected through a tree search that minimises a collision-aware concavity metric (Figure~\ref{fig:8_decomposition}). Adjacent components are merged where their union remains convex, reducing redundant cuts. Because the decomposition is purely geometric, it generalises to arbitrary reconstructed objects without relying on a class label, at the cost of parts that do not always coincide with semantic components~\cite{vermandere_adaptive_2026}.
 
-\iffalse
-\begin{figure}[hbht]
+\begin{wrapfigure}{r}{0.4\textwidth}
  \centering
- \includegraphics[width=1\textwidth]{Scene_dynamification_decomposition}
- \caption[Convex decomposition of a completed object]{The completed object mesh (left) and the approximately convex decomposition produced by CoACD~\cite{wei_approximate_2022} (right), with each part shown in a distinct colour.}
+ \includegraphics[width=0.4\textwidth]{Scene_dynamification_decomposition}
+ \caption[Convex decomposition of a completed object]{The approximately convex decomposition produced by CoACD~\cite{wei_approximate_2022}, with each part shown in a random colour.}
  \label{fig:8_decomposition}
-\end{figure}
-\fi
+\end{wrapfigure}
 
 Each component is assigned a discrete part index $i$, which is later sampled onto the voxel grid so that every voxel knows which structural component it belongs to. These indices drive the part-aware deformation in Section~\ref{sec:8_interpolation}.
 
@@ -187,28 +177,38 @@ Each component is assigned a discrete part index $i$, which is later sampled ont
 
 The completed mesh, its texture and its part labels are unified into a single \gls{CSDF} (Figure~\ref{fig:8_csdf}). A signed distance value $f(\mathbf{x})_\text{sdf}$ is sampled on a regular $128 \times 128 \times 128$ voxel grid, and the object texture is sampled onto the same grid so that each voxel also stores a colour $\mathbf{C} = (R, G, B)$. The part index $i$ from Section~\ref{sec:8_part_segmentation} is transferred to the grid by nearest-neighbour assignment, adding a third attribute per voxel. The grid is exported to a 3D texture sliced one pixel per voxel, where the RGB channels hold the colour and the alpha channel holds the signed distance value, with the part index carried in an auxiliary channel. This packed representation encodes geometry, appearance and structure in one volume and is the unit on which all subsequent deformation operates~\cite{vermandere_adaptive_2026}.
 
-\iffalse
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_dynamification_csdf}
- \caption[CSDF creation]{The completed mesh, its texture and its part labels are sampled onto a common voxel grid and packed into a 3D texture: colour in the RGB channels, signed distance in the alpha channel, and the part index in an auxiliary channel.}
+ \caption[CSDF creation]{The \gls{CSDF} sliced into an $8\times4$ grid of $64\times64$ pixel slices (left) and the corresponding 3D rendering of the packed volume (right). The RGB channels hold the colour, the alpha channel the signed distance value, and an auxiliary channel the part index.}
  \label{fig:8_csdf}
 \end{figure}
-\fi
-
 
 % ── 8.3.2.3 ──────────────────────────────────────────────────────────────────
 \subsubsection{Scaling-Zone Definition}
 \label{sec:8_scaling_zone}
 
-Selective scaling is controlled by a simple planar constraint. A scaling zone is delimited by two parallel planes along a chosen axis, a start plane and an end plane, and the user translates a third destination plane along that axis to set the target extent of the zone. Voxels before the start plane stay fixed, voxels beyond the end plane are rigidly translated to keep the rest of the object intact, and the voxels between the start and end planes are the ones that are deformed. This planar control is intuitive and behaves identically across objects, independent of their shape or class.
+Selective scaling is controlled by a simple planar constraint. A scaling zone is delimited by two parallel planes along a chosen axis, a start plane and an end plane, and the end plane is translated along that axis to set the target extent of the zone (Figure~\ref{fig:8_scaling_zone}). Voxels before the start plane stay fixed, voxels beyond the end plane are rigidly translated to keep the rest of the object intact, and the voxels between the two planes are the ones that are deformed. This planar control is intuitive and behaves identically across objects, independent of their shape or class.
 
+\begin{wrapfigure}{r}{0.4\textwidth}
+ \centering
+ \includegraphics[width=0.4\textwidth]{Scene_dynamification_scaling_zone}
+ \caption[Scaling-zone definition]{A scaling zone defined on a chair by a start plane (blue) and an end plane (red) along the scaling axis.}
+ \label{fig:8_scaling_zone}
+\end{wrapfigure}
 
 % ── 8.3.2.4 ──────────────────────────────────────────────────────────────────
 \subsubsection{Joint Field Interpolation}
 \label{sec:8_interpolation}
 
-Within the scaling zone, a new voxel grid is allocated at the target extent and the field is resampled into it. The part index controls which voxels take part in the deformation: rather than scaling only the voxels strictly between the two planes, every part that is intersected by the planes is scaled as a whole. This grows the selection out to the natural boundaries of the sliced components, so the deformation follows the structure of the object instead of an arbitrary planar cut and produces a more natural-looking selection of voxels.
+Within the scaling zone, a new voxel grid is allocated at the target extent and the field is resampled into it, jointly updating geometry, colour and part indices (Figure~\ref{fig:8_interpolation}). The part index controls which voxels take part in the deformation: rather than scaling only the voxels strictly between the two planes, every part that is intersected by the planes is scaled as a whole. This grows the selection out to the natural boundaries of the sliced components, so the deformation follows the structure of the object instead of an arbitrary planar cut and produces a more natural-looking selection of voxels.
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_dynamification_interpolation}
+ \caption[Joint interpolation within a scaling zone]{Joint interpolation of the signed distance field, colour and part indices within a scaling zone, shown for a vertical scaling (left) and a horizontal scaling (right) of the same object.}
+ \label{fig:8_interpolation}
+\end{figure}
 
 The signed distance and colour are continuous quantities and are interpolated linearly along the scaling axis. For two samples at positions $x_1$ and $x_2$, the value at an intermediate position $x$ is
 
@@ -228,16 +228,7 @@ The part index $i$ is discrete and cannot be interpolated. Instead, the boundary
 x_b = \argmin_{x} \big( |f(x)_\text{sdf}| \;\text{ where }\; i(x) \neq i(x + \delta x) \big),
 \]
 
-where $\delta x$ is a small sampling offset used to detect the label change. Figure~\ref{fig:8_interpolation} illustrates the joint interpolation of geometry, colour and part indices within a scaling zone.
-
-\iffalse
-\begin{figure}[hbht]
- \centering
- \includegraphics[width=1\textwidth]{Scene_dynamification_interpolation}
- \caption[Joint interpolation within a scaling zone]{Within the scaling zone, the signed distance field, colour and part indices are jointly resampled, producing a smooth and consistent deformation of both shape and appearance.}
- \label{fig:8_interpolation}
-\end{figure}
-\fi
+where $\delta x$ is a small sampling offset used to detect the label change.
 
 
 % ── 8.3.2.5 ──────────────────────────────────────────────────────────────────
@@ -252,14 +243,12 @@ n = \left\lfloor \frac{L'}{L} \right\rfloor,
 
 and the region is duplicated $n$ times along the scaling axis. The residual difference between $n L$ and $L'$ is absorbed by slightly scaling each repeated section using the interpolation scheme of Section~\ref{sec:8_interpolation}, and the boundary layers between adjacent repetitions are blended to avoid visible seams. This preserves the size of individual components while still reaching the target dimension~\cite{vermandere_adaptive_2026}.
 
-\iffalse
-\begin{figure}[hbht]
+\begin{wrapfigure}{r}{0.4\textwidth}
  \centering
- \includegraphics[width=1\textwidth]{Scene_dynamification_repetition}
+ \includegraphics[width=0.4\textwidth]{Scene_dynamification_repetition}
  \caption[Repetition-based scaling]{For repeating structures, the selected region (left) is duplicated rather than stretched (right), preserving the proportions of each component during large deformations.}
  \label{fig:8_repetition}
-\end{figure}
-\fi
+\end{wrapfigure}
 
 All of these deformations are applied in real time. The packed \gls{CSDF} is never edited destructively; it serves as the interpolation source from which the deformed field is sampled on the fly, and the result is continuously visualised as a surface extracted with Marching Cubes~\cite{lorensen_marching_1998}. The deformed grid is only written back to a 3D texture, optionally resampled to a fixed output resolution, when the object is exported.
 
@@ -268,9 +257,16 @@ All of these deformations are applied in real time. The packed \gls{CSDF} is nev
 \subsection{Recombination into a Dynamic Scene}
 \label{sec:8_recombination}
 
-The dynamified openings and objects are placed back into the completed environment to form a single interactive scene in the Unity game engine. The structural shell and the openings are kept as explicit meshes, while each scalable object is visualised by extracting its surface from the deforming \gls{CSDF} with Marching Cubes~\cite{lorensen_marching_1998} every frame, so that geometry, colour and part structure update live as the field is edited. The scaled objects are positioned at the locations recovered during object isolation in Chapter~\ref{ch:5_Scene_Segmentation}, and the separated windows and doors remain as movable overlays on the re-reconstructed walls of Section~\ref{sec:8_wall_reinpaint}.
+The dynamified openings and objects are placed back into the completed environment to form a single interactive scene in the Unity game engine (Figure~\ref{fig:8_recombination}). The structural shell and the openings are kept as explicit meshes, while each scalable object is visualised by extracting its surface from the \gls{CSDF} with Marching Cubes~\cite{lorensen_marching_1998}. This surface is only recomputed when the field itself changes, that is when an object is scaled; an object that is merely moved reuses its existing mesh, since its geometry, colour and part structure are unchanged. The scaled objects are positioned at the locations recovered during object isolation in Chapter~\ref{ch:5_Scene_Segmentation}, and the separated windows and doors remain as movable overlays on the re-reconstructed walls of Section~\ref{sec:8_wall_reinpaint}.
 
-All three element classes are manipulated interactively from this interface. The primary structure is reshaped by dragging individual walls forward or backward, which extends the floor, ceiling and adjoining walls to follow. The secondary openings can be translated across their wall and resized through their 27-sliced frame, with the stencil-buffer boolean of Section~\ref{sec:8_opening_dynamic} re-carving the wall as they move. The tertiary objects can be repositioned and selectively scaled through the start, end and destination planes of their scaling zones. Every operation provides immediate visual feedback, turning the static reconstruction into an editable digital environment.
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Scene_dynamification_recombination}
+ \caption[Recombination into a dynamic scene]{The dynamified openings and objects are recombined with the completed environment into a single interactive scene in Unity, where the structural shell, openings and objects can all be manipulated.}
+ \label{fig:8_recombination}
+\end{figure}
+
+All three element classes are manipulated interactively from this interface. The primary structure is reshaped by dragging individual walls forward or backward, which extends the floor, ceiling and adjoining walls to follow. The secondary openings can be translated across their wall and resized through their 27-sliced frame. The tertiary objects can be repositioned and selectively scaled through the start, end and destination planes of their scaling zones. Every operation provides immediate visual feedback, turning the static reconstruction into an editable digital environment.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
