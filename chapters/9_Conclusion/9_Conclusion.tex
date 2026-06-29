@@ -6,9 +6,11 @@
 \section{Conclusions}
 \label{sec:9_conclusions}
 
+//dont state what this chapter doesn't do, it's very obvious that this chapter will draw conclusions, this can be much more consise.
 % Paragraph purpose: restate the closed loop and frame the chapter as a synthesis, not a re-explanation.
 This thesis set out to transform partially scanned indoor environments into complete, structured and dynamically editable \glspl{DRM}. The preceding chapters followed a single artefact through the full modular pipeline of Figure~\ref{fig:1_Research_Aim}: a heterogeneous, partial and out-of-date scan is aligned and updated, decomposed into structural elements and objects with their occlusion maps, completed at both scene and object level, and finally made dynamic. This chapter does not repeat those stage-level results, which are established in the respective chapter conclusions, but synthesises them against the research aim of Chapter~\ref{ch:introduction}, draws out the cross-cutting findings, and states the limitations that define the future work.
 
+//again, too much meta explanation, just tell the conclusion
 Table~\ref{tab:9_synthesis} summarises the pipeline as a whole: for each stage it records the input it consumes, the artefact it produces, the principal quantitative result on V-Scan, and the dominant limitation carried into the next stage. The discussion that follows expands on these entries rather than restating them.
 
 \begin{table}[hbtp]
@@ -30,8 +32,8 @@ Limitations & Structural geometry aligns more reliably than furnished scenes; sc
 \cmidrule(r){1-1}
 Input & Aligned point cloud \\
 Output & Objects, refined oriented boxes, occlusion grids \\
-Results & Primary symmetry axis at $8.01^{\circ}$ error, 94\% rate; occluded volume 7.97--22.07\% per class. \\
-Limitations & Detection precision of 0.310 propagates false positives downstream. \\
+Results & Primary symmetry axis at $8.01^{\circ}$ error, 94\% finding rate; occluded volume 7.97--22.07\% per class. \\
+Limitations & Detection precision of 0.310 propagates false positives downstream, requiring an extra filtering step. \\
 \midrule
 \multicolumn{2}{@{}l}{\textbf{Scene completion (Ch.~\ref{ch:6_Scene_Completion})}} \\
 \cmidrule(r){1-1}
