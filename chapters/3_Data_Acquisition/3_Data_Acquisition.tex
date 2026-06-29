@@ -11,11 +11,14 @@
 \newglossaryentry{OBB}{name={OBB}, description = {Oriented Bounding Box}}
 
 % ─────────────────────────────────────────────────────────────────────────────
+
 \section{Introduction}
 \label{sec:3_intro}
-
-This chapter outlines the data used throughout the thesis. The pipeline introduced in Chapter~\ref{ch:background} requires partial indoor scans with colour, repeated multi-sensor captures for alignment evaluation, object-level bounding box annotations, and ground-truth geometry for both scene and object completion. No single existing dataset satisfies all of these requirements simultaneously: real-world datasets lack ground truth for occluded regions, while synthetic repositories do not reproduce realistic scanning conditions. Three complementary sources are therefore combined in this thesis, summarised in Table~\ref{tab:dataset_comparison}.
-
+ 
+% Paragraph 1 — Pipeline position
+This chapter establishes the data on which every subsequent stage of the pipeline operates. As defined in Chapter~\ref{ch:background}, each stage imposes specific requirements on its input: partial indoor scans with colour, repeated multi-sensor captures for alignment evaluation, object-level bounding box annotations, and ground-truth geometry for both scene and object completion. Table~\ref{tab:dataset_comparison} summarises how these requirements are met.
+ 
+% [Intro table — show first]
 \begin{table}[htbp]
     \centering
     \renewcommand{\arraystretch}{1.3}
@@ -41,9 +44,15 @@ This chapter outlines the data used throughout the thesis. The pipeline introduc
         \bottomrule
     \end{tabularx}
 \end{table}
-
-Public datasets (Section~\ref{sec:3_existing}) provide established benchmarks at both scene and object level. The real-world multi-temporal captures (Section~\ref{sec:3_realworld}) acquired across the KU~Leuven campus and a residential renovation site in Bruges supply the multi-sensor, multi-epoch data on which the alignment stage is evaluated. The V-Scan synthetic dataset (Section~\ref{sec:3_synthetic}) provides the joint partial scans and complete ground truth required for the quantitative evaluation of scene and object completion.
-
+ 
+% Paragraph 2 — Problem statement (expanded: the data gap)
+No single existing dataset satisfies these requirements simultaneously. Real-world scene datasets such as ScanNet~\cite{dai_scannet_2017} and Matterport3D~\cite{chang_matterport3d_2017} provide richly annotated indoor environments, but the occluded surfaces that completion methods must reconstruct are by definition absent from the captured data, preventing direct supervised evaluation of completion quality. Synthetic scene datasets such as SUNCG~\cite{song_semantic_2016} and Replica~\cite{straub_replica_2019} can provide complete geometry, but they deliver idealised outputs rather than sensor-dependent partial observations, omitting the noise, density variation and viewpoint-specific occlusion patterns that real scanners produce. At object level, ShapeNet~\cite{chang_shapenet_2015} offers scale and diversity but consists of CAD models that bear little resemblance to scanned data, while real scanned repositories such as Redwood~\cite{choi_large_2016} remain limited in size and category coverage.
+ 
+A separate gap exists for the alignment and updating stage. Evaluating multi-temporal registration requires repeated captures of the same environment across time and across sensing technologies, yet most public datasets capture each scene only once and with a single device. Datasets that do provide temporal variation, such as 3RScan~\cite{wald_rio_2019}, use a single sensor type, while multi-sensor datasets such as ScanNet++ capture at a single time point. No public resource combines both axes of variation. Finally, industrial object categories such as piping, ductwork and storage vessels are absent from most standard benchmarks, leaving a blind spot in object completion evaluation for AECO applications.
+ 
+% Paragraph 3 — Scope and contribution
+To address these gaps, the chapter assembles three complementary data sources. Public datasets (Section~\ref{sec:3_existing}) provide established benchmarks for training and qualitative evaluation. Real-world multi-temporal captures from the KU~Leuven campus and a residential renovation site in Bruges (Section~\ref{sec:3_realworld}) supply the multi-sensor, multi-epoch data required for alignment evaluation, together with a dedicated industrial object dataset derived from the campus chemistry building. Finally, The V-Scan synthetic dataset (Section~\ref{sec:3_synthetic}) is introduced, filling the gap between real and synthetic data by combining a procedural room generator and configurable virtual scanner, providing partial scans paired with complete scene- and object-level ground truth under controlled conditions.
+ 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Existing Datasets}
 \label{sec:3_existing}
@@ -85,17 +94,15 @@ Together, ScanNet++ and Matterport3D provide two complementary real-world benchm
 
 Datasets such as the \textit{Redwood Object Scan Dataset}~\cite{choi_large_2016}, \textit{Pix3D}~\cite{sun_pix3d_2018}, \textit{Google Scanned Objects}~\cite{downs_google_2022} and \textit{OmniObject3D}~\cite{wu_omniobject3d_2023} provide high-quality 3D object models derived from real scanning or image-based reconstruction. These resources are valuable for object reconstruction, novel-view synthesis and shape modelling, but remain limited in scale, diversity and annotation quality compared to synthetic repositories like ShapeNet~\cite{chang_shapenet_2015}.
 
-\begin{figure}[]
+\paragraph{ShapeNet.}
+ShapeNet~\cite{chang_shapenet_2015} is the first primary dataset used for quantitative isolated object completion experiments in Chapter~\ref{ch:7_Object_Completion}. It is a large-scale repository of CAD-based 3D object models organised into semantic categories, containing tens of thousands of examples across common furniture and household object classes (Figure~\ref{fig:3_ShapeNet}). Its principal strength lies in the availability of clean and complete geometry, making it well suited for controlled benchmarking and for training data-hungry completion networks.
+
+\begin{figure}[h]
   \centering
   \includegraphics[width=1\textwidth]{Shapenet}
   \caption[ShapeNet Dataset]{A selection of objects from the ShapeNet~\cite{chang_shapenet_2015} dataset, consisting of over 51{,}300 models covering 55 categories.}
   \label{fig:3_ShapeNet}
 \end{figure}
-
-\paragraph{ShapeNet.}
-ShapeNet~\cite{chang_shapenet_2015} is the first primary dataset used for quantitative isolated object completion experiments in Chapter~\ref{ch:7_Object_Completion}. It is a large-scale repository of CAD-based 3D object models organised into semantic categories, containing tens of thousands of examples across common furniture and household object classes (Figure~\ref{fig:3_ShapeNet}). Its principal strength lies in the availability of clean and complete geometry, making it well suited for controlled benchmarking and for training data-hungry completion networks.
-
-
 
 \paragraph{Redwood.}
 The Redwood 3D Scan Dataset~\cite{choi_large_2016} is the second primary dataset used for quantitative isolated object completion evaluation. It contains real objects captured with consumer RGB-D sensors and reconstructed into dense 3D models (Figure~\ref{fig:3_Redwood}). Despite its smaller scale compared to ShapeNet, Redwood reflects the imperfections of real-world acquisition, including sensor noise, incomplete observations and reconstruction artefacts, making it particularly valuable for assessing whether methods trained on synthetic CAD models remain effective on realistic scanned objects.
@@ -575,7 +582,17 @@ For each generated scene, the dataset stores the scans together with the metadat
 \section{Conclusion}
 \label{sec:3_conclusion}
 
-The data strategy of this thesis combines public datasets for training and qualitative evaluation, real-world multi-temporal campus and Bruges captures for alignment evaluation, and the contributed V-Scan synthetic dataset for the quantitative evaluation of scene and object completion. The V-Scan generation framework, comprising a procedural room generator coupled to a configurable virtual scanner and coordinated by a scan manager, is the principal data contribution of this chapter: it pairs realistic partial scans with complete scene- and object-level ground truth, a combination that no existing dataset offers. With the input data thus characterised, the next chapter addresses the alignment and updating of these scans into a single consistent reference frame.
+% Paragraph 1 — Recap
+This chapter defined the data acquisition strategy for the thesis, combining public datasets, real-world multi-temporal captures and a contributed synthetic generation framework to meet the evaluation requirements of the pipeline introduced in Chapter~\ref{ch:introduction}.
+
+% Paragraph 2 — Contributions
+In addition to the existing public datasets, three data contributions were made. The real-world capture campaign produced 45 sessions across three indoor environments using four sensor classes (Table~\ref{tab:3_captured_scenes_metrics}), providing the heterogeneous multi-temporal input for alignment evaluation. The industrial object dataset introduces 59 ground-truth models of piping and vessels from the campus chemistry building (Table~\ref{tab:3_chemistry_metrics}), filling a category gap in existing benchmarks that are dominated by residential furniture. The V-Scan generation framework produces 200 scene folders containing 3,100 objects (Table~\ref{tab:vscan_summary}), pairing partial scans with complete scene- and object-level ground truth, a combination that no existing dataset offers and that directly addresses the evaluation barrier identified in Chapter~\ref{ch:introduction}.
+
+% Paragraph 3 — Limitations
+Two limitations of the V-Scan dataset should be noted. The procedural room generator currently supports only rectangular room layouts assembled from modular grid tiles, which restricts the geometric complexity of the generated environments to orthogonal configurations. This is an intentional scoping decision that matches the planar assumption adopted by the scene completion stage in Chapter~\ref{ch:6_Scene_Completion}, but it means that more complex room layouts are not represented and therefore can only be evaluated qualitatively using the existing scene-level datasets. A second limitations is the limited variety of complex lighting conditions. Every room is evenly lit and no harsh lights or very dark areas are present. While this greatly improves clarity, it may not always reflect reality. 
+
+% Paragraph 4 — Forward link
+The campus captures feed directly into the alignment experiments of Chapter~\ref{ch:4_Alignment_Updating}. The V-Scan dataset is consumed by every subsequent experimental chapter for quantitative evaluation: alignment validation through known ground-truth poses, detection evaluation through bounding box annotations, scene completion evaluation through empty-scene geometry, and object completion evaluation through per-object partial scans and complete meshes. The chemistry building dataset complements these for the industrial object categories evaluated in Chapter~\ref{ch:7_Object_Completion}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \cleardoublepage

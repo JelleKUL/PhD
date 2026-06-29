@@ -69,9 +69,6 @@ In the context of scene de-occlusion from images, Zhan et al.~\cite{zhan_self-su
 
 The approach proposed in this chapter differs from the above works in that it performs occlusion detection through voxelised ray marching from the known scanner position(s), operating at two levels simultaneously: scene-level occlusion for the entire room, and object-level occlusion within each detected oriented bounding box.
 
-\todo{add more works about voxelised raymarching for occlusion detection}
-
-
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Methodology}
 \label{sec:5_methodology}
@@ -97,14 +94,16 @@ The object isolation process consists of four sequential steps: plane-based stru
 \subsubsection{Plane-Based Structural Segmentation}
 \label{sec:5_plane_detection}
 
-\begin{figure}[]
+The first step in object isolation is to separate the structural elements of the scene from the foreground objects. Indoor environments are predominantly composed of large planar surfaces such as walls, floors and ceilings, and these can be efficiently detected and removed before the object detection stage. Removing the structural geometry serves two purposes: it reduces the input complexity for the object detector by eliminating the dominant surfaces that are not objects of interest, and it produces the set of structural planes that will later be used to constrain the bounding box refinement (Figure~\ref{fig:5_plane_segmentation}).
+
+\begin{figure}[h]
   \centering
   \includegraphics[width=1\textwidth]{Plane_segmentation}
   \caption[Plane-based structural segmentation]{The raw mesh (left) and the plane-segmented mesh (right) of a sample scene.}
   \label{fig:5_plane_segmentation}
 \end{figure}
 
-The first step in object isolation is to separate the structural elements of the scene from the foreground objects. Indoor environments are predominantly composed of large planar surfaces such as walls, floors and ceilings, and these can be efficiently detected and removed before the object detection stage. Removing the structural geometry serves two purposes: it reduces the input complexity for the object detector by eliminating the dominant surfaces that are not objects of interest, and it produces the set of structural planes that will later be used to constrain the bounding box refinement (Figure~\ref{fig:5_plane_segmentation}).
+The structural segmentation is performed through a sequential iterative RANSAC plane detection~\cite{korman_latent_2018} on the full scene point cloud. The standard RANSAC algorithm randomly samples minimal point subsets (three points define a plane) to generate plane hypotheses and evaluates each hypothesis against the full point set by counting the number of inlier points within a distance threshold. The hypothesis with the largest number of inliers is accepted as a detected plane. In the iterative variant used here, this process is applied sequentially: at each iteration, the largest plane containing more than a predefined minimum number of inlier points is extracted and its inliers are removed from the remaining point set. The procedure is repeated until no planes with a sufficient number of inliers remain. After the procedure is complete, only a small number of residual points remain that do not fit any detected plane (Figure \ref{fig:5_plane_detection}).
 
 \begin{figure}[h]
   \centering
@@ -112,8 +111,6 @@ The first step in object isolation is to separate the structural elements of the
   \caption[Plane-based structural segmentation]{Top: the original scene point cloud. Bottom: the detected surface planes (grey) and the remaining points after plane removal (coloured).}
   \label{fig:5_plane_detection}
 \end{figure}
-
-The structural segmentation is performed through a sequential iterative RANSAC plane detection~\cite{korman_latent_2018} on the full scene point cloud. The standard RANSAC algorithm randomly samples minimal point subsets (three points define a plane) to generate plane hypotheses and evaluates each hypothesis against the full point set by counting the number of inlier points within a distance threshold. The hypothesis with the largest number of inliers is accepted as a detected plane. In the iterative variant used here, this process is applied sequentially: at each iteration, the largest plane containing more than a predefined minimum number of inlier points is extracted and its inliers are removed from the remaining point set. The procedure is repeated until no planes with a sufficient number of inliers remain. After the procedure is complete, only a small number of residual points remain that do not fit any detected plane.
 
 A simple semantic classification is then applied to each detected plane based on its normal direction. Planes with normals approximately aligned with the vertical axis are classified as floors or ceilings depending on their height, while planes with approximately horizontal normals are classified as walls. The points belonging to classified floor, wall and ceiling planes are removed from the scene, leaving predominantly foreground object geometry for the subsequent detection step.
 
@@ -126,7 +123,7 @@ To define proper physical boundaries for later use in bounding box refinement, t
 
 Object detection is performed on the cleaned point cloud, from which the structural planes have already been removed (Figure~\ref{fig:5_plane_detection}). A VoteNet-style detector~\cite{qi_deep_2019} is used, operating directly on the point cloud rather than on images. This is because the aligned and completed point clouds have fewer occlusions compared to image-only inputs. The scene is first sampled to a uniform resolution of 5\,cm, providing a suitable balance between geometric detail and execution speed~\cite{vermandere_guided_2025}.
 
-\begin{figure}[]
+\begin{figure}[h]
   \centering
   \includegraphics[width=1\textwidth]{Object_Detection_example}
   \caption[3D object detection example]{The remaining object point cloud(left) and the resulting detected bounding boxes highlighted around the detected objects(right).}
@@ -179,21 +176,24 @@ Once the orientation is established, the scene planes are used to constrain the 
 \subsection{Occlusion Detection}
 \label{sec:5_occlusion_detection}
 
-\begin{wrapfigure}[11]{}{0.25\textwidth}
+
+After object isolation and bounding box refinement, the next step is to determine which regions of the scene and of each individual object were occluded during scanning. This information is essential for the completion stages, which need to distinguish between regions that are confirmed empty and regions where geometry may be hidden behind visible surfaces.
+
+\begin{wrapfigure}[12]{}{0.25\textwidth}
   \centering
   \vspace{-10pt}
   \includegraphics[width = 0.25\textwidth]{voxel_traversal}
   \caption[Voxelised ray marching]{Voxelised ray marching process. From \cite{ding_adaptive_2023}}
   \label{fig:5_voxel_traversal}
 \end{wrapfigure}
-After object isolation and bounding box refinement, the next step is to determine which regions of the scene and of each individual object were occluded during scanning. This information is essential for the completion stages, which need to distinguish between regions that are confirmed empty and regions where geometry may be hidden behind visible surfaces.
 
-The occlusion detection is performed through voxelised ray marching from the known scanner position(s). The approach operates at two levels: scene-level occlusion for the entire room, and object-level occlusion within each detected oriented bounding box.
+The occlusion detection is performed through voxelised ray marching from the known scanner position(s) (Figure \ref{fig:5_voxel_traversal}). The approach operates at two levels: scene-level occlusion for the entire room, and object-level occlusion within each detected oriented bounding box.
 
 
 % ── 5.3.2.1 ──────────────────────────────────────────────────────────────────
 \subsubsection{Voxelised Ray Marching}
 \label{sec:5_raymarching}
+
 
 The core operation is a discrete ray traversal through a voxel grid. Given the scanner position $\mathbf{o}$ and the set of scanned points $P = \{\mathbf{p}_i\}_{i=1}^{N}$, All voxels that contain one or more points $\mathbf{p}_i$ are marked as \textbf{occupied}. Then rays are traced from $\mathbf{o}$ through every unoccupied voxel in the voxel grid starting from the most outer voxels. The discrete traversal is performed using a 3D variant of the Bresenham line algorithm, which efficiently identifies all voxels intersected by each ray. For each ray, the \textbf{occupied} voxels and unmarked voxels along the path are classified into three categories:
 
@@ -205,45 +205,36 @@ The core operation is a discrete ray traversal through a voxel grid. Given the s
 
 When multiple scanner positions are available, the voxel classification is accumulated across all positions: a voxel that is occluded from one scanner position but observed empty from another is classified as empty, since at least one observation confirms the absence of geometry.
 
-%\begin{figure}[ht]
-%  \centering
-%  \includegraphics[width=0.9\textwidth]{5_Ray_Marching}
-%  \caption[Voxelised ray marching]{Illustration of the ray marching process. Rays are cast from the scanner position through the voxel grid. Voxels before the surface are classified as observed empty (white), voxels at the surface as occupied (dark), and voxels behind the surface as occluded (grey).}
-%  \label{fig:5_ray_marching}
-%\end{figure}
-\todo{Insert ray marching illustration figure.}
-
 
 % ── 5.3.2.2 ──────────────────────────────────────────────────────────────────
 \subsubsection{Scene-Level Occlusion}
 \label{sec:5_scene_occlusion}
 
-At the scene level, the voxel grid spans the entire room volume. The ray marching is performed using all scanned points (before object removal) from all available scanner positions. This grid is used by the scene completion stage (Chapter~\ref{ch:6_Scene_Completion}) to constrain reconstruction to regions classified as occluded, preventing the generation of geometry in voxels that have been confirmed as empty by direct observation.
+At the scene level, the voxel grid spans the entire room volume (Figure \ref{fig:5_scene_occlusion_example}). The ray marching is performed using all scanned points (before object removal) from all available scanner positions. This grid is used by the scene completion stage (Chapter~\ref{ch:6_Scene_Completion}) to constrain reconstruction to regions classified as occluded, preventing the generation of geometry in voxels that have been confirmed as empty by direct observation.
 
+\begin{figure}[h]
+  \centering
+  \vspace{-10pt}
+  \includegraphics[width=1\textwidth]{Scene_occlusion_example}
+  \caption[Scene occlusion example]{The input pointcloud (left) and the calculated scene-level occlusion from the scanner position (right)}
+  \label{fig:5_scene_occlusion_example}
+  \vspace{-10pt}
+\end{figure}
 
 % ── 5.3.2.3 ──────────────────────────────────────────────────────────────────
 \subsubsection{Object-Level Occlusion}
 \label{sec:5_object_occlusion}
 
-\begin{wrapfigure}[11]{}{0.33\textwidth}
+\begin{wrapfigure}[]{}{0.4\textwidth}
   \centering
   \vspace{-10pt}
-  \includegraphics[width = 0.33\textwidth]{Object_grid_example}
+  \includegraphics[width = 0.4\textwidth]{Object_grid_example}
   \caption[Object-level voxel grid]{Object-level voxel grid example.}
   \label{fig:5_object_grid}
 \end{wrapfigure}
 At the object level, the voxel grid is defined within each object's refined \gls{OBB}. The use of oriented bounding boxes is important: because the bounding box is aligned with the object's principal axes rather than the world axes, the resulting voxel grid provides a more efficient and meaningful discretisation of the object's volume.
 
 For each detected object, rays are traced from the scanner position(s) through the object-level voxel grid. The classification follows the same three-category scheme as the scene level, but is restricted to the volume enclosed by the oriented bounding box. The resulting per-object occlusion grid provides an initial estimate of which voxels need to be completed by the generative model in Chapter~\ref{ch:7_Object_Completion}. Additionally, when combined with the symmetry detection from the bounding box refinement step, the occluded voxels on one side of the symmetry plane can be initialised with mirrored values from the observed side, providing a geometric prior for the completion network~\cite{vermandere_guided_2025}.
-
-%\begin{figure}[ht]
-%  \centering
-%  \includegraphics[width=0.9\textwidth]{5_Occlusion_Grids}
-%  \caption[Dual-level occlusion detection]{Left: the scene-level occlusion grid showing observed empty (white), occupied (dark) and occluded (grey) regions for the full room. Right: an example object-level occlusion grid within a refined oriented bounding box.}
-%  \label{fig:5_occlusion_grids}
-%\end{figure}
-\todo{Insert dual-level occlusion grid visualisation figure.}
-
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Experiments}
@@ -272,7 +263,7 @@ The detection is evaluated using precision, recall and IoU between predicted and
 \subsubsection{Results}
 
 Table~\ref{tab:5_detection_results} reports the per-class detection results across 200 scenes from the V-Scan dataset.
-
+\todo{Rerun experiments with better parameters to improve results}
 \begin{table}[h]
     \centering
     \caption[Object detection results per environment type]{Object detection results per V-Scan environment type at IoU threshold 0.5. Precision, recall and IoU are averaged over all scenes within each class.}

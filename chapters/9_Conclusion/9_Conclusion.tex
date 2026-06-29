@@ -87,6 +87,7 @@ These results are bounded by limitations that the individual chapters identify a
 \section{Future Work}
 \label{sec:9_future_work}
 
+// don't state finetuning on vscan in it's current state, 
 % Paragraph purpose: direction 1 — robustness and scope expansion.
 The most immediate direction is increasing robustness and expanding the scope beyond the single furnished room. Replacing the current detector with a more recent architecture, or fine-tuning it on V-Scan, would reduce the false positives that currently propagate through the pipeline, and extending the planar assumptions of scene completion and opening detection to curved and non-Manhattan structures would broaden the range of buildings the method can handle. Scaling from single rooms to connected multi-room and eventually building-scale environments is the natural next step, and would require the alignment and updating framework to manage inter-room consistency and loop closure rather than a single reference frame.
 
@@ -99,6 +100,7 @@ A third direction concerns evaluation and the path towards real deployment. V-Sc
 % Paragraph purpose: direction 4 — interaction and downstream use of the DRM.
 A fourth direction builds on the interactivity unlocked in Chapter~\ref{ch:8_Scene_Dynamification}. The current dynamification supports repositioning, removal and part-aware scaling, but the editable \gls{DRM} invites richer interaction: physically grounded behaviour, semantic constraints that keep edits plausible, and bidirectional updating in which manual edits and freshly captured scans are reconciled through the alignment and updating framework of Chapter~\ref{ch:4_Alignment_Updating}. Coupling the pipeline to the downstream applications surveyed in Chapter~\ref{ch:Valorisation}, from renovation planning to facility management, would also turn the methodological evaluation used here into task-level evaluation, measuring the \gls{DRM} by the decisions it supports rather than by reconstruction accuracy alone.
 
+//no need for a conclusion inside the conclusion
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Concluding Remarks}
 \label{sec:9_remarks}

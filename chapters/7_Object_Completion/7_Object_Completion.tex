@@ -184,16 +184,17 @@ The output of the network is a completed SDF on the same $64^3$ grid. Because th
 % Motivation: state the parallelism with geometry completion and the join structure of the texture stage.
 The texture pipeline runs in parallel with the geometry completion of Section~\ref{sec:7_voxel_geom} and merges with it once both intermediate results are available. The first step, material segmentation, operates on the partial mesh and produces a per-face material index on the observed surface (Figure~\ref{fig:7_material_segmentation}). In the second step, the partial material indices are transferred onto the completed mesh and IF-Net extends them onto the completed geometry (Figure~\ref{fig:7_material_prediction}). The third step, texture inpainting, transfers the original partial texture onto the completed mesh and fills the missing pixels material by material (Figure~\ref{fig:7_object_inpainting}).
 
-\paragraph{Material segmentation.}
-% Motivation: identify the materials on the observed surface only, before the completed geometry is available.
-Material segmentation is performed on the partial input mesh. The goal of the step is to label every observed face with a material index, which the later steps then use to isolate the texture per material.
-
-\begin{wrapfigure}{r}{0.33\textwidth}
+\begin{wrapfigure}[17]{r}{0.33\textwidth}
  \centering
+ \vspace{-20pt}
  \includegraphics[width=0.33\textwidth]{Half_chair_decomposition}
  \caption[COACD convex decomposition]{Convex decomposition of a partial chair mesh with \gls{COACD}; each part is shown in a random colour.}
  \label{fig:7_coacd}
 \end{wrapfigure}
+
+\paragraph{Material segmentation.}
+% Motivation: identify the materials on the observed surface only, before the completed geometry is available.
+Material segmentation is performed on the partial input mesh. The goal of the step is to label every observed face with a material index, which the later steps then use to isolate the texture per material.
 
 % UV unwrapping substep on the partial mesh
 The partial mesh is first re-unwrapped on a part-aware UV layout, because the scattered UV charts of typical scanned meshes confuse the segmentation by placing visually distinct material regions next to each other in 2D. To avoid this, the partial mesh is decomposed into nearly convex parts with \gls{COACD}~\cite{wei_approximate_2022} (Figure~\ref{fig:7_coacd}). Each part is geometrically simple enough to be unwrapped without large distortion, so a standard \gls{ABF} unwrap~\cite{maggiordomo_texture_2021} produces a chart in which faces that are adjacent on the 3D part remain adjacent in the UV image. Combined across all parts, the result is a semantic UV layout~\cite{vermandere_semantic_2024} that preserves the spatial proximity of the partial mesh.
@@ -267,10 +268,10 @@ The voxel-based method is evaluated on two datasets: a qualitative evaluation on
 \begin{figure}[H]
  \centering
  \vspace{-10pt}
- \includegraphics[width=1\textwidth]{Object_voxel_completion_matterport_experiments}
+ \includegraphics[width=0.9\textwidth]{Object_voxel_completion_matterport_experiments}
  \caption[Voxel-based object completion on Matterport3D]{Per-stage results of the voxel-based completion on four representative Matterport3D~\cite{chang_matterport3d_2017} objects. From top to bottom: partial input mesh, AutoSDF-completed geometry, completed material indices in 3D, UV layout with the projected partial texture and per-material inpainting mask, inpainted texture, and final textured mesh.}
  \label{fig:7_voxel_matterport}
- \vspace{-10pt}
+ \vspace{-20pt}
 \end{figure}
 
 \paragraph{Qualitative results on Matterport3D.}
