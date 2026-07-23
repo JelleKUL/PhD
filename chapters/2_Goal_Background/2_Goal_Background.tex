@@ -121,7 +121,7 @@ This thesis uses coloured point clouds as its primary input and textured meshes 
         Textured mesh                  & Main output          & Compact, renderable and editable surface \\
         Gaussian splatting             & Excluded             & Immature geometric editing and completion \\
         \midrule
-        \gls{SDF} / \gls{UDF}          & Completion (interm.) & In- and output for learning-based completion \\
+        Distance functions                & Completion (interm.) & In- and output for learning-based completion \\
         Parametric models              & Excluded             & Lacks captured visual and geometric detail \\
         Neural implicit                & Completion (interm.) & Learning-based internal representations\\
         \midrule
@@ -175,12 +175,12 @@ A distinction is commonly made between \textit{structured} and \textit{unstructu
 Point clouds do not contain explicit surface connectivity: neighbouring points are not directly linked to form surfaces, which makes rendering, mesh generation and watertight reconstruction more difficult. Their quality also depends strongly on the sensing device, ranging from highly accurate terrestrial laser scanners to noisier mobile and \gls{XR}-based systems~\cite{bassier_standalone_2016, vermandere_two-step_2022, de_geyter_automated_2022}.
 
 \paragraph{Meshes.}
-A mesh represents a surface using connected vertices, edges and faces (Figure \ref{fig:Mesh}, left). Meshes are the standard representation in computer graphics because they explicitly define surfaces and support efficient rendering, simulation, collision detection and geometric editing. In practice, most meshes consist of triangles, making them efficient to process and render. 
+A mesh represents a surface using connected vertices, edges and faces (Figure \ref{fig:Mesh}, left). Meshes are the standard representation in computer graphics because they explicitly define surfaces and support efficient rendering, simulation, collision detection and geometric editing. In practice, most meshes consist of triangles or quads, making them efficient to process and render. 
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=1\textwidth]{Mesh}
-  \caption[Mesh representation]{A mesh (left) and its corresponding uv texture (right). The edges (red) show the relation between the 3D and uv space.}
+  \caption[Mesh representation]{A mesh (left) and its corresponding uv texture (right). The edges (red) show the relation between the quad faces in 3D and uv space.}
   \label{fig:Mesh}
 \end{figure}
 
@@ -267,7 +267,7 @@ The surface is recovered as the zero level set of the function, giving a smooth 
 
 3D SDFs can be rendered through ray marching, a technique that traces rays from the viewpoint toward the scene. At each step, the SDF value at the current position directly provides the radius of an empty sphere around that point, meaning the ray can safely advance by that distance without overshooting the surface~\cite{hart_sphere_1996}. This variant, known as sphere tracing, is both efficient and geometrically exact: steps are large in open space and become progressively smaller as the ray approaches the zero level set, where the march terminates. Surface normals can then be recovered analytically as the gradient of the SDF, enabling direct shading without additional geometry queries. Alternatively, a mesh can be extracted using the Marching Cubes algorithm~\cite{lorensen_marching_1998}, which generates triangles at the zero crossing of the discrete voxel grid.
 
-When sampled on a regular voxel grid, SDFs are well suited for learning-based completion methods and have been widely used for object reconstruction~\cite{mittal_autosdf_2022, ren_xcube_2023, cheng_sdfusion_2023, rao_patchcomplete_2022, chu_diffcomplete_2023, yan_shapeformer_2023}. However, standard SDFs assume a closed watertight surface, which is often not available in raw scan data. \gls{UDF}s avoid this limitation by storing only unsigned distance values $f(\mathbf{x})_\text{udf}$, making them applicable to open or incomplete meshes~\cite{vermandere_geometry_2025}. For the dynamification step, SDFs can be extended to Coloured Signed Distance Functions (\gls{CSDF}s) by additionally storing per-voxel colour information, enabling joint geometry and appearance manipulation~\cite{oechsle_texture_2019, vermandere_adaptive_2026}.
+When sampled on a regular voxel grid, SDFs are well suited for learning-based completion methods and have been widely used for object reconstruction~\cite{mittal_autosdf_2022, ren_xcube_2023, cheng_sdfusion_2023, rao_patchcomplete_2022, chu_diffcomplete_2023, yan_shapeformer_2023}. However, standard SDFs assume a closed watertight surface, which is often not available in raw scan data. \gls{UDF}s avoid this limitation by storing only unsigned distance values $f(\mathbf{x})_\text{udf}$, making them applicable to open or incomplete meshes~\cite{vermandere_geometry_2025}. For the dynamification step, SDFs can be extended to Coloured Signed Distance Functions (\gls{CSDF}s) by additionally storing per-voxel colour information, enabling joint geometry and appearance manipulation~\cite{oechsle_texture_2019, vermandere_adaptive_2026}. However, these voxel grids quickly become very large, as their memory usage scales cubically with spatial resolution ($\mathbb{N}^{3}$) \ref{sec:bg_datastructures}.
 
 \paragraph{Structured parametric representations.}
 Structured parametric representations describe geometry through object definitions rather than purely through sampled surfaces. Instead of storing only points or triangles, these representations encode objects by parameters, construction logic and semantic relationships, and are widely used in design, engineering and manufacturing workflows because they support efficient editing, querying and procedural modification.
@@ -297,15 +297,15 @@ Neural implicit methods use neural networks to represent geometry or appearance 
 
 Instead of storing explicit vertices, faces or points, a neural network with parameters learns a mapping
 \[
-f_{param} : \mathbb{R}^{3} \rightarrow \mathbb{R}^{m},
+f_{param} : \mathbb{R}^{n} \rightarrow \mathbb{R}^{m},
 \]
-where the input is a spatial coordinate $\mathbf{x}=(x,y,z)$ and the $m$-dimensional output may encode occupancy, distance, density, colour or other scene properties.
+where the $n$-dimensional input can be a spatial coordinate $\mathbf{x}=(x,y,z)$ and the $m$-dimensional output may encode occupancy, distance, density, colour or other scene properties.
 
 A well-known example is the \gls{NeRF} (Figure \ref{fig:NERF}), which additionally conditions on viewing direction $\vec{\mathbf{d}} = (\theta, \phi)$ and predicts volume density and emitted colour:
 \[
-f_{param}(\mathbf{x}, \vec{\mathbf{d}}) : (x, y, z, \theta, \phi) \rightarrow (r, g, b, \sigma),
+f_{param}(\mathbf{x}, \vec{\mathbf{d}}) = (r, g, b, \sigma),
 \]
-where $\sigma$ denotes volumetric density (0-1) and $(r,g,b)$ the view-dependent radiance~\cite{mildenhall_nerf_2020}. Rendering is then performed through sampling points along camera rays and adding up the colours multiplied by their respective densities at each step into a final pixel color.
+where $\sigma$ denotes volumetric density (0-$\infty$) and $(r,g,b)$ the view-dependent radiance~\cite{mildenhall_nerf_2020}. Rendering is then performed through sampling points along camera rays and adding up the colours multiplied by their respective densities at each step into a final pixel color.
 
 These methods can produce highly realistic images from novel viewpoints. However, the scene structure is stored inside the network parameters rather than as directly editable objects, making object-level interaction, deterministic updates and geometric editing more difficult~\cite{weber_nerfiller_2023}. Recent work aims to decompose such models into separate objects~\cite{ardelean_gen3dsr_2025}, but robust interactive editing remains an open challenge. Neural implicit methods are therefore considered useful supporting tools, but not final output formats for the dynamic scene representations targeted in this thesis.
 
@@ -349,16 +349,12 @@ N_d \rightarrow \{N_{d+1}^{1}, \dots, N_{d+1}^{8}\}.
 Octrees are widely used for point cloud indexing, occupancy mapping, multiresolution reconstruction and ray tracing. They are particularly suitable for indoor scenes, where much of the volume is empty space and detail is concentrated near surfaces.
 
 \paragraph{k-d trees.}
-A k-d tree (short for k-dimensional tree) is a binary space-partitioning structure whichcan be used for point-based data. Rather than subdividing space uniformly, each node recursively splits the dataset along one coordinate axis. For a 3D point set, successive splits are typically performed along the $x$, $y$ and $z$ axes. At each node, a point set $P$ is partitioned into two subsets,
-\[
-P = P^{-} \cup P^{+},
-\]
-according to whether points lie below or above a splitting plane.
+A k-d tree (short for k-dimensional tree) is a binary space-partitioning structure which can be used for point-based data. Rather than subdividing space uniformly, each node recursively splits the dataset along one coordinate axis. For a 3D point set, successive splits are typically performed along the $x$, $y$ and $z$ axes.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=1\textwidth]{Treesearch}
-  \caption[Tree search]{An octree search (left) versus a kd-tree search (right). From \cite{tero_karras_thinking_2012}}
+  \caption[Tree search]{An octree partitioning (left) versus a kd-tree search (right). From \cite{tero_karras_thinking_2012}}
   \label{fig:treesearch}
 \end{figure}
 
@@ -500,7 +496,13 @@ Given a set of detections, each classified as a true positive (TP), false positi
 \text{Precision} = \frac{\text{TP}}{\text{TP} + \text{FP}}, \qquad
 \text{Recall} = \frac{\text{TP}}{\text{TP} + \text{FN}} .
 \end{equation}
-Precision measures the proportion of detections that correspond to actual objects, while recall measures the proportion of actual objects that are successfully detected. A high precision with low recall indicates conservative detection with few false alarms but many missed objects; the converse indicates aggressive detection. Precision and recall are reported for the 3D object detection stage (Chapter~\ref{ch:5_Scene_Segmentation}) to assess how reliably objects are identified and localised within the scene.
+Precision measures the proportion of detections that correspond to actual objects, while recall measures the proportion of actual objects that are successfully detected. A high precision with low recall indicates conservative detection with few false alarms but many missed objects; the converse indicates aggressive detection. Since precision and recall can be traded off against each other, the F1-score combines them into a single measure via their harmonic mean,
+
+\begin{equation}
+\label{eq:f_score}
+F_1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}} ,
+\end{equation}
+Precision and recall are reported for the 3D object detection stage (Chapter~\ref{ch:5_Scene_Segmentation}) to assess how reliably objects are identified and localised within the scene.
 
 
 
@@ -529,7 +531,7 @@ where:
     \item $\mu_x$, $\mu_y$ are the local means of each patch,
     \item $\sigma_x^2$, $\sigma_y^2$ are the local variances,
     \item $\sigma_{xy}$ is the cross-covariance between the two patches,
-    \item $c_1$, $c_2$ are stabilisation constants that prevent division by zero.
+    \item $c_1$, $c_2$ are the luminance and contrast stabilisation constants that prevent division by zero derived from the dynamic range of the images.
 \end{itemize}
 \gls{SSIM} values range from $-1$ to $1$, with 1 indicating identical images. The metric is computed locally over sliding windows and averaged across the image, and better reflects perceived visual quality than \gls{PSNR}, particularly for distortions that affect image structure rather than pixel intensity.
 
@@ -544,7 +546,7 @@ where $w_l$ are learned per-layer weights and $d_l(\hat{I}, I)$ is the spatially
 Together, these metrics provide a comprehensive evaluation framework covering geometric accuracy, volumetric agreement, detection reliability and visual quality across all stages of the pipeline. The experimental chapters refer back to these definitions when reporting quantitative results.
 
 % ─────────────────────────────────────────────────────────────────────────────
-\section{Conclusion}
+\section{Summary}
 \label{sec:bg_conclusion}
 
 This chapter established the vocabulary, data and evaluation criteria on which the remaining chapters depend. The review of prior work in Section~\ref{sec:bg_sota_dynamification} showed that, although object detection, scene completion, object completion and visual inpainting have each advanced considerably, no existing method integrates them into a unified workflow operating on heterogeneous and multi-temporal indoor scan data.

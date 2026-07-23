@@ -15,6 +15,15 @@
 \newglossaryentry{SUPER4PCS}{name={SUPER4PCS}, description={Super 4-Points Congruent Sets}}
 \newglossaryentry{ICP}{name={ICP}, description={Iterative Closest Point}}
 \newglossaryentry{API}{name={API}, description={Application Programming Interface}}
+\newglossaryentry{LCP}{name={LCP}, description={Largest Common Pointset}}
+
+%- Paper references for this chapter
+\definecolor{shadecolor}{gray}{0.9}
+\markerlessfootnote{
+	\begin{shaded}
+		Parts of this chapter's content were previously published in \cite{vermandere_automatic_2022,vermandere_two-step_2022}.
+	\end{shaded}
+}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
@@ -37,7 +46,7 @@ To address both challenges, this chapter presents a two-step alignment framework
 \section{Related Work}
 \label{sec:4_related}
 
-This section reviews the four areas of prior work most relevant to the contributions of this chapter: Low-Cost Sensor, 3D- and 2D-Based Alignment, Temporal Alignment, and Dataset Management.
+This section reviews the four areas of prior work most relevant to the contributions of this chapter: Low-Cost Sensor Alignment, 3D-Based Alignment, 2D-Based Alignment and Temporal Updating.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Low-Cost Sensor Data Alignment}
@@ -69,7 +78,7 @@ Three-dimensional registration methods estimate the transformation between two g
 For coarse alignment without a prior estimate, feature-based methods extract distinctive geometric descriptors from each dataset and establish correspondences between them. \gls{FPFH} descriptors~\cite{rusu_fast_2009} encode the local surface geometry around each point through histograms of angular relationships between surface normals. These descriptors can be matched across datasets to establish candidate correspondences, from which a rigid body transformation is estimated. The Fast Global Registration method proposed by Zhou et al.~\cite{zhou_fast_2016} avoids computationally demanding RANSAC-based outlier rejection by instead using a robust correspondence estimation function that simultaneously minimises distances between correspondences and down-weights outliers.
 
 % Paragraph purpose: discuss BIM-based alignment
-When a \gls{BIM} model is available, it can serve as an additional reference for geometric alignment. However, BIM geometries are typically abstract and sparse compared to captured point clouds, making conventional point-based features unreliable (Figure~\ref{fig:BIM_Features}). The \gls{SUPER4PCS} algorithm~\cite{mellado_super_2014} addresses this by matching approximately congruent four-point sets between datasets, relying on geometric ratios rather than local surface detail. This makes it particularly well suited for aligning captured data with the planar and simplified geometry of BIM models.
+When a \gls{BIM} model is available, it can serve as an additional reference for geometric alignment. However, BIM geometries are typically abstract and sparse compared to captured point clouds, making conventional point-based features unreliable (Figure~\ref{fig:BIM_Features}). The \gls{SUPER4PCS} algorithm~\cite{mellado_super_2014} addresses this by matching approximately congruent four-point sets between datasets, relying on geometric ratios rather than local surface detail. This makes it particularly well suited for aligning captured data with the planar and simplified geometry of BIM models. A key computational improvement over the original 4PCS algorithm is the use of a smart indexing structure that retrieves, for a given pair of points, all other pairs at approximately the same distance directly, without testing every combination. This reduces the pair-extraction cost from $O(n^2)$ to an expected $O(n)$, lowering the overall complexity from $O(n^2+k)$ to $O(n+k)$, where $k$ is the number of reported congruent sets.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{2D-Based Alignment}
@@ -79,7 +88,7 @@ When a \gls{BIM} model is available, it can serve as an additional reference for
 Image-based alignment methods estimate the pose of a sensor by matching visual features between newly captured images and a set of geo-referenced reference images. This approach is particularly relevant for \gls{XR} devices and smartphones, which are equipped with cameras that produce imagery alongside their geometric measurements.
 
 % Paragraph purpose: discuss feature matching for pose estimation
-Structure-from-Motion (\gls{SfM}) techniques estimate camera poses by detecting and matching distinctive image features across multiple views~\cite{schonberger_structure--motion_2016}. A wide range of local feature detectors and descriptors exists for this purpose, including SIFT~\cite{sun_sift_2014}, SURF~\cite{bay_speeded-up_2008}, and \gls{ORB}~\cite{rublee_orb_2011}, each offering different trade-offs between distinctiveness and computational cost. \gls{ORB} features in particular provide a computationally efficient basis for this matching and are used, for instance, by the Microsoft HoloLens~2~\cite{cyrus_hololens_2019}. When two or more reference images can be matched to a session image, the 3D coordinates of the matched feature points can be triangulated from the known reference poses, and the session camera pose can be estimated through a perspective-n-point solver~\cite{jinyu_survey_2019}.
+Structure-from-Motion (\gls{SfM}) techniques estimate camera poses by detecting and matching distinctive image features across multiple views~\cite{schonberger_structure--motion_2016}. A wide range of local feature detectors and descriptors exists for this purpose, including SIFT~\cite{sun_sift_2014}, SURF~\cite{bay_speeded-up_2008}, and \gls{ORB}~\cite{rublee_orb_2011}, each offering different trade-offs between distinctiveness and computational cost. \gls{ORB} features in particular provide a computationally efficient basis for this matching and are used, for instance, by the Microsoft HoloLens~2~\cite{cyrus_hololens_2019}. More recently, learned alternatives have replaced these handcrafted descriptors with features trained directly from data, such as SuperPoint~\cite{detone_superpoint_2018} for joint keypoint detection and description, and SuperGlue~\cite{sarlin_superglue_2020} for learned correspondence matching, which substantially improve robustness under wide viewpoint changes, illumination differences and weakly textured surfaces where handcrafted descriptors tend to fail~\cite{jin_image_2021}. When two or more reference images can be matched to a session image, the 3D coordinates of the matched feature points can be triangulated from the known reference poses, and the session camera pose can be estimated through a perspective-n-point solver~\cite{jinyu_survey_2019}.
 
 % Paragraph purpose: discuss limitations and challenges
 A significant challenge for image-based alignment in construction and facility environments is the potential for drastic changes in appearance between the reference and test data. Lighting conditions, surface treatments, and the presence or absence of temporary objects can all alter the visual features of a scene. Derivative features such as vanishing lines or geometric edge features have been proposed as more robust alternatives, as they are less likely to be associated with temporary scene elements~\cite{zollmann_augmented_2014}. Additionally, the repetitive nature of many indoor environments can cause ambiguous matches, where features from different rooms or corridors appear visually identical.
@@ -92,9 +101,11 @@ Several works have explored the combination of 2D and 3D alignment methods. Liu 
 
 Beyond alignment, combining multi-temporal datasets into a single consistent representation remains an open challenge. The simplest case is coverage improvement in a static environment: Lachat~et~al.~\cite{lachat_combination_2016} supplement TLS data with close-range photogrammetry, while Bolkas~et~al.~\cite{bolkas_creating_2020} fuse drone and ground-level point clouds using a grid-based occlusion infilling strategy. Alteirac~et~al.~\cite{alteirac_registration_2021} combine simultaneous multi-sensor captures. These methods assume the scene is unchanged between acquisitions.
 
-When the environment does change, the discrepancies must first be detected. Cloud-to-cloud distance computation is the dominant approach~\cite{mukupa_review_2017}, with voxel-based~\cite{hirt_change_2021} and learning-based~\cite{meyer_change_2022} variants improving robustness. However, most change detection methods focus on identifying differences between exactly two epochs rather than on integrating the new observations into the existing dataset.
+When the environment does change, the discrepancies must first be detected. Cloud-to-cloud distance computation is the dominant approach~\cite{mukupa_review_2017}, with voxel-based~\cite{hirt_change_2021}, learning-based~\cite{meyer_change_2022}, and comparative point-based variants such as M3C2~\cite{shirowzhan_comparative_2019} improving robustness. Nikoohemat~et~al.~\cite{nikoohemat_change_2018} specifically target indoor change detection from point clouds, though their scope is limited to identifying differences between exactly two epochs rather than integrating the new observations into the existing dataset. More broadly, most change detection methods share this limitation: they detect and report differences but do not produce an updated dataset.
 
-The key difficulty in actual updating is distinguishing unchanged regions, where the higher-quality original data should be preserved, from genuinely changed regions, where the new data must replace the old, and from regions that the new sensor simply did not observe. Partovi~et~al.~\cite{partovi_automatic_2021} focus on filling occlusions with photogrammetric data but do not handle temporal changes.
+Several works have addressed the progressive integration of new captures into an existing model. Gao~et~al.~\cite{gao_approach_2015} propose combining progressively captured point clouds, though they do not address the case where the scene itself has changed between captures. Pu\v{c}ko~et~al.~\cite{pucko_automated_2018} propose continuous updating of a 4D as-built point cloud through helmet-mounted low-precision scanners, which is conceptually close to the HoloLens-based capture used in this work, but their method merges partial scans without distinguishing between changed and unchanged regions. Partovi~et~al.~\cite{partovi_automatic_2021} focus on filling occlusions with photogrammetric data but do not handle temporal changes.
+
+The key difficulty that none of these methods fully resolve is distinguishing, at the point level, between three categories: unchanged regions where the higher-quality original data should be preserved, genuinely changed regions where the new data must replace the old, and regions that the new sensor simply did not observe. The method presented in this chapter addresses this three-way distinction through a sequential coverage and visibility check that operates directly on the point cloud without requiring a semantic model.
 
 % ─────────────────────────────────────────────────────────────────────────────
 
@@ -192,7 +203,7 @@ where:
 Only the precomputed feature graphs need to be transferred to the server, avoiding the computational cost of processing the full point clouds in real time.
 
 % Paragraph purpose: explain BIM-based alignment
-The second 3D alignment method targets the \gls{BIM} model using the \gls{SUPER4PCS} algorithm~\cite{mellado_super_2014}. This approach identifies approximately congruent four-point sets between the session data and the BIM geometry. A key advantage of \gls{SUPER4PCS} over \gls{FPFH}-based methods is its reliance on geometric ratios rather than local surface detail, making it robust to the abstract and sparse nature of BIM representations. The computational complexity is reduced from $O(n^2+k)$ to $O(n+k)$ compared to the original 4PCS algorithm, where $k$ is the number of reported congruent sets.
+The second 3D alignment method targets the \gls{BIM} model using the \gls{SUPER4PCS} algorithm~\cite{mellado_super_2014}, described in Section~\ref{sec:4_related_3d}. Since BIM geometries lack the local surface detail that \gls{FPFH} descriptors rely on, \gls{SUPER4PCS} is used instead, as its ratio-based matching operates on sparse planar geometry without requiring rich surface normals. The sampled BIM point cloud and the session point cloud are both provided to \gls{SUPER4PCS}, which returns a candidate rigid body transformation together with the Largest Common Pointset (\gls{LCP}) score that quantifies the fraction of the input that participates in the alignment. This score, along with the inlier percentage and the spatial extent of the matched region, feeds into the pose vote described in Section~\ref{sec:4_pose_vote}.
 
 % ── 4.3.3.2 ──────────────────────────────────────────────────────────────────
 \subsubsection{2D Alignment}
@@ -209,7 +220,7 @@ Three image-based alignment methods are employed, each addressing a different co
 \end{wrapfigure}
 % Paragraph purpose: explain the two overlapping references method
 \paragraph{Two overlapping references.}
-When a session image $i_\text{ses}$ can be matched with at least two overlapping co-registered reference images $I_{\text{ref},1}$ and $I_{\text{ref},2}$ with known transformations $\mathbf{T}_{\text{ref},1}$ and $\mathbf{T}_{\text{ref},2}$ (Figure~\ref{fig:2D_Alignment_overlapping}), the 3D coordinates of the matched features are already determined in the global coordinate system through the known reference poses. The session camera pose $\mathbf{T}_\text{ses}$ is then retrieved by solving the perspective-n-point problem using at least six 3D--2D correspondences. This method is analogous to conventional \gls{SfM} processing and produces the most reliable image-based alignment when dense, overlapping reference imagery is available.
+When a session image $i_\text{ses}$ can be matched with at least two overlapping co-registered reference images $i_{\text{ref},1}$ and $i_{\text{ref},2}$ with known transformations $\mathbf{T}_{\text{ref},1}$ and $\mathbf{T}_{\text{ref},2}$ (Figure~\ref{fig:2D_Alignment_overlapping}), the 3D coordinates of the matched features are already determined in the global coordinate system through the known reference poses. The session camera pose $\mathbf{T}_\text{ses}$ is then retrieved by solving the perspective-n-point problem using at least six 3D--2D correspondences. This method is analogous to conventional \gls{SfM} processing and produces the most reliable image-based alignment when dense, overlapping reference imagery is available.
 
 \begin{wrapfigure}[11]{r}{0.33\textwidth}
   \centering
@@ -220,8 +231,12 @@ When a session image $i_\text{ses}$ can be matched with at least two overlapping
 \end{wrapfigure}
 % Paragraph purpose: explain the two separate references method
 \paragraph{Two separate references.}
-When two non-overlapping reference images can each be matched to the session image (Figure~\ref{fig:2D_Alignment_separate}), the global pose is estimated by triangulating the session camera position from the two independent relative transformations. The accuracy of this method depends strongly on the angular separation between the two reference viewpoints: near-perpendicular configurations produce more accurate results than near-parallel ones, as small directional errors are amplified when the matching angle is small.
-
+When two non-overlapping reference images $i_{\text{ref},1}$ and $i_{\text{ref},2}$ with known poses $\mathbf{T}_{\text{ref},1}$ and $\mathbf{T}_{\text{ref},2}$ can each be matched to the session image $i_\text{ses}$ (Figure~\ref{fig:2D_Alignment_separate}), each match recovers a relative rotation and translation direction through the essential matrix decomposition. Since a single image pair provides no depth, only the direction from the reference camera to the session camera is known, not the distance. The session pose $\mathbf{T}_\text{ses}$ is therefore recovered by intersecting the two direction rays originating from the known reference positions:
+\begin{equation}
+\label{eq:4_separate_ref}
+\mathbf{T}_\text{ses} = \argmin_{\mathbf{T}} \sum_{k \in \{1,2\}} \left\| \mathbf{T} - \mathbf{T}_{\text{ref},k} \cdot \hat{\mathbf{T}}_{\text{rel},k} \right\|
+\end{equation}
+where $\hat{\mathbf{T}}_{\text{rel},k}$ is the unit-scale relative transformation between $i_\text{ses}$ and $i_{\text{ref},k}$. The accuracy depends on the angular separation between the two reference viewpoints: near-perpendicular configurations yield a well-defined intersection, while near-parallel ones amplify directional errors into large positional uncertainty.
 
 \begin{wrapfigure}[15]{l}{0.33\textwidth}
   \centering
@@ -258,25 +273,31 @@ This method is particularly useful when only sparse imagery is available but the
 \label{sec:4_pose_vote}
 
 % Paragraph purpose: explain the weighted voting mechanism
-Each alignment method produces a candidate transformation together with quality parameters. To combine these into a single robust pose estimate, a weighted pose vote is computed over all candidate transformations (Equation~\ref{eq:4_pose_vote}):
+Each alignment method produces a candidate transformation together with quality parameters. To combine these into a single robust pose estimate, a weighted pose vote is computed over all candidate transformations. Since rigid body transformations comprise a translation and a rotation, and rotations do not form a vector space, the two components are averaged separately.
+
+The final position $\mathbf{t}_\text{ses}$ is computed as a standard weighted average over the candidate translations:
 \begin{equation}
-\label{eq:4_pose_vote}
-\mathbf{T}_\text{ses} = \frac{\sum_{i=1}^{n} w_i \, \mathbf{T}_i}{\sum_{i=1}^{n} w_i}
+\label{eq:4_pose_vote_pos}
+\mathbf{t}_\text{ses} = \frac{\sum_{i=1}^{n} w_i \, \mathbf{t}_i}{\sum_{i=1}^{n} w_i}
+\end{equation}
+
+The final orientation is computed through weighted quaternion averaging \cite{cheng_averaging_2007}. Each candidate rotation is represented as a unit quaternion $\mathbf{q}_i$, and the weighted average quaternion $\mathbf{q}_\text{ses}$ is obtained as the eigenvector corresponding to the largest eigenvalue of the weighted quaternion matrix:
+\begin{equation}
+\label{eq:4_pose_vote_rot}
+\mathbf{q}_\text{ses} = \text{eig}_\text{max}\!\left(\sum_{i=1}^{n} w_i \, \mathbf{q}_i \mathbf{q}_i^\top\right)
 \end{equation}
 where:
 \begin{itemize}
-    \item $\mathbf{T}_\text{ses}$ is the final session transformation,
-    \item $\mathbf{T}_i \in \{\mathbf{T}_\text{pc}, \mathbf{T}_\text{img}\}$ are the candidate transformations from point-cloud-based and image-based alignment,
+    \item $\mathbf{t}_i$, $\mathbf{q}_i$ are the translation and unit quaternion of candidate $i$,
     \item $w_i$ is the weight of candidate $i$,
     \item $n$ is the number of candidate transformations.
 \end{itemize}
 
 % Paragraph purpose: explain the weight computation
-For image-based transformations, the weight is derived from the reprojection error, the number of feature matches, the inlier percentage, and the spatial extent of the inlier correspondences. For point cloud-based transformations, the weight is based on the \gls{RMSE} of the matched correspondences, the number of matches, and the spatial extent of the match region. Additionally, a method-specific weight reflects the empirical reliability of each approach: \gls{SUPER4PCS} alignment receives the highest base weight (1.0), followed by \gls{FPFH}-based registration and \gls{SfM} with overlapping references (both 0.8), two separate reference images (0.5), and single-reference raycasting (0.4).
+For image-based transformations, the weight $w_i$ is derived from the reprojection error, the number of feature matches, the inlier percentage, and the spatial extent of the inlier correspondences. For point cloud-based transformations, the weight is based on the \gls{RMSE} of the matched correspondences, the number of matches, and the spatial extent of the match region. Additionally, a method-specific base weight reflects the empirical reliability of each approach: \gls{SUPER4PCS} alignment receives the highest base weight (1.0), followed by \gls{FPFH}-based registration and \gls{SfM} with overlapping references (both 0.8), two separate reference images (0.5), and single-reference raycasting (0.4).
 
 % Paragraph purpose: explain the output
 The result of the pose voting is both a position and orientation estimate for the session and a confidence measure that reflects the degree of agreement among the contributing methods. This confidence measure is valuable for downstream quality control, as it indicates how reliably the session has been positioned within the reference coordinate system.
-
 % ── 4.3.4 ────────────────────────────────────────────────────────────────────
 \subsection{New Data Combination}
 \label{sec:4_combination}
@@ -385,13 +406,13 @@ The final updated dataset consists of three parts: the original reference points
 \section{Experiments}
 \label{sec:4_experiments}
 
-The alignment and updating methodology is evaluated on two complementary data sources. First, the three real-world environments introduced in Section~\ref{sec:3_captured_scenes} provide 45 measurement sessions spanning four sensor modalities under realistic multi-temporal conditions. Second, the V-Scan synthetic dataset (Section~\ref{sec:3_vscan}) provides controlled ground-truth poses against which alignment accuracy can be measured precisely.
+The alignment and updating methodology is evaluated on two complementary data sources. First, the three real-world environments introduced in Section~\ref{sec:3_captured_scenes} provide 45 measurement sessions spanning four sensor modalities under realistic multi-temporal conditions. Second, the V-Scan synthetic dataset (Section~\ref{sec:3_synthetic}) provides controlled ground-truth poses against which alignment accuracy can be measured precisely.
 
 % ── 4.4.1 ────────────────────────────────────────────────────────────────────
 \subsection{Alignment on Real-World Data}
 \label{sec:4_alignment_experiments}
 
-Table~\ref{tab:4_alignment_results} reports the positional and rotational accuracy of each individual alignment method and the combined weighted estimate for all three real-world test cases. Across all sites, the combined pose estimation achieves an average positional RMSE of 0.058\,m, an average rotational RMSE of 0.337°, and an average confidence of approximately 50\%.
+Table~\ref{tab:4_alignment_results} reports the positional and rotational accuracy of each individual alignment method and the combined weighted estimate for all three real-world test cases. The accuracy is measured against manually aligned ground-truth poses. Across all sites, the combined pose estimation achieves an average positional RMSE of 0.058\,m, an average rotational RMSE of 0.337°, and an average confidence of approximately 50\%.
 
 \begin{table}[htbp]
     \centering

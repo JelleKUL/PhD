@@ -2,6 +2,14 @@
 \chapter{Scene Dynamification}
 \label{ch:8_Scene_Dynamification}
 
+%- Paper references for this chapter
+\definecolor{shadecolor}{gray}{0.9}
+\markerlessfootnote{
+	\begin{shaded}
+		Parts of this chapter's content were previously published in \cite{vermandere_adaptive_2026}.
+	\end{shaded}
+}
+
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
 \label{sec:8_intro}
@@ -274,7 +282,7 @@ All of these deformations are applied in real time. The packed \gls{CSDF} is nev
 \subsection{Recombination into a Dynamic Scene}
 \label{sec:8_recombination}
 
-The dynamified openings and objects are placed back into the completed environment to form a single interactive scene in the Unity game engine (Figure~\ref{fig:8_recombination}). The structural shell and the openings are kept as explicit meshes, while each scalable object is visualised by extracting its surface from the \gls{CSDF} with Marching Cubes~\cite{lorensen_marching_1998}. This surface is only recomputed when the field itself changes, that is when an object is scaled; an object that is merely moved reuses its existing mesh, since its geometry, colour and part structure are unchanged. The scaled objects are positioned at the locations recovered during object isolation in Chapter~\ref{ch:5_Scene_Segmentation}, and the separated windows and doors remain as movable overlays on the re-reconstructed walls of Section~\ref{sec:8_wall_reinpaint}.
+The dynamified openings and objects are placed back into the completed environment to form a single interactive scene in the Unity game engine (Figure~\ref{fig:8_recombination}). The structural shell and the openings are kept as explicit meshes, while each scalable object is visualised by extracting its surface from the \gls{CSDF} with Marching Cubes. This surface is only recomputed when the field itself changes, that is when an object is scaled; an object that is merely moved reuses its existing mesh, since its geometry, colour and part structure are unchanged. The scaled objects are positioned at the locations recovered during object isolation in Chapter~\ref{ch:5_Scene_Segmentation}, and the separated windows and doors remain as movable overlays on the re-reconstructed walls of Section~\ref{sec:8_wall_reinpaint}.
 
 \begin{figure}[hbht]
  \centering
@@ -306,7 +314,7 @@ Figure~\ref{fig:8_scaling_comparison} compares the scaling strategies on two cle
  \label{fig:8_scaling_comparison}
 \end{figure}
 
-Global scaling resizes the whole object uniformly, so every part distorts: chair legs thicken and structural members lose their proportions. Part-aware selective scaling improves on this by confining the deformation to the scaling zone, so parts outside the zone, such as the legs of a chair, keep their original proportions while only the targeted region changes. Inside the zone, however, the selected parts are still stretched, and for repeating structures this produces the same elongation that global scaling causes elsewhere. The repetition strategy resolves this by preserving the proportions of the parts within the zone: each repeatable component is stretched by at most a factor of $1.5$ before a new repetition is inserted, so the components stay close to their original size while the region still reaches the target length. This works best for straight parts, where successive repetitions can be placed seamlessly along the scaling axis; small deviations at the seams are absorbed by the Marching Cubes~\cite{lorensen_marching_1998} meshing step, which always produces a watertight surface.
+Global scaling resizes the whole object uniformly, so every part distorts: chair legs thicken and structural members lose their proportions. Part-aware selective scaling improves on this by confining the deformation to the scaling zone, so parts outside the zone, such as the legs of a chair, keep their original proportions while only the targeted region changes. Inside the zone, however, the selected parts are still stretched, and for repeating structures this produces the same elongation that global scaling causes elsewhere. The repetition strategy resolves this by preserving the proportions of the parts within the zone: each repeatable component is stretched by at most a factor of $1.5$ before a new repetition is inserted, so the components stay close to their original size while the region still reaches the target length. This works best for straight parts, where successive repetitions can be placed seamlessly along the scaling axis; small deviations at the seams are absorbed by the Marching Cubes meshing step, which always produces a watertight surface.
 
 \begin{figure}[hbht]
  \centering
@@ -342,7 +350,7 @@ The results are very good across both scenes. This is partly due to the simple g
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_dynamification_matterport_scenes}
- \caption[Dynamification of Matterport3D scenes]{Two Matterport3D scans (left) and their complete dynamification (right), with separated objects and movable windows and doors.}
+ \caption[Dynamification of Matterport3D scenes]{Two Matterport3D scans (top) and their complete dynamification (bottom), with separated objects and movable windows and doors.}
  \label{fig:8_matterport_scenes}
 \end{figure}
 

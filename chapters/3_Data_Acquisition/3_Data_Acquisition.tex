@@ -48,7 +48,7 @@ This chapter establishes the data on which every subsequent stage of the pipelin
 % Paragraph 2 — Problem statement (expanded: the data gap)
 No single existing dataset satisfies these requirements simultaneously. Real-world scene datasets such as ScanNet~\cite{dai_scannet_2017} and Matterport3D~\cite{chang_matterport3d_2017} provide richly annotated indoor environments, but the occluded surfaces that completion methods must reconstruct are by definition absent from the captured data, preventing direct supervised evaluation of completion quality. Synthetic scene datasets such as SUNCG~\cite{song_semantic_2016} and Replica~\cite{straub_replica_2019} can provide complete geometry, but they deliver idealised outputs rather than sensor-dependent partial observations, omitting the noise, density variation and viewpoint-specific occlusion patterns that real scanners produce. At object level, ShapeNet~\cite{chang_shapenet_2015} offers scale and diversity but consists of CAD models that bear little resemblance to scanned data, while real scanned repositories such as Redwood~\cite{choi_large_2016} remain limited in size and category coverage.
  
-A separate gap exists for the alignment and updating stage. Evaluating multi-temporal registration requires repeated captures of the same environment across time and across sensing technologies, yet most public datasets capture each scene only once and with a single device. Datasets that do provide temporal variation, such as 3RScan~\cite{wald_rio_2019}, use a single sensor type, while multi-sensor datasets such as ScanNet++ capture at a single time point. No public resource combines both axes of variation. Finally, industrial object categories such as piping, ductwork and storage vessels are absent from most standard benchmarks, leaving a blind spot in object completion evaluation for AECO applications.
+An additional gap exists for the alignment and updating stage. Evaluating multi-temporal registration requires repeated captures of the same environment across time and across sensing technologies, yet most public datasets capture each scene only once and with a single device. Datasets that do provide temporal variation, such as 3RScan~\cite{wald_rio_2019}, use a single sensor type, while multi-sensor datasets such as ScanNet++ capture at a single time point. No public resource combines both axes of variation. Finally, industrial object categories such as piping, ductwork and storage vessels are absent from most standard benchmarks, leaving a blind spot in object completion evaluation for AECO applications.
  
 % Paragraph 3 — Scope and contribution
 To address these gaps, the chapter assembles three complementary data sources. Public datasets (Section~\ref{sec:3_existing}) provide established benchmarks for training and qualitative evaluation. Real-world multi-temporal captures from the KU~Leuven campus and a residential renovation site in Bruges (Section~\ref{sec:3_realworld}) supply the multi-sensor, multi-epoch data required for alignment evaluation, together with a dedicated industrial object dataset derived from the campus chemistry building. Finally, The V-Scan synthetic dataset (Section~\ref{sec:3_synthetic}) is introduced, filling the gap between real and synthetic data by combining a procedural room generator and configurable virtual scanner, providing partial scans paired with complete scene- and object-level ground truth under controlled conditions.
@@ -74,7 +74,7 @@ Large-scale real-world indoor datasets have played a central role in advancing s
 \end{figure}
 
 \paragraph{ScanNet++.}
-ScanNet++~\cite{yeshwanth_scannet_2023} is the first primary real-world dataset used for qualitative evaluation of the full pipeline. It extends earlier RGB-D indoor datasets such as ScanNet~\cite{dai_scannet_2017} through significantly higher geometric and visual fidelity. Each scene is captured using a combination of sub-millimetre terrestrial laser scans, registered 33-megapixel DSLR imagery and commodity RGB-D streams from mobile devices. This multi-modal acquisition strategy provides both highly accurate reference geometry and realistic lower-cost sensor observations within the same environments (Figure~\ref{fig:3_ScanNet}).
+ScanNet++~\cite{yeshwanth_scannet_2023} is the first primary real-world dataset used for qualitative evaluation of our pipeline. It extends earlier RGB-D indoor datasets such as ScanNet~\cite{dai_scannet_2017} through significantly higher geometric and visual fidelity. Each scene is captured using a combination of terrestrial laser scans, registered 33-megapixel DSLR imagery and commodity RGB-D streams from mobile devices. This multi-modal acquisition strategy provides both highly accurate reference geometry and realistic lower-cost sensor observations within the same environments (Figure~\ref{fig:3_ScanNet}).
 
 \paragraph{Matterport3D.}
 Matterport3D~\cite{chang_matterport3d_2017} is the second primary real-world dataset used for qualitative evaluation. Captures were obtained using the Matterport Pro camera system and include globally aligned camera poses, textured meshes and semantic annotations (Figure~\ref{fig:3_Matterport3D}). Each environment is subdivided into multiple rooms, resulting in a large variety of bedrooms, living rooms, kitchens, hallways, offices and commercial interiors, making Matterport3D particularly useful for evaluating completion methods under realistic room layouts and varied furnishing styles.
@@ -119,7 +119,7 @@ Together, ShapeNet and Redwood provide complementary object-level benchmarks: Sh
 \section{Real-World Data Capture}
 \label{sec:3_realworld}
 
-Real-world captures were performed at multiple sites on the KU~Leuven Technology Campus in Ghent and at a residential renovation site in Bruges, using a combination of high-end terrestrial laser scanners and consumer-grade \gls{XR} devices. The resulting collection (Table~\ref{tab:3_captured_scenes_metrics}) spans three categories of indoor environments and more than three orders of magnitude in per-session point count, providing the multi-temporal and multi-sensory data required for the alignment experiments in Chapter~\ref{ch:4_Alignment_Updating}. In addition, a dedicated industrial object dataset was derived from scans and \gls{BIM} modelling of the campus chemistry building (Section~\ref{sec:3_chemistry}), supplying ground-truth geometry for industrial piping and vessels that are absent from public object-level benchmarks.
+Real-world captures are performed at multiple sites on the KU~Leuven Technology Campus in Ghent and at a residential renovation site in Bruges, using a combination of high-end terrestrial laser scanners and consumer-grade \gls{XR} devices. The resulting collection (Table~\ref{tab:3_captured_scenes_metrics}) spans three categories of indoor environments and more than three orders of magnitude in per-session point count, providing the multi-temporal and multi-sensory data required for the alignment experiments in Chapter~\ref{ch:4_Alignment_Updating}. In addition, a dedicated industrial object dataset is derived from scans and \gls{BIM} modelling of the campus chemistry building (Section~\ref{sec:3_chemistry}), supplying ground-truth geometry for industrial piping and vessels that are absent from public object-level benchmarks.
  
 The sensors used to capture this data are described in Section~\ref{sec:3_sensors}, the multi-temporal environments in Section~\ref{sec:3_captured_scenes}, and the industrial object dataset in Section~\ref{sec:3_chemistry}.
 
@@ -162,7 +162,7 @@ The sensors used to capture this data are described in Section~\ref{sec:3_sensor
 \subsection{Sensing Technologies}
 \label{sec:3_sensors}
 
-Four classes of sensors were used, spanning a wide range of accuracy, density and operational characteristics (Figure~\ref{fig3:sensors}). Their properties directly influence the nature of the captured data and the challenges that each pipeline stage must address.
+Four classes of sensors are used, spanning a wide range of accuracy, density and operational characteristics (Figure~\ref{fig3:sensors}). Their properties directly influence the nature of the captured data and the challenges that each pipeline stage must address.
 
 \begin{figure}[htbp]
     \centering
@@ -173,8 +173,8 @@ Four classes of sensors were used, spanning a wide range of accuracy, density an
             \includegraphics[width=4cm]{P30} &
             \includegraphics[height=4cm]{VLX} \\[2pt]
 
-            \textbf{(a) Leica ScanStation P30} &
-            \textbf{(b) NavVis VLX} \\
+            \textbf{(a) Leica ScanStation P30 \cite{noauthor_leica_nodate}} &
+            \textbf{(b) NavVis VLX \cite{noauthor_navvis_nodate}} \\
 
             Scan rate: $1$ MHz &
             Scan rate: $2 \times 0.6$ MHz \\
@@ -192,8 +192,8 @@ Four classes of sensors were used, spanning a wide range of accuracy, density an
             \includegraphics[height=4cm]{BLK360} &
             \includegraphics[height=4cm]{Hololens} \\[2pt]
 
-            \textbf{(c) Leica BLK360} &
-            \textbf{(d) Microsoft HoloLens 2} \\
+            \textbf{(c) Leica BLK360 \cite{noauthor_leica_nodate-1}} &
+            \textbf{(d) Microsoft HoloLens 2 \cite{hubner_evaluation_2020}} \\
 
             Density: $6.0$ mm / $10$ m &
             Density: $80.0$ mm / $10$ m \\
@@ -209,12 +209,12 @@ Four classes of sensors were used, spanning a wide range of accuracy, density an
 
         \end{tabular}%
     }
-    \caption[Sensor overview]{Overview of the theoretical sensor characteristics for the sensors used in this thesis. Values are based on manufacturer specifications and virtual scanner presets.}
+    \caption[Sensor overview]{Overview of the theoretical sensor characteristics for the sensors used in this thesis. Values are based on manufacturer specifications and virtual scanner presets. From \cite{noauthor_leica_nodate},  \cite{noauthor_navvis_nodate}, \cite{noauthor_leica_nodate-1}, \cite{hubner_evaluation_2020}.}
     \label{fig3:sensors}
 \end{figure}
 
 \paragraph{Terrestrial Laser Scanners.}
-Static \gls{TLS} systems such as the Leica ScanStation P30~\cite{noauthor_leica_nodate} and BLK360~\cite{noauthor_leica_nodate-1} provide the highest measurement accuracy, typically achieving single-point accuracies between 1 and 2\,mm for the P30 and 5 to 10\,mm for the BLK360 at ranges up to 100 and 60\,m respectively~\cite{bassier_standalone_2016}. These systems capture structured point grids of 10 to 40 million points per setup, along with panoramic imagery. However, the static nature of the measurement introduces significant occlusions at ground level and behind objects, as only surfaces visible from the scanner position are recorded. Consecutive setups must be co-registered, typically through a combination of target-based and cloud-to-cloud methods, with sub-millimetre error propagation achievable across setups~\cite{geyter_point_2022}.
+Static \gls{TLS} systems such as the Leica ScanStation P30~\cite{noauthor_leica_nodate} and BLK360~\cite{noauthor_leica_nodate-1} provide the highest measurement accuracy, typically achieving single-point accuracies between 1 and 2\,mm for the P30 and 5 to 10\,mm for the BLK360 at ranges up to 100 and 60\,m respectively~\cite{bassier_standalone_2016}. These systems capture structured point grids of 10 to 40 million points per setup, along with panoramic imagery. However, the static nature of the measurement introduces significant occlusions at ground level and behind objects, as only surfaces visible from the scanner position are recorded. Consecutive setups must be co-registered, typically through a combination of target-based and cloud-to-cloud methods, with millimetre level error propagation achievable across setups~\cite{geyter_point_2022}.
 
 \paragraph{Indoor Mobile Mapping Systems.}
 Indoor mobile mapping systems (\gls{iMMS}) such as the NavVis VLX~\cite{noauthor_navvis_nodate} combine LiDAR sensors with camera-based \gls{SLAM} algorithms to achieve continuous data acquisition while the operator moves through the environment. These systems produce unordered point clouds with uneven point distributions, but their continuous trajectory results in significantly better spatial coverage than static scanners, particularly in cluttered environments. Global accuracies of LOA20 ($2\sigma \leq 0.05$\,m) to LOA30 ($2\sigma \leq 0.015$\,m) are achievable when supported by control measurements~\cite{geyter_point_2022, vermandere_two-step_2022}. Data acquisition is typically two to three times faster than with static \gls{TLS}.
@@ -229,21 +229,23 @@ Recent smartphones equipped with LiDAR sensors, such as iPhone models with the A
 \subsection{Captured Environments}
 \label{sec:3_captured_scenes}
 
-In each environment every sensor was deployed according to its intended use case, with \gls{TLS} setups placed to maximise structural coverage, \gls{iMMS} captures following natural walking trajectories with loop closures where possible, and \gls{XR} captures focused on cluttered regions inaccessible to the larger systems~\cite{geyter_point_2022}.
+In each environment every sensor is deployed according to its intended use case, with \gls{TLS} setups placed to maximise structural coverage, \gls{iMMS} captures following natural walking trajectories with loop closures where possible, and \gls{XR} captures focused on cluttered regions inaccessible to the larger systems~\cite{geyter_point_2022}.
 
-\paragraph{Laboratory Rooms.} The laboratory rooms (Figure~\ref{fig:3_campus_dataset}) are single-storey industrial spaces containing working desks, test equipment and machinery. Between captures taken several months apart, all movable objects were displaced in the course of ongoing research activity, making these rooms the primary test case for multi-temporal alignment under layout change in an otherwise stable structural envelope.
+\paragraph{Laboratory Rooms.} The laboratory rooms (Figure~\ref{fig:3_campus_dataset}) are single-storey industrial spaces containing working desks, test equipment and machinery. Between captures taken several months apart, all movable objects are displaced in the course of ongoing research activity, making these rooms the primary test case for multi-temporal alignment under layout change in an otherwise stable structural envelope.
 
 \begin{figure}[htbp]
   \centering
   \vspace{-10pt}
   \includegraphics[width=1\textwidth]{Campus_dataset}
   \includegraphics[width=1\textwidth]{Campus_Image_Dataset}
-  \caption[Campus datasets]{The campus datasets, captured using a P30(top), Hololens(left) and VLX(right) along with images captured by the Hololens.}
+  \caption[Campus datasets]{The campus datasets, captured using a P30 (top), HoloLens (left) and VLX (right) along with images captured by the HoloLens.}
   \vspace{-10pt}
   \label{fig:3_campus_dataset}
 \end{figure}
 
 \paragraph{Living Lab.} The living lab is a three-storey prefab residential building captured repeatedly throughout its construction (Figure~\ref{fig:3_livinglab_dataset}), from early stake-out through to MEP installation, providing test data in which both geometry and surface appearance change drastically between epochs.
+
+\paragraph{Bruges Renovation.} The Bruges renovation is a four-storey residential building captured during interior refurbishment (Figure~\ref{fig:3_house_dataset}), where the structural envelope is largely fixed but the interior is cluttered with construction materials and temporary storage that change position between visits.
 
 \begin{figure}[htbp]
   \centering
@@ -255,8 +257,6 @@ In each environment every sensor was deployed according to its intended use case
   \vspace{-10pt}
 \end{figure}
 
-\paragraph{Bruges Renovation.} The Bruges renovation is a four-storey residential building captured during interior refurbishment (Figure~\ref{fig:3_house_dataset}), where the structural envelope is largely fixed but the interior is cluttered with construction materials and temporary storage that change position between visits.
-
 \begin{figure}[htbp]
   \centering
   \vspace{-5pt}
@@ -267,10 +267,11 @@ In each environment every sensor was deployed according to its intended use case
   \vspace{-10pt}
 \end{figure}
 
+
 \subsection{Industrial Object Dataset}
 \label{sec:3_chemistry}
 
-The public object-level datasets described in Section~\ref{sec:3_object_datasets} primarily cover common residential furniture categories such as chairs, tables and sofas. Industrial objects, including piping, ductwork and storage vessels, are largely absent from both ShapeNet and Redwood yet are central to the AECO applications targeted in this thesis. To fill this gap, a dedicated industrial object dataset was created from the chemistry building (M-blok) on the KU~Leuven campus in Ghent (Figure~\ref{fig:3_chemistry_building}).
+The public object-level datasets described in Section~\ref{sec:3_object_datasets} primarily cover common residential furniture categories such as chairs, tables and sofas. Industrial objects, including piping, ductwork and storage vessels, are largely absent from both ShapeNet and Redwood yet are central to the AECO applications targeted in this thesis. To fill this gap, a dedicated industrial object dataset is created from the chemistry building (M-blok) on the KU~Leuven campus in Ghent (Figure~\ref{fig:3_chemistry_building}).
 
 \begin{figure}[htbp]
   \centering
@@ -279,9 +280,9 @@ The public object-level datasets described in Section~\ref{sec:3_object_datasets
   \label{fig:3_chemistry_building}
 \end{figure}
 
-The building houses a pilot brewery containing a variety of round and rectangular piping sections connected through bends, junctions and transitions, as well as storage vessels of different sizes and shapes. The environment was scanned using a Leica ScanStation P30 and a Leica BLK360. From the captured point clouds, 22 distinct pipe configurations and 9 vessels were identified. An as-built \gls{BIM} model of the facility was subsequently created in Autodesk Revit, modelling the vessels and piping.
+The building houses a pilot brewery containing a variety of round and rectangular piping sections connected through bends, junctions and transitions, as well as storage vessels of different sizes and shapes. The environment is scanned using a Leica ScanStation P30 and a Leica BLK360. From the captured point clouds, 22 distinct pipe configurations and 9 vessels are identified. An as-built \gls{BIM} model of the facility was subsequently created in Autodesk Revit, modelling the vessels and piping.
 
-To complement the scanned objects with a broader set of controlled industrial geometry, 50 additional pipe elements were manually constructed as parametric Revit families. These cover rectangular and round cross-sections with varying bends, junctions and transitions, representing the most common configurations encountered in industrial indoor environments. Together with the 9 modelled vessels, the dataset comprises 59 synthetic industrial objects spanning three classes not present in standard benchmarks: round pipe sections, rectangular pipe sections, and industrial vessels. Table~\ref{tab:3_chemistry_metrics} summarises the dataset composition.
+To complement the scanned objects with a broader set of controlled industrial geometry, 50 additional pipe elements are manually constructed as parametric Revit families. These cover rectangular and round cross-sections with varying bends, junctions and transitions, representing the most common configurations encountered in industrial indoor environments. Together with the 9 modelled vessels, the dataset comprises 59 synthetic industrial objects spanning three classes not present in standard benchmarks: round pipe sections, rectangular pipe sections, and industrial vessels. Table~\ref{tab:3_chemistry_metrics} summarises the dataset composition.
 
 \begin{table}[htbp]
     \centering
@@ -306,7 +307,7 @@ This dataset is used in Chapter~\ref{ch:7_Object_Completion} to evaluate the obj
 \section{Synthetic Data Creation}
 \label{sec:3_synthetic}
 
-The V-Scan dataset (Table~\ref{tab:vscan_summary}, Figure~\ref{fig:3_VScan}) was created to provide the joint property not available in any existing resource: partial scene scans paired with complete geometric ground truth, multi-sensory outputs, temporal variations and per-object annotations. It is the main benchmark used for the quantitative evaluation of scene and object completion in Chapters~\ref{ch:6_Scene_Completion} and~\ref{ch:7_Object_Completion}.
+The V-Scan dataset (Table~\ref{tab:vscan_summary}, Figure~\ref{fig:3_VScan}) is created to provide the joint property not available in any existing resource: partial scene scans paired with complete geometric ground truth, multi-sensory outputs, temporal variations and per-object annotations. It is the main benchmark used for the quantitative evaluation of scene and object completion in Chapters~\ref{ch:6_Scene_Completion} and~\ref{ch:7_Object_Completion}.
 
 \begin{table}[h]
     \centering
@@ -349,7 +350,7 @@ The framework proposed here combines both directions, integrating procedural sce
 \subsection{Procedural Room Layout Generator}
 \label{sec:3_room_generator}
 
-A procedural scene generation system was developed to automatically create diverse indoor environments from a predefined library of structural and furniture elements (Figure~\ref{fig:3_Room_Generator}). Room and furniture generation are separated, enabling multiple temporal variants of the same room geometry with different object layouts. Each random sampling step is deterministic based on a saved seed, ensuring reproducibility.
+A procedural scene generation system is developed to automatically create diverse indoor environments from a predefined library of structural and furniture elements (Figure~\ref{fig:3_Room_Generator}). Room and furniture generation are separated, enabling multiple temporal variants of the same room geometry with different object layouts. Each random sampling step is deterministic based on a saved seed, ensuring reproducibility.
 
 \begin{figure}[h]
   \centering
@@ -369,7 +370,7 @@ The room structure is generated on a grid-based system. Floor dimensions are ran
 
 \subsubsection{Furniture Placement}
 
-Furniture placement is divided into wall-mounted and free-standing categories. Wall-mounted items are positioned against available wall surfaces, while free-standing objects are placed using rejection sampling: candidate positions and orientations are accepted only if their \gls{OBB}s do not intersect previously placed objects. The total number of objects is controlled by a density parameter proportional to room area.
+Furniture placement is divided into wall-mounted and free-standing categories. Wall-mounted items are positioned against available wall surfaces, while free-standing objects are placed using rejection sampling: candidate positions and orientations are accepted only if their Oriented Bounding Boxes (\gls{OBB}s) do not intersect previously placed objects. The total number of objects is controlled by a density parameter proportional to room area.
 
 Some examples of the generated room layouts are shown in Figure~\ref{fig:3_Procedural_Rooms}. The resulting scenes exhibit a wide variety of room sizes, colours and furniture arrangements, providing a base for the subsequent virtual scanning.
 
@@ -578,20 +579,22 @@ For each generated scene, the dataset stores the scans together with the metadat
 \label{fig:3_json_formats}
 \end{figure}
 
+\subsection{Limitations}
+\label{sec:3_vscan_limitations}
+ 
+Two limitations of the V-Scan dataset should be noted. The procedural room generator currently supports only rectangular room layouts assembled from modular grid tiles, restricting the geometric complexity of the generated environments to orthogonal configurations. This is an intentional scoping decision that matches the planar assumption adopted by the scene completion stage in Chapter~\ref{ch:6_Scene_Completion}, but it means that more complex room layouts are not represented and can only be evaluated qualitatively using the existing scene-level datasets. A second limitation is the absence of complex lighting conditions. Every room is evenly lit without harsh lights or very dark areas. While this greatly improves clarity of the generated data, it may not always reflect real scanning conditions where shadows and uneven illumination affect both colour assignment and downstream texture processing.
+
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Conclusion}
 \label{sec:3_conclusion}
-
+ 
 % Paragraph 1 — Recap
 This chapter defined the data acquisition strategy for the thesis, combining public datasets, real-world multi-temporal captures and a contributed synthetic generation framework to meet the evaluation requirements of the pipeline introduced in Chapter~\ref{ch:introduction}.
-
+ 
 % Paragraph 2 — Contributions
 In addition to the existing public datasets, three data contributions were made. The real-world capture campaign produced 45 sessions across three indoor environments using four sensor classes (Table~\ref{tab:3_captured_scenes_metrics}), providing the heterogeneous multi-temporal input for alignment evaluation. The industrial object dataset introduces 59 ground-truth models of piping and vessels from the campus chemistry building (Table~\ref{tab:3_chemistry_metrics}), filling a category gap in existing benchmarks that are dominated by residential furniture. The V-Scan generation framework produces 200 scene folders containing 3,100 objects (Table~\ref{tab:vscan_summary}), pairing partial scans with complete scene- and object-level ground truth, a combination that no existing dataset offers and that directly addresses the evaluation barrier identified in Chapter~\ref{ch:introduction}.
-
-% Paragraph 3 — Limitations
-Two limitations of the V-Scan dataset should be noted. The procedural room generator currently supports only rectangular room layouts assembled from modular grid tiles, which restricts the geometric complexity of the generated environments to orthogonal configurations. This is an intentional scoping decision that matches the planar assumption adopted by the scene completion stage in Chapter~\ref{ch:6_Scene_Completion}, but it means that more complex room layouts are not represented and therefore can only be evaluated qualitatively using the existing scene-level datasets. A second limitations is the limited variety of complex lighting conditions. Every room is evenly lit and no harsh lights or very dark areas are present. While this greatly improves clarity, it may not always reflect reality. 
-
-% Paragraph 4 — Forward link
+ 
+% Paragraph 3 — Forward link
 The campus captures feed directly into the alignment experiments of Chapter~\ref{ch:4_Alignment_Updating}. The V-Scan dataset is consumed by every subsequent experimental chapter for quantitative evaluation: alignment validation through known ground-truth poses, detection evaluation through bounding box annotations, scene completion evaluation through empty-scene geometry, and object completion evaluation through per-object partial scans and complete meshes. The chemistry building dataset complements these for the industrial object categories evaluated in Chapter~\ref{ch:7_Object_Completion}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

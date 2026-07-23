@@ -2,6 +2,14 @@
 \chapter{Scene Completion}
 \label{ch:6_Scene_Completion}
 
+%- Paper references for this chapter
+\definecolor{shadecolor}{gray}{0.9}
+\markerlessfootnote{
+	\begin{shaded}
+		Parts of this chapter's content were previously published in \cite{vermandere_texture-based_2023,vermandere_semantic_2024}.
+	\end{shaded}
+}
+
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
 \label{sec:6_intro}
@@ -169,7 +177,7 @@ The panorama still contains all foreground objects, so the pixels covering remov
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_completion_to_be_inpainted}
- \caption[Projected mask on reconstructed mesh]{The occluded pixels (red) projected onto the reconstructed mesh, showing the regions that will be inpainted per plane.}
+ \caption[Projected mask on reconstructed mesh]{The occluded pixels (red) projected onto the reconstructed mesh and scaled to match the projected voxels size, showing the regions that will be inpainted per plane.}
  \label{fig:6_to_be_inpainted}
 \end{figure}
 
@@ -202,7 +210,7 @@ The inpainted textures are applied back to their UV-parameterised fragments, and
 \section{Experiments}
 \label{sec:6_experiments}
 
-The completion is evaluated quantitatively on the V-Scan synthetic dataset (Section~\ref{sec:3_vscan}), which provides a ground-truth empty point cloud and a ground-truth empty panorama for every scene~\cite{vermandere_synthetic_2026}, and qualitatively on real scans from Matterport3D~\cite{chang_matterport3d_2017}, for which no defurnished reference is available. Table~\ref{tab:6_completion_results} and Figure~\ref{fig:6_vscan_results} summarise the V-Scan results, broken down by environment type.
+The completion is evaluated quantitatively on the V-Scan synthetic dataset (Section~\ref{sec:3_synthetic}), which provides a ground-truth empty point cloud and a ground-truth empty panorama for every scene~\cite{vermandere_synthetic_2026}, and qualitatively on real scans from Matterport3D~\cite{chang_matterport3d_2017}, for which no defurnished reference is available. Table~\ref{tab:6_completion_results} and Figure~\ref{fig:6_vscan_results} summarise the V-Scan results, broken down by environment type.
 
 \begin{table}[h]
     \centering

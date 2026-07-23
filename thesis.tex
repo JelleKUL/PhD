@@ -146,6 +146,13 @@
 
 \newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
 
+\newcommand\markerlessfootnote[1]{%
+	\begingroup
+	\renewcommand\thefootnote{}\footnote{#1}%
+	\addtocounter{footnote}{-1}%
+	\endgroup
+}
+
 % this line will be replaced to create a diff
 % (see make_diff.sh)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

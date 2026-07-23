@@ -35,7 +35,7 @@ Output & Objects, refined oriented boxes, occlusion grids \\
 Results & Primary symmetry axis at $8.01^{\circ}$ error, 94\% finding rate; occluded volume 7.97--22.07\% per class. \\
 Limitations & Detection precision of 0.310 propagates false positives downstream, requiring an extra filtering step. \\
 \midrule
-\multicolumn{2}{@{}l}{\textbf{Scene completion (Ch.~\ref{ch:6_Scene_Completion})}~\cite{vermandere_semantic_2024, suvorov_resolution-robust_2022}} \\
+\multicolumn{2}{@{}l}{\textbf{Scene completion (Ch.~\ref{ch:6_Scene_Completion})}~\cite{vermandere_texture-based_2023,vermandere_semantic_2024}} \\
 \cmidrule(r){1-1}
 Objective & Reconstruct the static room envelope in geometry and texture. \\
 Input & Object-removed cloud, planes, occlusion grid \\
@@ -43,7 +43,7 @@ Output & Closed textured mesh of the empty room \\
 Results & Chamfer 1.5--1.9\,cm, F-score $>$0.975; PSNR up to 59\,dB. \\
 Limitations & Planarity assumption and single-panorama texture limit large or curved occluded regions. \\
 \midrule
-\multicolumn{2}{@{}l}{\textbf{Object completion (Ch.~\ref{ch:7_Object_Completion})}~\cite{mittal_autosdf_2022, hunyuan3d_hunyuan3d-omni_2025, vermandere_geometry_2025}} \\
+\multicolumn{2}{@{}l}{\textbf{Object completion (Ch.~\ref{ch:7_Object_Completion})}~\cite{vermandere_geometry_2025, vermandere_guided_2025}} \\
 \cmidrule(r){1-1}
 Objective & Complete each isolated object using local observations and scene context. \\
 Input & Partial object meshes, per-object grids, panorama \\
@@ -51,7 +51,7 @@ Output & Fully textured object meshes \\
 Results & Voxel method IoU 61.8--72.2\%; image method generalises without per-category tuning. \\
 Limitations & Voxel material cap and image-method occlusion-grid decoupling remain. \\
 \midrule
-\multicolumn{2}{@{}l}{\textbf{Scene dynamification (Ch.~\ref{ch:8_Scene_Dynamification})}~\cite{wei_approximate_2022, vermandere_adaptive_2026}} \\
+\multicolumn{2}{@{}l}{\textbf{Scene dynamification (Ch.~\ref{ch:8_Scene_Dynamification})}~\cite{vermandere_adaptive_2026}} \\
 \cmidrule(r){1-1}
 Objective & Turn the static reconstruction into an interactive, editable \gls{DRM}. \\
 Input & Static scene and object meshes \\
@@ -81,7 +81,7 @@ Part awareness and scalability & Ch.~\ref{ch:8_Scene_Dynamification} & Met geome
 \end{table}
 
 % Paragraph purpose: the coupling argument, the scientific core that the tables cannot convey.
-The scientific core of these results is the coupling that binds the stages into a single framework rather than a sequence of independent tools, which is the unified treatment Chapter~\ref{ch:introduction} found missing in prior work. Its mechanism is the measured occlusion of Chapter~\ref{ch:5_Scene_Segmentation}: by distinguishing regions that are occupied-but-unobserved from those that are genuinely empty, the occlusion grids let scene completion avoid reconstructing space owned by objects while object completion draws on the surrounding envelope of walls, floors and neighbours. This resolves the mutual dependency that defeats methods treating the two problems in isolation. Validating it quantitatively was itself a methodological obstacle, since the surfaces most relevant to completion are precisely those absent from real scans: the V-Scan dataset of Chapter~\ref{ch:3_Data_Acquisition} overcomes this by pairing realistic partial scans with complete ground truth~\cite{vermandere_synthetic_2026, de_geyter_automated_2022}, and its use as the common benchmark is what lets every stage be checked independently while still composing into one coherent \gls{DRM}.
+The scientific core of these results is the coupling that binds the stages into a single framework rather than a sequence of independent tools, which is the unified treatment Chapter~\ref{ch:introduction} found missing in prior work. Its mechanism is the measured occlusion of Chapter~\ref{ch:5_Scene_Segmentation}: by distinguishing regions that are occupied-but-unobserved from those that are genuinely empty, the occlusion grids let scene completion avoid reconstructing space owned by objects while object completion draws on the surrounding envelope of walls, floors and neighbours. This resolves the mutual dependency that defeats methods treating the two problems in isolation. Validating it quantitatively was itself a methodological obstacle, since the surfaces most relevant to completion are precisely those absent from real scans: the V-Scan dataset of Chapter~\ref{ch:3_Data_Acquisition} overcomes this by pairing realistic partial scans with complete ground truth, and its use as the common benchmark is what lets every stage be checked independently while still composing into one coherent \gls{DRM}.
 
 % Paragraph purpose: cross-cutting findings that recur across stages.
 Three findings recur across the stages. First, robustness emerges from combination rather than from any single best method: the alignment vote, the pairing of complementary completion priors and the routing of building elements to different treatments each outperform their strongest individual component. Second, structure is more recoverable than appearance: across alignment, scene completion and dynamification, planar and geometrically regular surfaces are handled reliably, while the residual difficulty concentrates consistently in texture synthesis and in irregular geometry. Third, explicit occlusion reasoning is not only the coupling mechanism but the enabler of modularity itself, since it is what keeps independently developed stages from conflicting when composed.
