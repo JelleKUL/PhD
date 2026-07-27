@@ -39,7 +39,7 @@ This section reviews the four areas specific to dynamification: window and door 
 \subsection{Window and Door Detection}
 \label{sec:8_rw_detection}
 
-Recovering the openings hidden in the wall textures requires detecting windows and doors in an image without a fixed, pre-trained class set, since the texture content varies widely across rooms and datasets. Open-vocabulary detectors address this by conditioning detection on a free-text prompt. Grounding DINO~\cite{liu_grounding_2024} couples a transformer detector with grounded language pre-training, so that arbitrary phrases such as \emph{window} or \emph{door} can be localised in an image without category-specific training. To turn a detected box into a precise region outline, the Segment Anything Model (SAM)~\cite{kirillov_segment_2023} produces a tight mask from a box or point prompt and generalises across domains without fine-tuning. Combining a prompt-driven detector with a promptable segmenter gives the class-agnostic, mask-level localisation needed to cut openings out of the reconstructed walls, which is the combination adopted in this chapter.
+Recovering the openings hidden in the wall textures requires detecting windows and doors in an image without a fixed, pre-trained class set, since the texture content varies widely across rooms and datasets. Open-vocabulary detectors address this by conditioning detection on a free-text prompt. Grounding DINO~\cite{liu_grounding_2024} couples a transformer detector with grounded language pre-training, so that arbitrary phrases such as \emph{window} or \emph{door} can be localised in an image without category-specific training. To turn a detected box into a precise region outline, the Segment Anything Model (SAM)~\cite{kirillov_segment_2023} produces a tight mask from a box or point prompt and generalises across domains without fine-tuning. Combining a prompt-driven detector with a promptable segmenter provides the class-agnostic, mask-level localisation needed to cut openings out of the reconstructed walls, which is the combination adopted in this chapter.
 
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -93,15 +93,15 @@ The scene completion of Chapter~\ref{ch:6_Scene_Completion} reconstructs each ro
 \subsubsection{Opening Detection}
 \label{sec:8_opening_detection}
 
-\begin{wrapfigure}{l}{0.5\textwidth}
+\begin{wrapfigure}{r}{0.3\textwidth}
  \centering
  \vspace{-10pt}
- \includegraphics[width=0.5\textwidth]{Scene_dynamification_opening_detection}
+ \includegraphics[width=0.3\textwidth]{Scene_dynamification_opening_detection}
  \caption[Window and door detection on wall textures]{The final detection polygon traced on a flattened wall texture, annotated with its class label and confidence score.}
  \label{fig:8_opening_detection}
 \end{wrapfigure}
 
-Each wall fragment $M_k$ produced in Chapter~\ref{ch:6_Scene_Completion} carries a flattened texture in its own \gls{UV} space, which already presents the surface upright and free of perspective distortion~\cite{vermandere_semantic_2024}. This is the ideal input for a 2D detector, because each window and door appears as a flat, front-facing rectangle rather than a tilted and stretched shape seen from an angle. The base-colour texture of each fragment is extracted and passed to the Grounding DINO~\cite{liu_grounding_2024} open-vocabulary detector, prompted with the phrases \emph{window} and \emph{door}, which returns a bounding box and class label per opening. Each box is then refined into a tight binary mask by SAM~\cite{kirillov_segment_2023}, prompted with that box, and the largest external contour of the mask is traced and simplified into a pixel-space polygon $\{(x_l, y_l)\}$ describing the opening outline (Figure~\ref{fig:8_opening_detection}).
+Each wall fragment $M_k$ produced in Chapter~\ref{ch:6_Scene_Completion} carries a flattened texture in its own \gls{UV} space, which already presents the surface upright and free of perspective distortion. This is the ideal input for a 2D detector, because each window and door appears as a flat, front-facing rectangle rather than a tilted and stretched shape seen from an angle. The base-colour texture of each fragment is extracted and passed to the Grounding DINO~\cite{liu_grounding_2024} open-vocabulary detector, prompted with the phrases \emph{window} and \emph{door}, which returns a bounding box and class label per opening. Each box is then refined into a tight binary mask by SAM~\cite{kirillov_segment_2023}, prompted with that box, and the largest external contour of the mask is traced and simplified into a pixel-space polygon $\{(x_l, y_l)\}$ describing the opening outline (Figure~\ref{fig:8_opening_detection}).
 
 
 Operating per fragment, in its canonical \gls{UV} orientation, keeps the detection robust: each wall is seen in isolation and upright, so the detector is not confused by adjacent surfaces or by the curvature of the original panorama. A small padding is applied to each detection so that window and door frames, which sit at the very edge of the detected box, are included in the subsequent cutout.
@@ -133,7 +133,7 @@ The union of all clipped triangles forms a new textured mesh containing only the
 \subsubsection{Dynamic Opening Construction}
 \label{sec:8_opening_dynamic}
 
-The cutout already carries the projected geometry of the opening, but its outer edge sits exactly on the wall plane, which would leave a gap when the element is moved or scaled. To make it behave as a real, movable opening, its outer perimeter is extruded back toward the wall so the edges meet the surface cleanly and the element gains the volume of a frame (Figure~\ref{fig:8_opening_dynamic}). A boolean bounding box is then built around this volume and used to procedurally remove the part of the wall it intersects: rather than re-meshing the wall, the intersection is carved at render time through a screen-space stencil-buffer boolean~\cite{hecomi_screenspaceboolean_2018}, which keeps the operation interactive and free of geometric artefacts as the opening is moved or resized. Finally, the opening is 27-sliced~\cite{deftly_27_2021} using user-defined boundaries that can be placed to follow the framing and glazing, so that resizing stretches only the panes and infill while the frame keeps its real thickness, matching how a physical window or door scales.
+The cutout already carries the projected geometry of the opening, but its outer edge sits exactly on the wall plane, which would leave a gap when the element is moved or scaled. To make it behave as a real, movable opening, its outer perimeter is extruded back toward the wall so the edges meet the surface cleanly and the element gains the volume of a frame (Figure~\ref{fig:8_opening_dynamic}). A boolean bounding box is then built around this volume and used to procedurally remove the part of the wall it intersects: rather than re-meshing the wall, the intersection is carved at render time through a screen-space stencil-buffer boolean, which keeps the operation interactive and free of geometric artefacts as the opening is moved or resized. Finally, the opening is 27-sliced~\cite{deftly_27_2021} using user-defined boundaries that can be placed to follow the framing and glazing, so that resizing stretches only the panes and infill while the frame keeps its real thickness, matching how a physical window or door scales.
 
 \begin{figure}[hbht]
  \centering
@@ -147,7 +147,7 @@ The cutout already carries the projected geometry of the opening, but its outer 
 \subsubsection{Wall Re-Reconstruction}
 \label{sec:8_wall_reinpaint}
 
-Because windows and doors are now treated as separate, movable elements, the wall must be complete underneath them so that an opening can be repositioned or removed without exposing a gap. The wall surface behind each opening is reconstructed as a flat region flush with the surrounding wall: rather than reproducing the recessed geometry of the original opening, which now lives entirely on the cutout, the patch is kept planar so it matches the neighbouring wall and floor surfaces. Its texture is completed with the same per-plane strategy used in Chapter~\ref{ch:6_Scene_Completion}: the opening polygons are rasterised into an alpha mask on the wall texture, marking the opening interior as the region to fill, and the masked texture is completed by LaMa~\cite{suvorov_resolution-robust_2022} so that the wall continues plausibly behind the removed opening (Figure~\ref{fig:8_wall_reinpaint}). The wall mesh is closed across the hole using the same constrained triangulation as in Chapter~\ref{ch:6_Scene_Completion}, leaving a continuous structural surface with the opening represented as an independent overlay on top of it.
+Because windows and doors are now treated as separate, movable elements, the wall must be complete underneath them so that an opening can be repositioned or removed without exposing a gap. The wall surface behind each opening is reconstructed as a flat region in the same plane as the surrounding wall: rather than reproducing the recessed geometry of the original opening, which now lives entirely on the cutout, the patch is kept planar so it matches the neighbouring wall and floor surfaces. Its texture is completed with the same per-plane strategy used in Chapter~\ref{ch:6_Scene_Completion}: the opening polygons are rasterised into an alpha mask on the wall texture, marking the opening interior as the region to fill, and the masked texture is completed by LaMa~\cite{suvorov_resolution-robust_2022} so that the wall continues plausibly behind the removed opening (Figure~\ref{fig:8_wall_reinpaint}). The wall mesh is closed across the hole using the same constrained triangulation as in Chapter~\ref{ch:6_Scene_Completion}, leaving a continuous structural surface with the opening represented as an independent overlay on top of it.
 
 \begin{figure}[hbht]
  \centering
@@ -185,7 +185,7 @@ Depending on the completion method of Chapter~\ref{ch:7_Object_Completion}, each
  \label{fig:8_decomposition}
 \end{wrapfigure}
 
-Part segmentation is performed first on the completed mesh, because it produces an extra per-voxel attribute that is stored in the \gls{CSDF} alongside geometry and colour. The mesh is decomposed into approximately convex components using CoACD~\cite{wei_approximate_2022}, which recursively cuts the mesh with planes selected through a tree search that minimises a collision-aware concavity metric (Figure~\ref{fig:8_decomposition}). Adjacent components are merged where their union remains convex, reducing redundant cuts. Because the decomposition is purely geometric, it generalises to arbitrary reconstructed objects without relying on a class label, at the cost of parts that do not always coincide with semantic components~\cite{vermandere_adaptive_2026}.
+Part segmentation is performed first on the completed mesh, because it produces an extra per-voxel attribute that is stored in the \gls{CSDF} alongside geometry and colour. The mesh is decomposed into approximately convex components using CoACD~\cite{wei_approximate_2022}, which recursively cuts the mesh with planes selected through a tree search that minimises a collision-aware concavity metric (Figure~\ref{fig:8_decomposition}). Adjacent components are merged where their union remains convex, reducing redundant cuts. Because the decomposition is purely geometric, it generalises to arbitrary reconstructed objects without relying on a class label, at the cost of parts that do not always coincide with semantic components.
 
 
 
@@ -234,17 +234,7 @@ Within the scaling zone, a new voxel grid is allocated at the target extent and 
  \label{fig:8_interpolation}
 \end{figure}
 
-The signed distance and colour are continuous quantities and are interpolated linearly along the scaling axis. For two samples at positions $x_1$ and $x_2$, the value at an intermediate position $x$ is
-
-\[
-f(x)_\text{sdf} = f(x_1)_\text{sdf} + \frac{x - x_1}{x_2 - x_1}\,\big(f(x_2)_\text{sdf} - f(x_1)_\text{sdf}\big),
-\]
-
-\[
-\mathbf{C}(x) = \mathbf{C}_1 + \frac{x - x_1}{x_2 - x_1}\,(\mathbf{C}_2 - \mathbf{C}_1).
-\]
-
-To limit computation and memory, interpolation is restricted to voxels near the surface, and the signed distance is locally re-evaluated after interpolation so that the zero level set remains consistent and free of discontinuities.
+The signed distance and colour are continuous quantities and are interpolated linearly along the scaling axis. To limit computation and memory, interpolation is restricted to voxels near the surface, and the signed distance is locally re-evaluated after interpolation so that the zero level set remains consistent and free of discontinuities.
 
 The part index $i$ is discrete and cannot be interpolated. Instead, the boundary between two adjacent parts is located along the scaling axis at the position where the index changes and the surface is closest, so that part transitions are preserved through the deformation rather than blurred:
 
@@ -293,6 +283,11 @@ The dynamified openings and objects are placed back into the completed environme
 
 All three element classes are manipulated interactively from this interface. The primary structure is reshaped by dragging individual walls forward or backward, which extends the floor, ceiling and adjoining walls to follow. The secondary openings can be translated across their wall and resized through their 27-sliced frame. The tertiary objects can be repositioned and selectively scaled through the start, end and destination planes of their scaling zones. Every operation provides immediate visual feedback, turning the static reconstruction into an editable digital environment.
 
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{User Interface}
+\label{sec:8_ui}
+ 
+The scene is presented in the same layout as it was captured, but now populated with the dynamic openings and objects rather than static geometry. Each element can be edited individually. Selecting an object exposes visual gizmos for the direct manipulations, such as the handles that translate a wall, drag an opening across its surface or move the scaling planes of an object, so that the deformation can be performed by dragging directly in the 3D view. Alongside the gizmos, the same operations are available as definable parameters, letting a target wall position, opening size or scaling factor be entered as an exact value when precision matters. Combining direct gizmo manipulation with numeric parameters makes both quick rearrangement and precise editing possible within a single interface.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Experiments}

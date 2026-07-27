@@ -72,7 +72,7 @@ Early approaches to object completion do not predict the missing geometry, but \
 Point-based methods operate directly on a fixed-size point cloud. Point-Voxel Diffusion~\cite{zhou_3d_2021} predicts the complete shape through a 3D diffusion process, and IF-Net~\cite{chibane_implicit_2020} uses implicit features extracted from the partial point cloud to predict occupancy at arbitrary query positions. These models recover the broad shape reliably but lose fine detail in dense regions and struggle with large missing parts, because the point representation does not encode a continuous surface and the partial sampling drops fine features along with the missing geometry.
 
 % Paragraph purpose: voxelised distance-field methods + AutoSDF figure
-Voxelised distance-field methods convert the partial geometry to an SDF or, for non-watertight scans, a UDF, both defined in Chapter~\ref{ch:background}, and complete the field on a regular voxel grid. AutoSDF~\cite{mittal_autosdf_2022} learns a discrete autoregressive prior over voxelised SDF grids using a \gls{VQ-VAE} and predicts the missing voxels conditioned on the observed ones (Figure~\ref{fig:7_autosdf}). SDFusion~\cite{cheng_sdfusion_2023} extends this with multimodal conditioning such as text or images, and DiffComplete~\cite{chu_diffcomplete_2023} reformulates the problem as a diffusion process. PatchComplete~\cite{rao_patchcomplete_2022} and ShapeFormer~\cite{yan_shapeformer_2023} use multi-resolution patch priors and a sparse vector-quantised implicit representation respectively to improve generalisation to unseen categories. XCube~\cite{ren_xcube_2023} scales the same idea to large scenes through a hierarchical sparse voxel latent diffusion model. The Interactive Voxel Editor of~\cite{wegen_interactive_2022} adds a complementary contribution: it shows that the voxel-level mask of the to-be-completed region can be edited by hand in a 3D interface, which is the workflow followed in~\cite{vermandere_guided_2025}.
+Voxelised distance-field methods convert the partial geometry to an SDF or, for non-watertight scans, a UDF, both defined in Chapter~\ref{ch:background}, and complete the field on a regular voxel grid. AutoSDF~\cite{mittal_autosdf_2022} learns a discrete autoregressive prior over voxelised SDF grids using a Vector-Quantised Variational Auto-Encoder (\gls{VQ-VAE}) and predicts the missing voxels conditioned on the observed ones (Figure~\ref{fig:7_autosdf}). SDFusion~\cite{cheng_sdfusion_2023} extends this with multimodal conditioning such as text or images, and DiffComplete~\cite{chu_diffcomplete_2023} reformulates the problem as a diffusion process. PatchComplete~\cite{rao_patchcomplete_2022} and ShapeFormer~\cite{yan_shapeformer_2023} use multi-resolution patch priors and a sparse vector-quantised implicit representation respectively to improve generalisation to unseen categories. XCube~\cite{ren_xcube_2023} scales the same idea to large scenes through a hierarchical sparse voxel latent diffusion model. The Interactive Voxel Editor of~\cite{wegen_interactive_2022} adds a complementary contribution: it shows that the voxel-level mask of the to-be-completed region can be edited by hand in a 3D interface, which is the workflow followed in~\cite{vermandere_guided_2025}.
 
 \begin{figure}[hbht]
  \centering
@@ -162,7 +162,7 @@ The refined oriented bounding box of each object is divided into a $64^3$ voxel 
 
 \paragraph{To-be-completed voxel mask.}
 % Motivation: prior workflows required manual or symmetry-based mask; the occlusion grid removes this need
-In earlier voxel-based completion workflows, the to-be-completed mask had to be defined either by extending the bounding box past the observed surface~\cite{mittal_autosdf_2022} or by hand-picking voxels in a 3D editor~\cite{wegen_interactive_2022, vermandere_guided_2025}. Both options require an extra step that is either coarse or labour-intensive. The per-object occlusion grid produced by the voxelised ray marching of Chapter~\ref{ch:5_Scene_Segmentation} solves this problem directly: every voxel inside the bounding box has already been classified as observed-empty, occupied or occluded, and the occluded voxels are exactly the regions where geometry could still be hidden. A voxel is therefore added to the completion set if its label is \textit{occluded} and it is not already occupied by observed surface. If the occlusion grid was computed at a different resolution from the AutoSDF grid, it is resampled to $64^3$ through nearest-neighbour upsampling so that the two grids align voxel-for-voxel. Because the occlusion grid was computed inside the oriented bounding box rather than along the world axes, the resulting mask is automatically aligned with the object's principal axes.
+In earlier voxel-based completion workflows, the to-be-completed mask had to be defined either by extending the bounding box past the observed surface~\cite{mittal_autosdf_2022} or by hand-picking voxels in a 3D editor~\cite{wegen_interactive_2022, vermandere_guided_2025}. Both options require an extra step that is either coarse or labour-intensive. The per-object occlusion grid produced by the voxelised ray marching of Chapter~\ref{ch:5_Scene_Segmentation} solves this problem directly: every voxel inside the object-level refined bounding box has already been classified as observed-empty, occupied or occluded, and the occluded voxels are exactly the regions where geometry could still be hidden. A voxel is therefore added to the completion set if its label is \textit{occluded} and it is not already occupied by observed surface. If the occlusion grid was computed at a different resolution from the AutoSDF grid, it is resampled to $64^3$ through nearest-neighbour upsampling so that the two grids align voxel-for-voxel. Because the occlusion grid was computed inside the oriented bounding box rather than along the world axes, the resulting mask is automatically aligned with the object's principal axes.
 
 
 % ── 7.3.2 ────────────────────────────────────────────────────────────────────
@@ -205,7 +205,7 @@ The texture pipeline runs in parallel with the geometry completion of Section~\r
 Material segmentation is performed on the partial input mesh. The goal of the step is to label every observed face with a material index, which the later steps then use to isolate the texture per material.
 
 % UV unwrapping substep on the partial mesh
-The partial mesh is first re-unwrapped on a part-aware UV layout, because the scattered UV charts of typical scanned meshes confuse the segmentation by placing visually distinct material regions next to each other in 2D. To avoid this, the partial mesh is decomposed into nearly convex parts with \gls{COACD}~\cite{wei_approximate_2022} (Figure~\ref{fig:7_coacd}). Each part is geometrically simple enough to be unwrapped without large distortion, so a standard \gls{ABF} unwrap~\cite{maggiordomo_texture_2021} produces a chart in which faces that are adjacent on the 3D part remain adjacent in the UV image. Combined across all parts, the result is a semantic UV layout~\cite{vermandere_semantic_2024} that preserves the spatial proximity of the partial mesh.
+The partial mesh is first re-unwrapped on a part-aware UV layout, because the scattered UV charts of typical scanned meshes confuse the segmentation by placing visually distinct material regions next to each other in 2D. To avoid this, the partial mesh is decomposed into convex parts with \gls{COACD}~\cite{wei_approximate_2022} (Figure~\ref{fig:7_coacd}). Each part is geometrically simple enough to be unwrapped without large distortion, so a standard \gls{ABF} unwrap~\cite{maggiordomo_texture_2021} produces a chart in which faces that are adjacent on the 3D part remain adjacent in the UV image. Combined across all parts, the result is a semantic UV layout~\cite{vermandere_semantic_2024} that preserves the spatial proximity of the partial mesh.
 
 % Segmentation + grouping substep on the partial UV
 The re-unwrapped partial texture is then segmented into patches using SAM~\cite{kirillov_segment_2023}, which produces a large set of disjoint regions that share visual similarity but does not yet group them by material. Patches that belong to the same material are grouped through the cosine similarity of EfficientNet~\cite{tan_efficientnet_2019} features:
@@ -217,7 +217,7 @@ The re-unwrapped partial texture is then segmented into patches using SAM~\cite{
     \end{gathered}
 \end{equation}
 
-To ensure maximum visual separation, the similarity threshold $t_c$ is tuned so that no more than eight groups remain, since each group is assigned a three-channel material index and can therefore carry $2^3 = 8$ labels. The boundaries of each group are baked into the partial mesh as new edges so that every face of the partial mesh carries a single material index.
+To ensure maximum visual separation, the similarity threshold $t_c$ is tuned so that no more than eight groups remain, since each group is assigned a three-channel material index and can therefore carry $2^3 = 8$ labels. The boundaries of each group are baked into the partial mesh as new edges so that every face of the partial mesh carries a single material index (Figure \ref{fig:7_material_segmentation}).
 
 \begin{figure}[hbht]
  \centering
@@ -230,9 +230,9 @@ To ensure maximum visual separation, the similarity threshold $t_c$ is tuned so 
 % Motivation: this is where the parallel tracks meet; first transfer the observed indices, then extend them with IF-Net.
 At this point both parallel tracks have produced their intermediate output: the geometry track has delivered the completed mesh of Section~\ref{sec:7_voxel_geom}, and the segmentation track has delivered the partial mesh labelled with per-face material indices. They are joined in two stages.
 
-First, the material indices are transferred from the partial mesh onto the completed mesh through a 3D-to-3D correspondence. For each face on the completed mesh, the closest face on the partial mesh is found through a k-d tree query: when this closest face lies within a distance threshold (one voxel of $\mathbf{G}$), its material index is copied over; otherwise the face is marked as unlabelled. This populates roughly the half of the completed mesh that came from the original observation, and leaves the AutoSDF-generated half empty.
+First, the material indices are transferred from the partial mesh onto the completed mesh through a 3D-to-3D correspondence. For each face on the completed mesh, the closest face on the partial mesh is found through a k-d tree query: when this closest face lies within a distance threshold (one voxel of $\mathbf{G}$), its material index is copied over. The rest of the faces are marked as unlabelled.
 
-Second, the unlabelled half is filled in by IF-Net~\cite{chibane_implicit_2021}. Material indices are coarser than the eventual texture: they only need to identify which group a face belongs to, not what its colour is. A per-vertex prediction is therefore sufficient, and the resolution limitation that made IF-Net unsuitable for full texture recovery does not affect material indices. The labelled half of the completed mesh is sampled as a coloured point cloud where each point carries its material index colour, voxelised at the AutoSDF resolution, and passed through the IF-Net encoder. The decoder then predicts the material index at every query point, extending the observed labelling onto the previously unseen regions. The output of this step is the completed mesh with a full per-face material index map.
+Second, the unlabelled faces are filled in by IF-Net~\cite{chibane_implicit_2021} (Figure \ref{fig:7_material_prediction}). Material indices are coarser than the eventual texture: they only need to identify which group a face belongs to, not what its colour is. A per-vertex prediction is therefore sufficient, and the resolution limitation that made IF-Net unsuitable for full texture recovery does not affect material indices. The labelled faces of the completed mesh are sampled as a coloured point cloud where each point carries its material index colour, voxelised at the AutoSDF resolution, and passed through the IF-Net encoder. The decoder then predicts the material index at every query point, extending the observed labelling onto the previously unseen regions. The output of this step is the completed mesh with a full per-face material index map.
 
 \begin{figure}[hbht]
  \centering
@@ -243,7 +243,14 @@ Second, the unlabelled half is filled in by IF-Net~\cite{chibane_implicit_2021}.
 
 \paragraph{Texture inpainting.}
 % Motivation: now that material indices live on the completed mesh, transfer the partial texture, re-unwrap the completed mesh on its own layout, and inpaint per material.
-The final step transfers the original partial texture onto the completed mesh and fills in the missing pixels material by material. The partial texture is first mapped to the completed mesh through the same 3D-to-3D correspondence that was used to transfer the material indices, so that each face on the completed mesh inherits the partial texture's colour from its closest matching partial face and the AutoSDF-generated regions remain empty.
+The final step transfers the original partial texture onto the completed mesh and fills in the missing pixels material by material (Figure \ref{fig:7_object_inpainting}). The partial texture is first mapped to the completed mesh through the same 3D-to-3D correspondence that was used to transfer the material indices, so that each face on the completed mesh inherits the partial texture's colour from its closest matching partial face and the AutoSDF-generated regions remain empty.
+
+\begin{figure}[hbht]
+ \centering
+ \includegraphics[width=1\textwidth]{Object_inpainting}
+ \caption[Per-material texture inpainting]{Per-material texture inpainting: the completed mesh with the partial texture and material indices transferred onto it (left); the new UV layout produced by re-unwrapping the completed mesh with \gls{COACD} (top centre) before per-material patch-based quilting (bottom centre); the final fully textured completed mesh (right).}
+ \label{fig:7_object_inpainting}
+\end{figure}
 
 % Second COACD application, this time on the completed mesh.
 The completed mesh is then re-unwrapped on its own UV layout, again through \gls{COACD}~\cite{wei_approximate_2022} followed by \gls{ABF}~\cite{maggiordomo_texture_2021}, this time applied to the completed geometry rather than the partial one. The partial texture and the material indices are projected together into this new UV layout, so the per-material inpainter has both the reference appearance and the per-material mask aligned in the same 2D space.
@@ -258,12 +265,7 @@ In this new UV layout, the material indices act as masks that isolate one materi
 \end{equation}
 with $e_{ij} = f(B_i, B_j)$ the boundary cost between blocks $B_i$ and $B_j$. Each material is inpainted independently, which keeps the boundaries sharp and prevents textures from one material bleeding into another. The result is a fully textured completed mesh.
 
-\begin{figure}[hbht]
- \centering
- \includegraphics[width=1\textwidth]{Object_inpainting}
- \caption[Per-material texture inpainting]{Per-material texture inpainting: the completed mesh with the partial texture and material indices transferred onto it (left); the new UV layout produced by re-unwrapping the completed mesh with \gls{COACD} (top centre) before per-material patch-based quilting (bottom centre); the final fully textured completed mesh (right).}
- \label{fig:7_object_inpainting}
-\end{figure}
+
 
 
 % ── 7.3.4 ────────────────────────────────────────────────────────────────────
@@ -273,19 +275,18 @@ with $e_{ij} = f(B_i, B_j)$ the boundary cost between blocks $B_i$ and $B_j$. Ea
 % Motivation for the evaluation choice: AutoSDF was trained on ShapeNet; standard furniture is in-distribution. Real shortcomings only become visible on categories outside that prior, so an industrial dataset is used in addition to Matterport.
 The voxel-based method is evaluated on two datasets: a qualitative evaluation on Matterport3D~\cite{chang_matterport3d_2017} to illustrate the typical performance on in-distribution scanned furniture, and a quantitative evaluation on the industrial object dataset introduced in Chapter~\ref{ch:3_Data_Acquisition} to expose how the method behaves outside the AutoSDF training prior.
 
-\begin{figure}[H]
+\paragraph{Qualitative results on Matterport3D.}
+% Show first: the per-stage figure, then a discussion grounded in observations from each row.
+Figure~\ref{fig:7_voxel_matterport} stacks the per-stage outputs of the voxel pipeline for four representative Matterport objects, with each row corresponding to one intermediate result of Sections~\ref{sec:7_voxel_geom}--\ref{sec:7_voxel_texture}: the partial input mesh, the AutoSDF-completed geometry, the completed material indices in 3D, the UV layout with the projected partial texture and the per-material inpainting mask, the inpainted texture, and the final fully textured mesh.
+ 
+\begin{figure}[hbht]
  \centering
  \vspace{-10pt}
  \includegraphics[width=0.9\textwidth]{Object_voxel_completion_matterport_experiments}
  \caption[Voxel-based object completion on Matterport3D]{Per-stage results of the voxel-based completion on four representative Matterport3D~\cite{chang_matterport3d_2017} objects. From top to bottom: partial input mesh, AutoSDF-completed geometry, completed material indices in 3D, UV layout with the projected partial texture and per-material inpainting mask, inpainted texture, and final textured mesh.}
  \label{fig:7_voxel_matterport}
- \vspace{-20pt}
 \end{figure}
 
-\paragraph{Qualitative results on Matterport3D.}
-% Show first: the per-stage figure, then a discussion grounded in observations from each row.
-Figure~\ref{fig:7_voxel_matterport} stacks the per-stage outputs of the voxel pipeline for four representative Matterport objects, with each row corresponding to one intermediate result of Sections~\ref{sec:7_voxel_geom}--\ref{sec:7_voxel_texture}: the partial input mesh, the AutoSDF-completed geometry, the completed material indices in 3D, the UV layout with the projected partial texture and the per-material inpainting mask, the inpainted texture, and the final fully textured mesh.
- 
 % Geometry observations
 The second row shows that AutoSDF predicts large missing regions consistently and returns clean, dense meshes with well-defined boundaries, even on objects whose ground truth covers only a fraction of the volume. The same row also shows the cost: fine surface detail is smoothed out by the $64^3$ voxelisation, and originally observed parts of the mesh are slightly altered by the \gls{VQ-VAE} encoding even though they were never marked as to-be-completed~\cite{vermandere_geometry_2025}. The candidate selection of Section~\ref{sec:7_voxel_geom} mitigates the latter by retaining the variant that lies closest to the partial surface.
  
@@ -301,7 +302,7 @@ The fourth and fifth rows show the per-material inpainting at work. Well-scanned
  
 \paragraph{Quantitative evaluation on industrial objects.}
 % Introduce the experiment without re-introducing the dataset (it was already described in Chapter 3).
-The industrial object dataset of Chapter~\ref{ch:3_Data_Acquisition} provides a controlled regime to test the method on categories that lie outside the AutoSDF training prior. AutoSDF is first fine-tuned on the synthetic counterpart of the dataset for 399 epochs~\cite{decrocq_voxel_2025}, then evaluated separately on the synthetic objects and on the real scans of the same categories. The synthetic regime measures whether the network can learn the industrial classes at all when given clean inputs, the real regime measures whether the result transfers to scanned data.
+The industrial object dataset of Chapter~\ref{ch:3_Data_Acquisition} provides a controlled regime to test the method on categories that lie outside the AutoSDF training prior. AutoSDF is first fine-tuned on the synthetic counterpart of the dataset for 399 epochs, then evaluated separately on the synthetic objects and on the real scans of the same categories. The synthetic regime measures whether the network can learn the industrial classes at all when given clean inputs, the real regime measures whether the result transfers to scanned data.
  
 \begin{table}[h]
     \centering
@@ -325,7 +326,7 @@ The industrial object dataset of Chapter~\ref{ch:3_Data_Acquisition} provides a 
 On the synthetic counterpart of the dataset (Table~\ref{tab:7_industrial}), the IoU sits in the $60$--$75\,\%$ range expected for SDF-based completion methods on their own training distribution~\cite{rao_patchcomplete_2022, chu_diffcomplete_2023}, and performance degrades only when more than $70\,\%$ of the volume must be predicted from less than $30\,\%$ of observed geometry. Round objects benefit most from fine-tuning because their surfaces are smoother and more predictable than the bends and fittings of rectangular pipework, while rectangular pipes drop more sharply at the highest completeness intervals because their right-angle features are easily perturbed by the latent-code substitution.
  
 % Real-scan results: pipes
-On the real scanned pipe segments, the synthetic numbers do not transfer. Figure~\ref{fig:7_voxel_pipe_industrial} shows the typical failure mode: the bottom half of the input is reproduced more or less correctly, but the upper half, which the network must predict, is replaced by recognisable fragments of furniture from the ShapeNet prior, such as chair backs or sofa shapes for the round-rectangular junctions, and a small aeroplane fuselage for the long straight rectangular pipe. The fine-tuning was not enough to override the dominant prior, and the network falls back to the closest categories it knows whenever the partial input is ambiguous.
+On the real scanned pipe segments, the synthetic numbers do not transfer. Figure~\ref{fig:7_voxel_pipe_industrial} shows the typical failure mode: the bottom half of the input is reproduced more or less correctly, but the upper half, which the network must predict, is replaced by recognisable fragments of furniture from the ShapeNet prior, such as chair backs or sofa shapes for the round-rectangular junctions, and a small aeroplane fuselage for the long straight rectangular pipe. The fine-tuning did not suffice to override the dominant prior, and the network falls back to the closest categories it knows whenever the partial input is ambiguous.
  
 \begin{figure}[hbht]
  \centering
@@ -449,7 +450,7 @@ The completed and textured object is generated in the canonical frame used by Hu
 \label{sec:7_image_exp}
 
 % Motivation for the eval choice: V-Scan provides ground truth for the quantitative numbers; Matterport mirrors the voxel-based figure so the two methods can be compared directly.
-The image-based method is evaluated on two datasets: a quantitative evaluation on the synthetic V-Scan dataset of Chapter~\ref{ch:3_Data_Acquisition}~\cite{vermandere_synthetic_2026} to measure reconstruction fidelity against ground-truth geometry and texture, and a qualitative evaluation on Matterport3D~\cite{chang_matterport3d_2017} that mirrors the per-stage layout of Figure~\ref{fig:7_voxel_matterport} so the two methods can be compared directly.
+The image-based method is evaluated on two datasets: a quantitative evaluation on the synthetic V-Scan dataset of Chapter~\ref{ch:3_Data_Acquisition} to measure reconstruction fidelity against ground-truth geometry and texture, and a qualitative evaluation on Matterport3D~\cite{chang_matterport3d_2017} that mirrors the per-stage layout of Figure~\ref{fig:7_voxel_matterport} so the two methods can be compared directly.
 
 
 \paragraph{Quantitative evaluation on V-Scan.}

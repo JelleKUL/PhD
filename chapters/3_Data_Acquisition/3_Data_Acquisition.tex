@@ -10,6 +10,14 @@
 \newglossaryentry{TSDF}{name={TSDF}, description={Truncated Signed Distance Field}}
 \newglossaryentry{OBB}{name={OBB}, description = {Oriented Bounding Box}}
 
+%- Paper references for this chapter
+\definecolor{shadecolor}{gray}{0.9}
+\markerlessfootnote{
+	\begin{shaded}
+		Parts of this chapter's content were previously published in \cite{vermandere_synthetic_2026}.
+	\end{shaded}
+}
+
 % ─────────────────────────────────────────────────────────────────────────────
 
 \section{Introduction}
@@ -47,7 +55,7 @@ This chapter establishes the data on which every subsequent stage of the pipelin
  
 % Paragraph 2 — Problem statement (expanded: the data gap)
 No single existing dataset satisfies these requirements simultaneously. Real-world scene datasets such as ScanNet~\cite{dai_scannet_2017} and Matterport3D~\cite{chang_matterport3d_2017} provide richly annotated indoor environments, but the occluded surfaces that completion methods must reconstruct are by definition absent from the captured data, preventing direct supervised evaluation of completion quality. Synthetic scene datasets such as SUNCG~\cite{song_semantic_2016} and Replica~\cite{straub_replica_2019} can provide complete geometry, but they deliver idealised outputs rather than sensor-dependent partial observations, omitting the noise, density variation and viewpoint-specific occlusion patterns that real scanners produce. At object level, ShapeNet~\cite{chang_shapenet_2015} offers scale and diversity but consists of CAD models that bear little resemblance to scanned data, while real scanned repositories such as Redwood~\cite{choi_large_2016} remain limited in size and category coverage.
- 
+
 An additional gap exists for the alignment and updating stage. Evaluating multi-temporal registration requires repeated captures of the same environment across time and across sensing technologies, yet most public datasets capture each scene only once and with a single device. Datasets that do provide temporal variation, such as 3RScan~\cite{wald_rio_2019}, use a single sensor type, while multi-sensor datasets such as ScanNet++ capture at a single time point. No public resource combines both axes of variation. Finally, industrial object categories such as piping, ductwork and storage vessels are absent from most standard benchmarks, leaving a blind spot in object completion evaluation for AECO applications.
  
 % Paragraph 3 — Scope and contribution

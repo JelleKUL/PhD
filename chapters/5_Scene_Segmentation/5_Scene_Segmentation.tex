@@ -50,7 +50,6 @@ Despite these advances, all of these methods detect objects based on the geometr
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Symmetry Detection}
 \label{sec:5_rw_symmetry}
-\todo{het doel van de Symmetry detection uitleggen: symmetry detection can be used to find the center axis of (partially) observed objects, which can be used to refine the bounding box orientation and extent to also include the hidden parts. + add small symmetry detection image example}
 Symmetry detection in 3D shapes provides geometric cues that can be used to infer the orientation, centre and spatial extent of partially observed objects. Most manufactured indoor objects exhibit at least one axis of symmetry due to design and manufacturing constraints, making symmetry a useful prior for bounding box refinement.
 
 For complete objects, PRS-Net~\cite{gao_prs-net_2019} employs an unsupervised 3D convolutional neural network to discover global planar reflective symmetry. However, complete geometry is rarely available for scanned objects. Partial symmetry detection is more challenging because there is no guarantee that symmetrical features will be captured. Mitra et al.~\cite{mitra_partial_2006} developed an early algorithm based on matching local shape signatures and accumulating evidence in transformation space, handling both partial and approximate symmetry. Sipiran et al.~\cite{sipiran_approximate_2014} improved upon this with a vote-based approach specifically targeting partial 3D meshes with large missing parts, using heat-diffusion-based surface functions and a partiality-aware voting scheme to reduce false positives. SymmetryNet~\cite{shi_symmetrynet_2020} requires only a single RGB-D input to discover symmetry planes using an unsupervised learning approach. Among these, the method by Sipiran et al. is most suited to the present setting because it operates directly on partial meshes without requiring training data or complete references, making it applicable to arbitrary scanned objects.
@@ -68,7 +67,6 @@ For indoor environments specifically, several works exploit the structural regul
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Occlusion Detection}
 \label{sec:5_rw_occlusion}
-\todo{include an image to illustrate this better}
 Chen et al.~\cite{chen_dynamic_2016} proposed a dynamic occlusion detection and inpainting method for sequential terrestrial laser scanning point clouds. Their approach constructs stationary background models using laser reflectance intensity and geometrical attributes across a TLS sequence, achieving high precision and recall but requiring multiple sequential scans from the same position.
 
 Nikoohemat et al.~\cite{nikoohemat_change_2018} demonstrate the value of the scanner trajectory for occlusion reasoning in indoor mobile laser scanning. By using the trajectory as a set of scanner positions, gaps can be discriminated from real openings in the data, and a voxel-based method can be applied for labelling navigable space.
@@ -285,7 +283,6 @@ The detection is evaluated using precision, recall and IoU between predicted and
 \subsubsection{Results}
 
 Table~\ref{tab:5_detection_results} reports the per-class detection results across 200 scenes from the V-Scan dataset.
-\todo{Waarschijnlijk een fout ergens in de configuratie, de resultaten zijn ad hoc wel veel beter, Rerun experiments with better parameters to improve results}
 \begin{table}[h]
     \centering
     \caption[Object detection results per environment type]{Object detection results per V-Scan environment type at IoU threshold 0.5. Precision, recall and IoU are averaged over all scenes within each class.}
@@ -294,27 +291,24 @@ Table~\ref{tab:5_detection_results} reports the per-class detection results acro
         \toprule
         \textbf{Environment} & \textbf{Scans} & \textbf{Precision} & \textbf{Recall} & \textbf{Avg IoU} \\
         \midrule
-        Industrial   & 100 & 0.275 & 0.364 & 0.539 \\
-        Office       &  40 & 0.413 & 0.583 & 0.516 \\
-        Bedroom      &  20 & 0.297 & 0.681 & 0.437 \\
-        Dining room  &  20 & 0.300 & 0.511 & 0.506 \\
-        Living room  &  20 & 0.306 & 0.678 & 0.497 \\
+        Industrial   & 100 & 0.439 & 0.387 & 0.536 \\
+        Office       &  40 & 0.598 & 0.647 & 0.527 \\
+        Bedroom      &  20 & 0.612 & 0.870 & 0.454 \\
+        Dining room  &  20 & 0.521 & 0.616 & 0.512 \\
+        Living room  &  20 & 0.426 & 0.794 & 0.519 \\
         \midrule
-        \textbf{Overall} & \textbf{200} & \textbf{0.310} & \textbf{0.485} & \textbf{0.517} \\
+        \textbf{Overall} & \textbf{200} & \textbf{0.495} & \textbf{0.551} & \textbf{0.522} \\
         \bottomrule
     \end{tabular}
 \end{table}
 
 \subsubsection{Analysis}
 
-The overall precision of 0.310 indicates that a substantial number of false positive detections occur across all environment types. This is partly expected, since the detector was originally trained on real-world datasets (ScanNet, SUN RGB-D) and applied here to synthetic V-Scan data, introducing a domain gap. Additionally, the over-detection tendency of VoteNet in densely furnished scenes, previously noted in~\cite{vermandere_guided_2025}, contributes to the lower precision despite the IoU-based merging of overlapping boxes.
+The overall precision of 0.495 indicates that roughly half of all predicted bounding boxes correspond to actual objects. The remaining false positives are partly expected, since the detector was originally trained on real-world datasets (ScanNet, SUN RGB-D) and applied here to synthetic V-Scan data, introducing a domain gap. Additionally, the over-detection tendency of VoteNet in densely furnished scenes, previously noted in~\cite{vermandere_guided_2025}, contributes to false positives despite the IoU-based merging of overlapping boxes. Precision is highest for bedrooms (0.612) and offices (0.598), where objects tend to be larger and more geometrically distinct, and lowest for living rooms (0.426) and industrial scenes (0.439), where smaller or more irregularly shaped objects lead to more spurious detections.
 
-Recall varies considerably across environment types. The bedroom and living room categories achieve the highest recall (0.681 and 0.678 respectively), which can be attributed to the presence of larger, more geometrically distinct objects such as beds, sofas and tables. The industrial environment shows the lowest recall (0.364), likely due to the presence of smaller or more irregularly shaped objects that are harder to detect from a single scan position.
+Recall varies across environment types. The bedroom and living room categories achieve the highest recall (0.870 and 0.794 respectively), which can be attributed to the presence of larger, more geometrically distinct objects such as beds, sofas and tables that are well represented in the detector's training data. The industrial environment shows the lowest recall (0.387), likely due to the presence of smaller or more irregularly shaped objects such as shelving units and equipment that differ substantially from the residential furniture the detector was trained on.
 
-The average IoU across all scenes is 0.517, indicating moderate spatial overlap between predicted and ground-truth bounding boxes. Since the ground-truth boxes correspond to the complete objects while the predicted boxes are fitted to the visible geometry, the IoU is inherently limited by the degree of occlusion in each scene.
-
-The effectiveness of the plane detection for bounding box refinement depends on the positioning of objects relative to the room structure. When an object is not positioned against a wall, the impact is minimal, as the only relevant plane is the floor. Since the initial detection bounding boxes are aligned with the global axis, and the floor is typically level, the bounding box aligns naturally with the floor. However, for objects positioned against a wall, especially when the walls do not align with the global orthogonal axis, the additional plane provides a clear initial alignment and physical boundary for the object~\cite{vermandere_guided_2025}.
-
+The average IoU across all scenes is 0.522, indicating moderate spatial overlap between predicted and ground-truth bounding boxes. Since the ground-truth boxes correspond to the complete objects while the predicted boxes are fitted to the visible geometry, the IoU is inherently limited by the degree of occlusion in each scene.
 
 
 
@@ -344,8 +338,6 @@ The effectiveness of the plane detection for bounding box refinement depends on 
 %        \bottomrule
 %    \end{tabular}
 %\end{table}
-\todo{Add bounding box refinement experiment: compare IoU before and after refinement using V-Scan ground-truth complete bounding boxes.}
-
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Symmetry Detection}
@@ -473,11 +465,11 @@ On an object level, Figure~\ref{fig:5_object_occlusion_examples} illustrates the
 
 This chapter presented the object isolation and occlusion detection methodology that bridges the gap between the aligned point cloud produced in Chapter~\ref{ch:4_Alignment_Updating} and the completion stages presented in Chapters~\ref{ch:6_Scene_Completion} and~\ref{ch:7_Object_Completion}.
 
-The object isolation pipeline begins with an iterative RANSAC-based plane segmentation that identifies and removes the structural elements of the scene, both to simplify the subsequent detection and to provide the physical boundary constraints needed for bounding box refinement. Object detection is then performed on the cleaned foreground point cloud using a VoteNet-based detector~\cite{qi_deep_2019}, achieving an overall precision of 0.310, recall of 0.485 and average IoU of 0.517 across 200 V-Scan scenes at an IoU threshold of 0.5. The detected bounding boxes are subsequently refined by combining approximate symmetry detection~\cite{sipiran_approximate_2014}, which identifies the primary axis with a mean angular error of $8.01^{\circ}$ and a 94.0\% detection rate on ShapeNet chairs, with the scene planes to construct oriented bounding boxes constrained by the physical boundaries of the room~\cite{vermandere_guided_2025, korman_latent_2018}.
+The object isolation pipeline begins with an iterative RANSAC-based plane segmentation that identifies and removes the structural elements of the scene, both to simplify the subsequent detection and to provide the physical boundary constraints needed for bounding box refinement. Object detection is then performed on the cleaned foreground point cloud using a VoteNet-based detector~\cite{qi_deep_2019}, achieving an overall precision of 0.495, recall of 0.551 and average IoU of 0.522 across 200 V-Scan scenes at an IoU threshold of 0.5. The detected bounding boxes are subsequently refined by combining approximate symmetry detection~\cite{sipiran_approximate_2014}, which identifies the primary axis with angular errors below $4^{\circ}$ and detection rates of at least 75\% across seven ShapeNet furniture categories, with the scene planes to construct oriented bounding boxes constrained by the physical boundaries of the room~\cite{vermandere_guided_2025, korman_latent_2018}.
 
 The occlusion detection uses voxelised ray marching from the known scanner positions to classify the scene volume into observed empty, occupied and occluded regions at both scene level and object level. The occlusion characterisation on the V-Scan dataset showed that the fraction of occluded volume varies substantially across and within environment types, ranging from 7.97\% for office scenes to 22.07\% for dining rooms, with high intra-class variability reflecting the strong dependence on furniture arrangement and scanner placement.
 
-Several limitations should be noted. The moderate detection precision (0.310) means that false positives are common, and missed detections propagate into all subsequent stages. The domain gap between the training data and the synthetic evaluation data likely contributes to this, and fine-tuning the detector or using more recent architectures could improve these results. The symmetry-based bounding box refinement assumes that objects exhibit at least one axis of symmetry, which holds for most manufactured indoor furniture but may not apply to irregular objects. While the primary axis is detected reliably, the secondary and tertiary axes show substantially lower detection rates, limiting the refinement for objects that require multiple axes for proper alignment. Finally, the voxel resolution in the occlusion detection introduces a trade-off between spatial precision and computational cost whose optimal setting depends on the scale and complexity of the scene.
+Several limitations should be noted. The detection precision of 0.495 means that roughly half of the predicted boxes are false positives, and missed detections (overall recall of 0.551) propagate into all subsequent stages. The domain gap between the training data and the synthetic evaluation data likely contributes to this, and fine-tuning the detector or using more recent architectures could improve these results. The symmetry-based bounding box refinement assumes that objects exhibit at least one axis of symmetry, which holds for most manufactured indoor furniture but may not apply to irregular objects. While the primary axis is detected reliably across all tested categories, the secondary and tertiary axes show higher angular errors, limiting the refinement for objects that require multiple axes for proper alignment. Finally, the voxel resolution in the occlusion detection introduces a trade-off between spatial precision and computational cost whose optimal setting depends on the scale and complexity of the scene.
 
 Despite these limitations, the outputs of this chapter provide the structured inputs required for the parallel completion stages. The scene-level occlusion grid informs Chapter~\ref{ch:6_Scene_Completion} about where environmental reconstruction is needed, while the per-object occlusion grids and refined bounding boxes provide Chapter~\ref{ch:7_Object_Completion} with the spatial context and geometric priors necessary for plausible object reconstruction.
 
