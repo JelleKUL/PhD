@@ -73,17 +73,18 @@ The objects of Chapter~\ref{ch:7_Object_Completion} are completed as \glspl{SDF}
 
 The dynamification is organised into a scene-level stage and an object-level stage. The scene-level stage (Section~\ref{sec:8_scene}, Figure~\ref{fig:8_method_scene_overview}) reopens the closed structural shell by detecting windows and doors, separating them as dynamic elements and reconstructing the surface behind them. The object-level stage (Section~\ref{sec:8_object}, Figure~\ref{fig:8_method_object_overview}) converts each completed object into a \gls{CSDF}, decomposes it into convex parts, and scales user-defined regions of the field. The recombination of both into a single interactive scene is described in Section~\ref{sec:8_recombination}.
 
+\begin{figure}[hbht]
+ \centering
+ \vspace{-10pt}
+ \includegraphics[width=1\textwidth]{Scene_dynamification_scene_method}
+ \caption[Scene dynamification pipeline]{Overview of the scene-level dynamification. Each opening is detected in the flattened wall texture, cut out as a separate surface, constructed into a dynamic framed element, and the wall behind it is reconstructed and re-inpainted.}
+\vspace{-30pt}
+ \label{fig:8_method_scene_overview}
+\end{figure}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Scene Dynamification}
 \label{sec:8_scene}
-
-\begin{figure}[hbht]
- \centering
- \includegraphics[width=1\textwidth]{Scene_dynamification_scene_method}
- \caption[Scene dynamification pipeline]{Overview of the scene-level dynamification. Each opening is detected in the flattened wall texture, cut out as a separate surface, constructed into a dynamic framed element, and the wall behind it is reconstructed and re-inpainted.}
- \label{fig:8_method_scene_overview}
-\end{figure}
 
 The scene completion of Chapter~\ref{ch:6_Scene_Completion} reconstructs each room as a set of closed walls whose surface is projected onto the scanned points, so a window or door is reconstructed with the geometry of the wall plane fitted to its surrounding points and is distinguishable only by its texture. Scene dynamification recovers these openings as independent, manipulable geometry. Each opening is detected in the wall texture and cut out as a separate surface, which therefore already carries the projected geometry of the opening. It is then turned into a dynamic element with its own frame and panels, and the wall surface behind it is reconstructed as a flat plane so that the structural shell stays complete (Figure~\ref{fig:8_method_scene_overview}).
 
@@ -157,10 +158,6 @@ Because windows and doors are now treated as separate, movable elements, the wal
 \end{figure}
 
 
-% ─────────────────────────────────────────────────────────────────────────────
-\subsection{Object Dynamification}
-\label{sec:8_object}
-
 \begin{figure}[h]
  \centering
  \vspace{-10pt}
@@ -169,6 +166,10 @@ Because windows and doors are now treated as separate, movable elements, the wal
  \label{fig:8_method_object_overview}
 \vspace{-10pt}
 \end{figure}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Object Dynamification}
+\label{sec:8_object}
 
 Depending on the completion method of Chapter~\ref{ch:7_Object_Completion}, each completed object arrives either as a textured mesh or as a mesh extracted from a completed \gls{SDF} with a texture applied. Object dynamification first brings both forms into a single deformable representation, the \gls{CSDF}, then turns it into a part-aware, selectively scalable field through convex decomposition, scaling-zone definition, joint interpolation, and, for large deformations, repetition of modular parts (Figure~\ref{fig:8_method_object_overview}).
 
@@ -210,9 +211,9 @@ The completed mesh, its texture and its part labels are unified into a single \g
 \subsubsection{Scaling-Zone Definition}
 \label{sec:8_scaling_zone}
 
-\begin{wrapfigure}[16]{r}{0.5\textwidth}
+\begin{wrapfigure}[16]{r}{0.45\textwidth}
  \centering
- \vspace{-40pt}
+ \vspace{-50pt}
  \includegraphics[width=0.4\textwidth]{Scene_dynamification_scaling_zone}
  \caption[Scaling-zone definition]{A scaling zone defined on a chair by a start plane (blue) and an end plane (red) along the scaling axis.}
  \label{fig:8_scaling_zone}
@@ -360,7 +361,6 @@ Once the elements are separated, the scene can be freely rearranged. Figure~\ref
  \includegraphics[width=1\textwidth]{Scene_dynamification_matterport_variations}
  \caption[Layout variations of dynamified scenes]{Two alternative layouts (columns) of each of the two scenes from Figure~\ref{fig:8_matterport_scenes}, with objects moved and scaled and windows and doors repositioned along the walls.}
  \label{fig:8_matterport_variations}
- \vspace{-20pt}
 \end{figure}
 
 

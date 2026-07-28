@@ -109,7 +109,7 @@ The key difficulty that none of these methods fully resolve is distinguishing, a
 
 % ─────────────────────────────────────────────────────────────────────────────
 
-\begin{figure}[h!]
+\begin{figure}[hb]
   \centering
   \includegraphics[width=1\textwidth]{Alignment_Method}
   \caption[Alignment pipeline overview]{Overview of the proposed two-step alignment and updating pipeline.}
@@ -414,7 +414,7 @@ The alignment and updating methodology is evaluated on two complementary data so
 
 Table~\ref{tab:4_alignment_results} reports the positional and rotational accuracy of each individual alignment method and the combined weighted estimate for all three real-world test cases. The accuracy is measured against manually aligned ground-truth poses. Across all sites, the combined pose estimation achieves an average positional RMSE of 0.058\,m, an average rotational RMSE of 0.337°, and an average confidence of approximately 50\%.
 
-\begin{table}[htbp]
+\begin{table}[hb]
     \centering
     \caption[Real-world alignment results]{Positional and rotational accuracy and confidence of each alignment method across the three real-world test cases. Case~1: laboratory rooms, Case~2: living lab, Case~3: Bruges renovation.}
     \label{tab:4_alignment_results}
@@ -490,14 +490,14 @@ The experiment aligns each scan variation against two types of reference data: t
 
 Table~\ref{tab:4_vscan_full} reports the alignment results when the variation scans cover the full room (Figure~\ref{fig:2D_Alignment_exp_synthetic_full}). The alignment is evaluated across all 200 V-Scan scenes and the success rate, average RMSE, positional error, and angular error are reported for successful registrations.
 
-\begin{figure}[htbp]
+\begin{figure}[hb]
   \centering
   \includegraphics[width=1\textwidth]{Synthetic_alignment_results_full}
   \caption[Synthetic Alignment Results (Full Scans)]{Example of a successful full scan alignment in Variation~2 (Furniture Change). The variation scan (red) is aligned against the furnished reference scan (blue, top) and the empty scene scan (blue, bottom).}
   \label{fig:2D_Alignment_exp_synthetic_full}
 \end{figure}
 
-\begin{table}[htbp]
+\begin{table}[hb]
     \centering
     \caption[V-Scan full scan alignment]{Alignment results on V-Scan full scans. Each variation is aligned against the furnished reference scan and the empty scene scan. Only successful registrations are included in the accuracy statistics.}
     \label{tab:4_vscan_full}
@@ -588,7 +588,7 @@ The final combined dataset consists of 54.4\% preserved reference points, 13.4\%
 
 The Ground truth available in the V-Scan dataset provides an objective reference against which coverage can be measured. For each of the five V-Scan environment types, the main furnished scan is combined with a furniture-and-position-change variation (Variation~1) using the updating procedure (Figure~\ref{fig:Synthetic_Combination_Results}). The reference and variation scans are both subsampled to a 2\,cm voxel resolution with a distance threshold of 2\,cm. Coverage is measured as the percentage of the ground-truth empty scene that is represented within the distance threshold by either the variation scan alone or the combined pipeline output.
 
-\begin{figure}[htbp]
+\begin{figure}[hb]
   \centering
   \includegraphics[width=1\textwidth]{Synthetic_combination_results}
   \caption[Synthetic Combination Results (Full Scans)]{Example of a successful combination of a variation scan (red) with the reference scan (blue) to produce the combined dataset.}
@@ -597,7 +597,7 @@ The Ground truth available in the V-Scan dataset provides an objective reference
 
 Table~\ref{tab:4_vscan_combination} reports the results per environment type. Across all environments, the updating procedure preserves on average 92\% of the reference points and replaces approximately 8\% with observations from the variation scan. The replaced points correspond to regions where the furniture configuration changed between the two scans. The coverage of the empty scene improves from 89\% for the variation scan alone to over 97\% after the combination, yielding an average coverage gain of 8.4 percentage points.
 
-\begin{table}[htbp]
+\begin{table}[hb]
     \centering
     \caption[V-Scan combination results]{Updating results on V-Scan scenes per environment type. Coverage is measured against the ground-truth empty scene. All scans are subsampled to 2\,cm voxel size with a 2\,cm distance threshold.}
     \label{tab:4_vscan_combination}

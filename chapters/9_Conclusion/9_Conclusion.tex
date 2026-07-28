@@ -32,8 +32,8 @@ Limitations & Structural geometry aligns more reliably than furnished scenes; sc
 Objective & Decompose the cloud into structure and objects and measure what is occluded. \\
 Input & Aligned point cloud \\
 Output & Objects, refined oriented boxes, occlusion grids \\
-Results & Primary symmetry axis at $8.01^{\circ}$ error, 94\% finding rate; occluded volume 7.97--22.07\% per class. \\
-Limitations & Detection precision of 0.310 propagates false positives downstream, requiring an extra filtering step. \\
+Results & Detection precision 0.495, recall 0.551 (IoU$_{0.5}$); primary symmetry axis below $4^{\circ}$ error for 6/7 categories, $\geq$75\% finding rate; occluded volume 7.97--22.07\% per class. \\
+Limitations & Detection precision of 0.495 propagates false positives downstream; symmetry assumes at least one axis per object. \\
 \midrule
 \multicolumn{2}{@{}l}{\textbf{Scene completion (Ch.~\ref{ch:6_Scene_Completion})}~\cite{vermandere_texture-based_2023,vermandere_semantic_2024}} \\
 \cmidrule(r){1-1}
@@ -94,7 +94,7 @@ These results are bounded by limitations that the individual chapters identify a
 \label{sec:9_future_work}
 
 % Paragraph purpose: direction 1 — robustness and scope expansion.
-The most immediate direction is increasing robustness and expanding the scope beyond the single furnished room. Replacing the current detector with a more recent architecture would reduce the false positives that currently propagate through the pipeline, and extending the planar assumptions of scene completion and opening detection to curved and non-Manhattan structures would broaden the range of buildings the method can handle. Scaling from single rooms to connected multi-room and eventually building-scale environments is the natural next step, and would require the alignment and updating framework to manage inter-room consistency and loop closure rather than a single reference frame.
+The most immediate direction is increasing robustness and expanding the scope beyond the single furnished room. Improving the current detector, whether through fine-tuning on synthetic data or adopting a more recent architecture, would further reduce the false positives that currently propagate through the pipeline, and extending the planar assumptions of scene completion and opening detection to curved and non-Manhattan structures would broaden the range of buildings the method can handle. Scaling from single rooms to connected multi-room and eventually building-scale environments is the natural next step, and would require the alignment and updating framework to manage inter-room consistency and loop closure rather than a single reference frame.
 
 % Paragraph purpose: direction 2 — fidelity, texture and part awareness.
 A second direction is increasing fidelity, particularly in the two areas the cross-cutting analysis identified as residually hard. Texture synthesis under large occlusion would benefit from multi-view and learned scene-level priors rather than a single aligned panorama, and the geometry-only part decomposition used for scaling could be enriched with appearance and learned semantic cues so that part-aware editing reflects function as well as shape. Tightening the link between the image-based object completion and the measured per-object occlusion grid would combine the generality of the image-conditioned generator with the occlusion-awareness of the voxel method, addressing the principal trade-off found in Chapter~\ref{ch:7_Object_Completion}.

@@ -189,9 +189,6 @@ The output of the network is a completed SDF on the same $64^3$ grid. Because th
 \subsection{Texture Completion}
 \label{sec:7_voxel_texture}
 
-% Motivation: state the parallelism with geometry completion and the join structure of the texture stage.
-The texture pipeline runs in parallel with the geometry completion of Section~\ref{sec:7_voxel_geom} and merges with it once both intermediate results are available. The first step, material segmentation, operates on the partial mesh and produces a per-face material index on the observed surface (Figure~\ref{fig:7_material_segmentation}). In the second step, the partial material indices are transferred onto the completed mesh and IF-Net extends them onto the completed geometry (Figure~\ref{fig:7_material_prediction}). The third step, texture inpainting, transfers the original partial texture onto the completed mesh and fills the missing pixels material by material (Figure~\ref{fig:7_object_inpainting}).
-
 \begin{wrapfigure}[17]{r}{0.33\textwidth}
  \centering
  \vspace{-20pt}
@@ -199,6 +196,11 @@ The texture pipeline runs in parallel with the geometry completion of Section~\r
  \caption[COACD convex decomposition]{Convex decomposition of a partial chair mesh with \gls{COACD}; each part is shown in a random colour.}
  \label{fig:7_coacd}
 \end{wrapfigure}
+
+% Motivation: state the parallelism with geometry completion and the join structure of the texture stage.
+The texture pipeline runs in parallel with the geometry completion of Section~\ref{sec:7_voxel_geom} and merges with it once both intermediate results are available. The first step, material segmentation, operates on the partial mesh and produces a per-face material index on the observed surface (Figure~\ref{fig:7_material_segmentation}). In the second step, the partial material indices are transferred onto the completed mesh and IF-Net extends them onto the completed geometry (Figure~\ref{fig:7_material_prediction}). The third step, texture inpainting, transfers the original partial texture onto the completed mesh and fills the missing pixels material by material (Figure~\ref{fig:7_object_inpainting}).
+
+
 
 \paragraph{Material segmentation.}
 % Motivation: identify the materials on the observed surface only, before the completed geometry is available.

@@ -403,14 +403,15 @@ Once a room has been generated, a virtual scanner simulates common indoor acquis
 
 
 \subsubsection{Scanner Configuration}
-
-The scanner behaviour is controlled through a set of parameters describing the sensing characteristics of the simulated device (visualised in Figure~\ref{fig:3_VScan_Parameters}):\\
 \begin{wrapfigure}{r}{0.34\textwidth}
   \centering
+  \vspace{-25pt}
   \includegraphics[]{Scanner_params}
   \caption[V-Scan Parameters]{Overview of the V-Scan parameters.}
   \label{fig:3_VScan_Parameters}
 \end{wrapfigure}
+The scanner behaviour is controlled through a set of parameters describing the sensing characteristics of the simulated device (Figure~\ref{fig:3_VScan_Parameters}):\\
+
 \begin{itemize}
     \item \textbf{Scan density}: $\rho$, the angular spacing between consecutive rays, expressed as the point spacing in mm at 10\,m distance.
     \item \textbf{Scan range}: $r$, the maximum detection distance, in metres.
@@ -474,14 +475,16 @@ After acquisition, points can be filtered to a predefined scan volume to retain 
 
 \subsubsection{Image Capture and Colour Assignment}
 
-Colour information is captured through a spherical image render at the sensor location. The camera renders an equirectangular panoramic image (Figure~\ref{fig:3_vscan_pano_example}), which serves both as the panoramic image output and as the source for point cloud colouring. Each scanned point is assigned a colour by sampling the panoramic image at its corresponding \gls{UV} coordinates derived from the angles of the cast rays.
-
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1\textwidth]{Pano_example}
     \caption[Pano example]{Example of a panoramic image captured at the scanner position, stored in equirectangular format.}
     \label{fig:3_vscan_pano_example}
 \end{figure}
+
+Colour information is captured through a spherical image render at the sensor location. The camera renders an equirectangular panoramic image (Figure~\ref{fig:3_vscan_pano_example}), which serves both as the panoramic image output and as the source for point cloud colouring. Each scanned point is assigned a colour by sampling the panoramic image at its corresponding \gls{UV} coordinates derived from the angles of the cast rays.
+
+
 
 \subsubsection{Object Isolation}
 

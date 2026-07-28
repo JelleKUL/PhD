@@ -322,8 +322,9 @@ Voxel grids divide 3D space into small cubic cells, analogous to how pixels divi
 \]
 where each voxel $g_{ijk}$ stores one or more attributes associated with that spatial cell.
 
-\begin{wrapfigure}{r}{0.5\textwidth}
+\begin{wrapfigure}{r}{0.4\textwidth}
   \centering
+  \vspace{-10pt}
   \includegraphics[]{Voxel}
   \caption[Voxel grid representation]{Example of a voxel grid representation.}
   \label{fig:Voxel}
@@ -410,7 +411,7 @@ The Chamfer Distance (\gls{CD})~\cite{fan_point_2017} (Figure \ref{fig:chamfer_d
 
 \begin{wrapfigure}[12]{r}{0.25\textwidth}
   \centering
-  \vspace{-10pt}
+  \vspace{-15pt}
   \includegraphics[]{Chamfer_distance}
   \caption[Chamfer distance]{The (squared) sum of the minimal $\mathbf{p}$ to $\mathbf{q}$ distances}
   \label{fig:chamfer_distance}
@@ -418,18 +419,17 @@ The Chamfer Distance (\gls{CD})~\cite{fan_point_2017} (Figure \ref{fig:chamfer_d
 
 In both formulations, the first term measures the \textit{accuracy} of the prediction and the second measures its \textit{completeness}. \gls{CD-L1} sums absolute Euclidean distances and is more robust to outliers, while \gls{CD-L2} sums squared distances and penalises large deviations more heavily. Unless otherwise specified, this thesis reports CD-L1 values, as is standard in the shape completion literature. Both variants are symmetric and capture missing as well as excessive geometry, but neither accounts for surface normals or topology. The Chamfer Distance is used to evaluate the geometric accuracy of completed objects (Chapter~\ref{ch:7_Object_Completion}) and reconstructed scene elements (Chapter~\ref{ch:6_Scene_Completion}).
 
-
-% ── LOA ──────────────────────────────────────────────────────────────────────
-\paragraph{Level of Accuracy.}
-The \gls{LOA} specification~\cite{documentation_usibd_2019}, is a standardised framework for reporting the geometric accuracy of captured point clouds relative to a reference model. Rather than reporting a single continuous error value, the LOA metric expresses accuracy as the percentage of point-to-surface distances that fall within predefined distance brackets. A scene or element is assigned an LOA label when at least 95\% of its inlier points satisfy the corresponding distance threshold.
-
 \begin{wrapfigure}[12]{r}{0.25\textwidth}
   \centering
-  \vspace{-10pt}
   \includegraphics[]{LOA}
   \caption[LOA]{The percentage of points that lie within a certain distance threshold from point $\mathbf{p}$}
   \label{fig:LOA}
 \end{wrapfigure}
+% ── LOA ──────────────────────────────────────────────────────────────────────
+\paragraph{Level of Accuracy.}
+The \gls{LOA} specification~\cite{documentation_usibd_2019}, is a standardised framework for reporting the geometric accuracy of captured point clouds relative to a reference model. Rather than reporting a single continuous error value, the LOA metric expresses accuracy as the percentage of point-to-surface distances that fall within predefined distance brackets. A scene or element is assigned an LOA label when at least 95\% of its inlier points satisfy the corresponding distance threshold.
+
+
 
 The standard defines the following cumulative brackets:
 \begin{equation}
