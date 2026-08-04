@@ -231,7 +231,7 @@ When a session image $i_\text{ses}$ can be matched with at least two overlapping
 \end{wrapfigure}
 % Paragraph purpose: explain the two separate references method
 \paragraph{Two separate references.}
-When two non-overlapping reference images $i_{\text{ref},1}$ and $i_{\text{ref},2}$ with known poses $\mathbf{T}_{\text{ref},1}$ and $\mathbf{T}_{\text{ref},2}$ can each be matched to the session image $i_\text{ses}$ (Figure~\ref{fig:2D_Alignment_separate}), each match recovers a relative rotation and translation direction through the essential matrix decomposition. Since a single image pair provides no depth, only the direction from the reference camera to the session camera is known, not the distance. The session pose $\mathbf{T}_\text{ses}$ is therefore recovered by intersecting the two direction rays originating from the known reference positions:
+When two non-overlapping reference images $i_{\text{ref},1}$ and $i_{\text{ref},2}$ with known poses $\mathbf{T}_{\text{ref},1}$ and $\mathbf{T}_{\text{ref},2}$ can each be matched to the session image $i_\text{ses}$ (Figure~\ref{fig:2D_Alignment_separate}), each match recovers a relative rotation and translation direction through the essential matrix decomposition. Since a single image pair provides no scale, only the direction from the reference camera to the session camera is known, not the distance. The session pose $\mathbf{T}_\text{ses}$ is therefore recovered by intersecting the two direction rays originating from the known reference positions:
 \begin{equation}
 \label{eq:4_separate_ref}
 \mathbf{T}_\text{ses} = \argmin_{\mathbf{T}} \sum_{k \in \{1,2\}} \left\| \mathbf{T} - \mathbf{T}_{\text{ref},k} \cdot \hat{\mathbf{T}}_{\text{rel},k} \right\|
