@@ -153,6 +153,36 @@
 	\endgroup
 }
 
+% Make ChapterHead_N.pdf (and any other images in /image) findable
+% regardless of which chapters/<Name>/ subfolder is being compiled.
+% Path is relative to thesis.tex's own location.
+\graphicspath{{image/}}
+
+% ── Chapter opener image page ──────────────────────────────────────
+% Usage: \chapteropener{<number>}{<Chapter Title>}{<image file, e.g. ChapterHead_1>}
+% Place this ONE line at the very top of each chapter file, before \chapter{...}.
+% It does not touch the chapter's own \chapter{} heading or Introduction section.
+\newcommand{\chapteropener}[3]{%
+  \cleardoublepage % guarantees the divider always lands on a right-hand (odd) page
+  \thispagestyle{empty}
+ 
+  \vspace*{\fill}
+  \begin{center}
+    {\sffamily\Huge\bfseries #1}\\[1cm]     % number only, big, matches chapter heading font (sans, bold)
+    \includegraphics[width=\textwidth]{#3}\\[0.5cm]
+    {\sffamily\Huge\bfseries #2}             % chapter title, same font family/weight
+  \end{center}
+  \vspace*{\fill}
+  \clearpage % ships the divider page
+ 
+  % Force exactly one guaranteed blank page before the chapter content.
+  % The \null ensures this page actually ships (an empty \clearpage/\newpage
+  % with nothing typeset on it can otherwise be silently absorbed).
+  \thispagestyle{empty}
+  \null
+  \newpage
+}
+
 % this line will be replaced to create a diff
 % (see make_diff.sh)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
