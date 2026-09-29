@@ -109,11 +109,11 @@ Panoramic images or localised pinhole camera images provide complementary appear
 
 A clear understanding of scene dynamification requires an overview of the ways in which 3D geometry and appearance can be represented digitally, since the chosen representation strongly influences which operations are possible: how missing geometry can be reconstructed, how colour can be stored, and how easily a scene can be edited afterwards.
 
-This thesis uses coloured point clouds as its primary input and textured meshes as its main output, with volumetric distance fields used internally during the completion stages. Several other representations, such as parametric building models, neural fields and Gaussian splatting, are considered but not adopted as pipeline outputs. Table~\ref{tab:rep_overview} summarises these choices and are further expanded upon in each relevant subsection.
+This thesis uses coloured point clouds as its primary input and textured meshes as its main output, with volumetric distance fields used internally during the completion stages. Several other representations, such as parametric building models, neural fields and Gaussian splatting, are considered but not adopted as pipeline outputs. Table~\ref{tab:rep_overview} summarises these choices which are further expanded upon in each relevant subsection.
 
 \begin{table}[htbp]
     \centering
-    \caption[3D Representations used in this thesis]{Representations used in this thesis, with the role each plays in the pipeline and the reason for its selection or exclusion. Rows follow the order in which the representations are discussed in this section.}
+    \caption[3D representations used in this thesis]{Representations used in this thesis, with the role each plays in the pipeline and the reason for its selection or exclusion. Rows follow the order in which the representations are discussed in this section.}
     \label{tab:rep_overview}
     \renewcommand{\arraystretch}{1.2}
     \begin{tabularx}{\textwidth}{l l X}
@@ -140,7 +140,7 @@ This thesis uses coloured point clouds as its primary input and textured meshes 
 \subsection{Explicit Representations}
 \label{sec:bg_explicit}
 
-Due to their straightforward and efficient structures, explicit representations can be directly used in most 3D software without extra processing, making them practical for visualisation, editing and many more downstream applications. In this section, Point clouds, meshes and Gaussian splats are discussed.
+Due to their straightforward and efficient structures, explicit representations can be directly used in most 3D software without extra processing, making them practical for visualisation, editing and many more downstream applications. In this section, point clouds, meshes and Gaussian splats are discussed.
 
 \paragraph{Point clouds.}
 A point cloud (Figure \ref{fig:Pointcloud}) is a collection of sampled 3D points,
@@ -210,7 +210,7 @@ Mesh representations from indoor scans are often reconstructed using a meshing a
   \centering
   \vspace{-10pt}
   \includegraphics[]{Splat}
-  \caption[3D Gaussian splatting]{Example of a 3D Gaussian splatting representation. Showing a zoomed in view of the gaussian $S_i$ }
+  \caption[3D Gaussian splatting]{Example of a 3D Gaussian splatting representation. Showing a zoomed-in view of the gaussian $S_i$ }
   \label{fig:Splat}
 \end{wrapfigure}
 \paragraph{3D Gaussian splatting.}
@@ -244,7 +244,7 @@ Implicit representations do not store surfaces directly. Instead, geometry is de
   \vspace{-20pt}
   \centering
   \includegraphics[width = 0.4\textwidth]{SDF}
-  \caption[Signed Distance Function 2D]{Example of an SDF in 3D space.}
+  \caption[Signed Distance Function 3D]{Example of an SDF in 3D space.}
     \label{fig:SDF}
       \vspace{-10pt}
 \end{wrapfigure}
@@ -294,7 +294,7 @@ Neural implicit methods use neural networks to represent geometry or appearance 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=1\textwidth]{NERF}
-  \caption[NeRF representation]{Example of a NeRF representation. where novel views can be rendered from the implicit function by marching rays through the volume and adding the predicted colour and density values at each step.}
+  \caption[NeRF representation]{Example of a NeRF representation, where novel views can be rendered from the implicit function by marching rays through the volume and adding the predicted colour and density values at each step.}
   \label{fig:NERF}
 \end{figure}
 
@@ -339,7 +339,7 @@ The main limitation of dense voxel grids is memory consumption: doubling the res
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=1\textwidth]{Octree}
-  \caption[Octree and k-d tree representation]{Example of an octree representation(left) and a k-d tree representation(right). The octree recursively subdivides space into eight children, while the k-d tree recursively splits the point set along coordinate axes.}
+  \caption[Octree and k-d tree representation]{Example of an octree representation (left) and a k-d tree representation (right). The octree recursively subdivides space into eight children, while the k-d tree recursively splits the point set along coordinate axes.}
   \label{fig:Octree}
 \end{figure}
 
@@ -358,7 +358,7 @@ A k-d tree (short for k-dimensional tree) is a binary space-partitioning structu
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=1\textwidth]{Treesearch}
-  \caption[Tree search]{An octree partitioning (left) versus a kd-tree search (right). From \cite{tero_karras_thinking_2012}}
+  \caption[Tree search]{An octree partitioning (left) versus a k-d tree search (right). From \cite{tero_karras_thinking_2012}}
   \label{fig:treesearch}
 \end{figure}
 
@@ -430,7 +430,7 @@ In both formulations, the first term measures the \textit{accuracy} of the predi
 \end{wrapfigure}
 % ── LOA ──────────────────────────────────────────────────────────────────────
 \paragraph{Level of Accuracy.}
-The \gls{LOA} specification~\cite{documentation_usibd_2019}, is a standardised framework for reporting the geometric accuracy of captured point clouds relative to a reference model. Rather than reporting a single continuous error value, the LOA metric expresses accuracy as the percentage of point-to-surface distances that fall within predefined distance brackets. A scene or element is assigned an LOA label when at least 95\% of its inlier points satisfy the corresponding distance threshold.
+The \gls{LOA} specification~\cite{documentation_usibd_2019} is a standardised framework for reporting the geometric accuracy of captured point clouds relative to a reference model. Rather than reporting a single continuous error value, the LOA metric expresses accuracy as the percentage of point-to-surface distances that fall within predefined distance brackets. A scene or element is assigned an LOA label when at least 95\% of its inlier points satisfy the corresponding distance threshold.
 
 
 
@@ -446,7 +446,7 @@ The standard defines the following cumulative brackets:
 \end{equation}
 where $D = \{d_i \mid \mathbf{p}_i \in P,\, \mathbf{q}_j \in Q : d_i = \min_{\mathbf{q}_j} \|\mathbf{p}_i - \mathbf{q}_j\| < t_d\}$ is the set of filtered point-to-surface distances, and $t_d$ is a user-defined distance threshold, typically set to $0.10\,\text{m}$ in accordance with common building tolerances~\cite{geyter_point_2022}. The LOA10 upper bound is therefore configurable, while the LOA20 and LOA30 thresholds are fixed by the standard.
 
-A higher LOA percentage indicates that more points fall within the tighter accuracy bracket, and thus reflects better geometric agreement between the captured scan and the reference. The metric is used in this thesis to evaluate the alignment accuracy of multi-temporal scans and the geometric fidelity of reconstructed scene elements (Chapter~\ref{ch:4_Alignment_Updating}).
+A higher LOA percentage indicates that more points fall within the tighter accuracy bracket, and thus reflects better geometric agreement between the captured scan and the reference. The metric is used in this thesis to evaluate the alignment accuracy of multi-temporal scans (Chapter~\ref{ch:4_Alignment_Updating}) and the geometric fidelity of reconstructed scene elements (Chapter~\ref{ch:6_Scene_Completion}).
 
 % ── Overlap ──────────────────────────────────────────────────────────────────
 \subsection{Overlap Metrics}
@@ -456,7 +456,7 @@ A higher LOA percentage indicates that more points fall within the tighter accur
   \centering
   \vspace{-20pt}
   \includegraphics[]{IOU}
-  \caption[IOU]{The relation between the intersection and union of two volumes or surfaces.}
+  \caption[IoU]{The relation between the intersection and union of two volumes or surfaces.}
   \label{fig:IOU}
 \end{wrapfigure}
 
@@ -513,7 +513,7 @@ Precision and recall are reported for the 3D object detection stage (Chapter~\re
 \subsection{Perceptual and Image Quality Metrics}
 \label{sec:bg_metrics_perceptual}
 
-The texture completion and inpainting stages of the pipeline produce visual outputs whose quality cannot be fully captured by geometric metrics alone. Four complementary metrics are used, progressing from pixel-level accuracy to increasingly perceptually meaningful comparisons.
+The texture completion and inpainting stages of the pipeline produce visual outputs whose quality cannot be fully captured by geometric metrics alone. Three complementary metrics are used, progressing from pixel-level accuracy to increasingly perceptually meaningful comparisons.
 
 \paragraph{Peak Signal-to-Noise Ratio.}
 The Peak Signal-to-Noise Ratio (\gls{PSNR}) quantifies the pixel-level reconstruction accuracy of a predicted image $I^*$ relative to a reference image $I$. It is defined in terms of the Mean Squared Error (MSE)~\cite{wang_image_2004}:

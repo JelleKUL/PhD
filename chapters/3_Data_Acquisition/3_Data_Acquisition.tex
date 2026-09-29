@@ -62,7 +62,7 @@ No single existing dataset satisfies these requirements simultaneously. Real-wor
 An additional gap exists for the alignment and updating stage. Evaluating multi-temporal registration requires repeated captures of the same environment across time and across sensing technologies, yet most public datasets capture each scene only once and with a single device. Datasets that do provide temporal variation, such as 3RScan~\cite{wald_rio_2019}, use a single sensor type, while multi-sensor datasets such as ScanNet++ capture at a single time point. No public resource combines both axes of variation. Finally, industrial object categories such as piping, ductwork and storage vessels are absent from most standard benchmarks, leaving a blind spot in object completion evaluation for AECO applications.
  
 % Paragraph 3 — Scope and contribution
-To address these gaps, the chapter assembles three complementary data sources. Public datasets (Section~\ref{sec:3_existing}) provide established benchmarks for training and qualitative evaluation. Real-world multi-temporal captures from the KU~Leuven campus and a residential renovation site in Bruges (Section~\ref{sec:3_realworld}) supply the multi-sensor, multi-epoch data required for alignment evaluation, together with a dedicated industrial object dataset derived from the campus chemistry building. Finally, The V-Scan synthetic dataset (Section~\ref{sec:3_synthetic}) is introduced, filling the gap between real and synthetic data by combining a procedural room generator and configurable virtual scanner, providing partial scans paired with complete scene- and object-level ground truth under controlled conditions.
+To address these gaps, the chapter assembles three complementary data sources. Public datasets (Section~\ref{sec:3_existing}) provide established benchmarks for training and qualitative evaluation. Real-world multi-temporal captures from the KU~Leuven campus and a residential renovation site in Bruges (Section~\ref{sec:3_realworld}) supply the multi-sensor, multi-epoch data required for alignment evaluation, together with a dedicated industrial object dataset derived from the campus chemistry building. Finally, the V-Scan synthetic dataset (Section~\ref{sec:3_synthetic}) is introduced, filling the gap between real and synthetic data by combining a procedural room generator and configurable virtual scanner, providing partial scans paired with complete scene- and object-level ground truth under controlled conditions.
  
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Existing Datasets}
@@ -166,8 +166,6 @@ The sensors used to capture this data are described in Section~\ref{sec:3_sensor
         \bottomrule
     \end{tabularx}
 \end{table}
-
-The sensors used to capture this data are described in Section~\ref{sec:3_sensors} and the individual environments in Section~\ref{sec:3_captured_scenes}.
 
 % ── Sensors ─────────────────────────────────────────────────────────────────
 \subsection{Sensing Technologies}
@@ -273,7 +271,7 @@ In each environment every sensor is deployed according to its intended use case,
   \vspace{-5pt}
   \includegraphics[width=1\textwidth]{House_Dataset}
   \includegraphics[width=1\textwidth]{House_Image_Dataset}
-  \caption[House datasets]{The house datasets, captured at different phases of construction.}
+  \caption[House datasets]{The house datasets, captured at different phases of a renovation.}
   \label{fig:3_house_dataset}
   \vspace{-10pt}
 \end{figure}
@@ -400,7 +398,7 @@ Once a room has been generated, a virtual scanner simulates common indoor acquis
 \begin{figure}[htpb]
   \centering
   \includegraphics[width=1\textwidth]{Vscan_method}
-  \caption[V-Scan Method]{Overview of the V-Scan method: A single scan position generates a point cloud and panoramic image, which are then used to extract object-level observations and generate dataset outputs.}
+  \caption[V-Scan Method]{Overview of the V-Scan method: a single scan position generates a point cloud and panoramic image, which are then used to extract object-level observations and generate dataset outputs.}
   \label{fig:3_VScan_Method}
 \end{figure}
 
@@ -556,7 +554,7 @@ For each generated scene, the dataset stores the scans together with the metadat
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1\textwidth]{Vscan_data}
-    \caption[V-Scan data]{Example outputs from the V-Scan generation pipeline: full scene point clouds (left), Panoramic images (right) and isolated partial object point clouds (bottom).}
+    \caption[V-Scan data]{Example outputs from the V-Scan generation pipeline: full scene point clouds (left), panoramic images (right) and isolated partial object point clouds (bottom).}
     \label{fig:3_vscan_data}
 \end{figure}
 

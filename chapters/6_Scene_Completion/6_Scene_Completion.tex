@@ -180,7 +180,7 @@ The panorama still contains all foreground objects, so the pixels covering remov
 \begin{figure}[hbht]
  \centering
  \includegraphics[width=1\textwidth]{Scene_completion_to_be_inpainted}
- \caption[Projected mask on reconstructed mesh]{The occluded pixels (red) projected onto the reconstructed mesh and scaled to match the projected voxels size, showing the regions that will be inpainted per plane.}
+ \caption[Projected mask on reconstructed mesh]{The occluded pixels (red) projected onto the reconstructed mesh and scaled to match the projected voxel size, showing the regions that will be inpainted per plane.}
  \label{fig:6_to_be_inpainted}
 \end{figure}
 
@@ -295,7 +295,7 @@ Objects that the upstream detector from Chapter~\ref{ch:5_Scene_Segmentation} mi
 When a wall-mounted graphical element (a poster, a painting, a sign) is only partially covered by a removed object, the visible part of the element falls into the LaMa~\cite{suvorov_resolution-robust_2022} context window while the rest must be invented. The inpainting does not commit to either continuing the element coherently or terminating it cleanly, and instead smears the visible content into the masked region. This is a limitation of the inpainting prior rather than of the masking: the network is biased toward repetitive surroundings, so localised graphical content within a large mask cannot be reconstructed faithfully.
  
 \paragraph{Over-infilling in large occluded regions.}
-Where a large continuous portion of the scene is occluded, typically behind a large piece of furniture against a corner, the geometric boundaries of the underlying structure are no longer constrained by enough scanned points to recover the correct extent. The plane cutting in Section~\ref{sec:6_plane_segmentation} then includes fragments that should have been trimmed at a wall or recess, and the mesh extends past the true structural boundary. This is the geometric counterpart to the textural smearing above: in both cases the result follows the inpainting or extension prior rather than the actual geometry, because the actual geometry is not observed.
+Where a large continuous portion of the scene is occluded, typically behind a large piece of furniture in a corner, the geometric boundaries of the underlying structure are no longer constrained by enough scanned points to recover the correct extent. The plane cutting in Section~\ref{sec:6_plane_segmentation} then includes fragments that should have been trimmed at a wall or recess, and the mesh extends past the true structural boundary. This is the geometric counterpart to the textural smearing above: in both cases the result follows the inpainting or extension prior rather than the actual geometry, because the actual geometry is not observed.
  
 \paragraph{Oblique stretching at doors and windows.}
 Doors and windows are intentionally filled in by the meshing stage, since they are reintroduced as dynamic elements in Chapter~\ref{ch:8_Scene_Dynamification}. Texturally, however, these openings are seen by the scanner at very oblique angles and from a single viewpoint, so the panorama samples that fall on the reconstructed wall fragment behind the opening are heavily foreshortened. The projected texture therefore appears stretched along the grazing direction, and the inpainting cannot recover sharp detail at these locations. This artefact is benign in the present chapter, since the affected regions will be replaced when the openings are restored, but it sets a quality ceiling on the static result.

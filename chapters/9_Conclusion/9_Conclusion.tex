@@ -12,11 +12,11 @@
 % Paragraph purpose: restate the closed loop concisely, no meta-explanation.
 This thesis set out to transform partially scanned indoor environments into complete, structured and dynamically editable \glspl{DRM}. The preceding chapters followed a single artefact through the full modular pipeline of Figure~\ref{fig:1_Research_Aim}: a heterogeneous, partial and out-of-date scan is aligned and updated, decomposed into structural elements and objects with their occlusion maps, completed at both scene and object level, and finally made dynamic.
 
-Chapter~\ref{ch:introduction} framed the central research gap as the absence of a unified framework that jointly addresses alignment, completion and dynamification across heterogeneous and multi-temporal data, and decomposed it into five pipeline objectives together with two cross-cutting objectives, while Chapter~\ref{ch:background} translated the target representation into four concrete \gls{DRM} requirements. Table~\ref{tab:9_synthesis} reports, for each stage, the objective it answers, its input and output, the principal quantitative result on V-Scan and the dominant limitation it carries forward; Table~\ref{tab:9_requirements} maps the same work onto the \gls{DRM} requirements.
+Chapter~\ref{ch:introduction} framed the central research gap as the absence of a unified framework that jointly addresses alignment, completion and dynamification across heterogeneous and multi-temporal data, and decomposed it into five pipeline objectives together with two cross-cutting objectives, while Chapter~\ref{ch:background} translated the target representation into four concrete \gls{DRM} requirements. Table~\ref{tab:9_synthesis} reports, for each stage, the objective it answers, its input and output, its principal quantitative result and the dominant limitation it carries forward; Table~\ref{tab:9_requirements} maps the same work onto the \gls{DRM} requirements.
 
 \begin{table}[hbtp]
 \centering
-\caption[Pipeline synthesis]{Synthesis of the pipeline stages: the objective each answers, its input and output, the principal result on V-Scan and the dominant limitation carried forward. Detailed results and experimental conditions are given in the corresponding chapter.}
+\caption[Pipeline synthesis]{Synthesis of the pipeline stages: the objective each answers, its input and output, its principal result and the dominant limitation carried forward. Results are on V-Scan unless stated otherwise; detailed results and experimental conditions are given in the corresponding chapter.}
 \label{tab:9_synthesis}
 \footnotesize
 \renewcommand{\arraystretch}{1.3}
@@ -27,7 +27,7 @@ Chapter~\ref{ch:introduction} framed the central research gap as the absence of 
 Objective & Fuse heterogeneous, multi-temporal scans into one up-to-date frame without full rescanning. \\
 Input & Heterogeneous multi-temporal scans \\
 Output & Aligned, up-to-date point cloud \\
-Results & 0.058\,m average accuracy; 97.5\% empty-scene recovery from two scans. \\
+Results & 0.058\,m average positional accuracy on the real-world captures; 97.5\% empty-scene recovery from two scans. \\
 Limitations & Structural geometry aligns more reliably than furnished scenes; scanner changes with low overlap remain hardest. \\
 \midrule
 \multicolumn{2}{@{}l}{\textbf{Object \& occlusion detection (Ch.~\ref{ch:5_Scene_Segmentation})}~\cite{vermandere_guided_2025, vermandere_synthetic_2026}} \\
@@ -35,7 +35,7 @@ Limitations & Structural geometry aligns more reliably than furnished scenes; sc
 Objective & Decompose the cloud into structure and objects and measure what is occluded. \\
 Input & Aligned point cloud \\
 Output & Objects, refined oriented boxes, occlusion grids \\
-Results & Detection precision 0.495, recall 0.551 (IoU$_{0.5}$); primary symmetry axis below $4^{\circ}$ error for 6/7 categories, $\geq$75\% finding rate; occluded volume 7.97--22.07\% per class. \\
+Results & Detection precision 0.495 and recall 0.551 at IoU\,0.5; primary symmetry axis below $4^{\circ}$ error for 6/7 ShapeNet categories, $\geq$75\% detection rate; occluded volume 7.97--22.07\% per class. \\
 Limitations & Detection precision of 0.495 propagates false positives downstream; symmetry assumes at least one axis per object. \\
 \midrule
 \multicolumn{2}{@{}l}{\textbf{Scene completion (Ch.~\ref{ch:6_Scene_Completion})}~\cite{vermandere_texture-based_2023,vermandere_semantic_2024}} \\
@@ -51,7 +51,7 @@ Limitations & Planarity assumption and single-panorama texture limit large or cu
 Objective & Complete each isolated object using local observations and scene context. \\
 Input & Partial object meshes, per-object grids, panorama \\
 Output & Fully textured object meshes \\
-Results & Voxel method IoU 61.8--72.2\%; image method generalises without per-category tuning. \\
+Results & Voxel method IoU 61.8--72.2\% on synthetic industrial objects; image method F-score@5\,cm 0.76--0.88 on V-Scan, without per-category tuning. \\
 Limitations & Voxel material cap and image-method occlusion-grid decoupling remain. \\
 \midrule
 \multicolumn{2}{@{}l}{\textbf{Scene dynamification (Ch.~\ref{ch:8_Scene_Dynamification})}~\cite{vermandere_adaptive_2026}} \\
@@ -59,7 +59,7 @@ Limitations & Voxel material cap and image-method occlusion-grid decoupling rema
 Objective & Turn the static reconstruction into an interactive, editable \gls{DRM}. \\
 Input & Static scene and object meshes \\
 Output & Interactive part-aware \gls{DRM} \\
-Results & Selective scaling preserves proportions; openings separated and rendered interactively in Unity. \\
+Results & Selective scaling preserves proportions; openings separated and rendered interactively in Unity (qualitative). \\
 Limitations & Geometry-only part decomposition and planar-wall opening detection remain. \\
 \bottomrule
 \end{tabularx}
@@ -96,17 +96,23 @@ These results are bounded by limitations that the individual chapters identify a
 \section{Future Work}
 \label{sec:9_future_work}
 
-% Paragraph purpose: direction 1 — robustness and scope expansion.
+% Paragraph purpose: direction 1: robustness and scope expansion.
 The most immediate direction is increasing robustness and expanding the scope beyond the single furnished room. Improving the current detector, whether through fine-tuning on synthetic data or adopting a more recent architecture, would further reduce the false positives that currently propagate through the pipeline, and extending the planar assumptions of scene completion and opening detection to curved and non-Manhattan structures would broaden the range of buildings the method can handle. Scaling from single rooms to connected multi-room and eventually building-scale environments is the natural next step, and would require the alignment and updating framework to manage inter-room consistency and loop closure rather than a single reference frame.
 
-% Paragraph purpose: direction 2 — fidelity, texture and part awareness.
+% Paragraph purpose: direction 2: fidelity, texture and part awareness.
 A second direction is increasing fidelity, particularly in the two areas the cross-cutting analysis identified as residually hard. Texture synthesis under large occlusion would benefit from multi-view and learned scene-level priors rather than a single aligned panorama, and the geometry-only part decomposition used for scaling could be enriched with appearance and learned semantic cues so that part-aware editing reflects function as well as shape. Tightening the link between the image-based object completion and the measured per-object occlusion grid would combine the generality of the image-conditioned generator with the occlusion-awareness of the voxel method, addressing the principal trade-off found in Chapter~\ref{ch:7_Object_Completion}.
 
-% Paragraph purpose: direction 3 — evaluation and the construction-industry gap.
+% Paragraph purpose: direction 3: evaluation and the construction-industry gap.
 A third direction concerns evaluation and the path towards real deployment. V-Scan establishes controlled ground truth, but closing the gap to the construction industry calls for larger and more varied real-world benchmarks with reliable completion ground truth, captured across the diversity of materials, clutter and sensing conditions encountered in practice. Narrowing the synthetic-to-real domain gap observed in detection and object completion, and validating the full pipeline on such data, is the decisive step from a demonstrated single-room methodology towards the faster, reusable digitisation of existing buildings that motivated this work.
 
-% Paragraph purpose: direction 4 — interaction and downstream use of the DRM.
+% Paragraph purpose: direction 4: interaction and downstream use of the DRM.
 A fourth direction builds on the interactivity unlocked in Chapter~\ref{ch:8_Scene_Dynamification}. The current dynamification supports repositioning, removal and part-aware scaling, but the editable \gls{DRM} invites richer interaction: physically grounded behaviour, semantic constraints that keep edits plausible, and bidirectional updating in which manual edits and freshly captured scans are reconciled through the alignment and updating framework of Chapter~\ref{ch:4_Alignment_Updating}. Coupling the pipeline to the downstream applications surveyed in Chapter~\ref{ch:Valorisation}, from renovation planning to facility management, would also turn the methodological evaluation used here into task-level evaluation, measuring the \gls{DRM} by the decisions it supports rather than by reconstruction accuracy alone.
+
+% Paragraph purpose: direction 5: human-in-the-loop scanning, moving the user into the capture process.
+A fifth direction turns the operator from a passive user into an active participant during capture, using the pipeline itself to guide the scan as it is acquired rather than only processing it afterwards. Because occlusion is measured rather than assumed in Chapter~\ref{ch:5_Scene_Segmentation}, the same grids that drive completion could be surfaced live. Visualising occluded and unobserved regions on the device would let the operator see what the reconstruction is still missing and decide whether to keep scanning, and guiding them towards those regions or prompting them to move an occluding object out of the way would recover geometry that no amount of downstream completion can invent. The intermediate results could also be reviewed in the loop, with the detected oriented bounding boxes presented for confirmation or correction before they propagate, which would directly counter the false positives that the moderate detection precision currently carries forward. This shifts the pipeline from completing whatever happens to be captured towards actively steering the capture so that less has to be inferred. Realising it would require the alignment, detection and occlusion stages to run incrementally and at interactive rates, a substantial engineering step beyond the offline processing validated here, but one for which the modular, occlusion-aware structure of the pipeline is already suited.
+
+% Paragraph purpose: direction 6: uncertainty quantification exposed to the user.
+Closely related is the quantification of uncertainty in the predicted geometry and texture. The completion stages currently return a single reconstruction without distinguishing regions constrained by observation from regions inferred entirely from a learned prior, yet these differ sharply in reliability. Attaching a calibrated confidence to each reconstructed region, derived for instance from the occlusion grids, the density of supporting observations or the spread of a generative prior, would let the reconstruction communicate how much of itself is measured and how much is imagined. Users could then set a confidence threshold appropriate to their task, viewing or exporting only the parts they trust: a renovation estimate might demand near-measured certainty and discard the rest, while a visualisation might accept plausible inference throughout. Exposing uncertainty in this way, rather than hiding it inside a uniformly rendered mesh, is what would let a completed \gls{DRM} be used responsibly for decisions of differing consequence.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

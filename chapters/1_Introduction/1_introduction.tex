@@ -54,7 +54,7 @@ Despite this potential, two fundamental barriers prevent \gls{DRM}s from being e
 The first fundamental barrier is incompleteness, both in space and over time. Distance sensors capture only the surfaces visible from their sensor positions, leaving significant portions of every scene unobserved because of occlusions and sensor constraints~\cite{vermandere_guided_2025}. In addition, buildings evolve continuously: furniture is rearranged, equipment is replaced, and layouts change through use~\cite{vermandere_two-step_2022}. As a result, any captured dataset becomes progressively more incomplete as a representation of the current state of the environment once changes occur after acquisition.
 
 % explain second barrier — lack of structure and editability
-The second fundamental barrier is limited editability caused by the unintelligent nature of captured data. Reality-capture outputs typically represent scenes as large, collections of points known as a point cloud, or as meshes of connected triangles, the latter being generally more efficient as large flat surfaces such as walls and floors can be represented by only a few triangles. While these representations can accurately describe appearance and geometry, neither inherently distinguishes between different objects and their surroundings~\cite{geyter_point_2022}. Transforming these monolithic observations into meaningful, independently manipulable objects is therefore a non-trivial task.
+The second fundamental barrier is limited editability caused by the unintelligent nature of captured data. Reality-capture outputs typically represent scenes as large collections of points known as a point cloud, or as meshes of connected triangles, the latter being generally more efficient as large flat surfaces such as walls and floors can be represented by only a few triangles. While these representations can accurately describe appearance and geometry, neither inherently distinguishes between different objects and their surroundings~\cite{geyter_point_2022}. Transforming these monolithic observations into meaningful, independently manipulable objects is therefore a non-trivial task.
 
 % highlight interaction between both barriers and reinforce difficulty
 These two barriers reinforce each other: incomplete data makes object extraction and editing more difficult, while the absence of individually editable objects complicates efficient updating as scenes change over time. Together, they explain why achieving realism, completeness, and editability within a single representation remains challenging.
@@ -69,7 +69,7 @@ However, these approaches remain fundamentally limited in scope. They typically 
 \label{sec2:problem}
  
 %  define overall problem as multi-stage pipeline challenge
-Transforming partially scanned indoor environments into \gls{DRM}s remains an open challenge in current 3D reconstruction workflows. This challenge is inherently multi-stage: the input data must first be aligned and made up-to-date, then missing geometry must be recovered at both scene and object level, and finally the completed reconstruction must be transformed into a editable environment. Each stage introduces its own difficulties, and the stages are mutually dependent in ways that make isolated solutions insufficient.
+Transforming partially scanned indoor environments into \gls{DRM}s remains an open challenge in current 3D reconstruction workflows. This challenge is inherently multi-stage: the input data must first be aligned and made up-to-date, then missing geometry must be recovered at both scene and object level, and finally the completed reconstruction must be transformed into an editable environment. Each stage introduces its own difficulties, and the stages are mutually dependent in ways that make isolated solutions insufficient.
  
 %  define alignment and updating challenge
 \paragraph{Alignment and updating.}
@@ -88,7 +88,7 @@ Beyond these individual categories, a structural difficulty is that scene-level 
 
 %  define dynamification challenge
 \paragraph{Dynamification.}
-Once completed and isolated objects and scenes are available, transforming them into a truly dynamic and editable environment adds a further requirement. Objects must also support manipulation without introducing artefacts in itself or the surrounding scene~\cite{ardelean_gen3dsr_2025, vermandere_adaptive_2026}. Uniform scaling of a complex object distorts its structural proportions. For example, a bookcase stretched uniformly looks wrong because the shelves become too thick. Part-aware deformation preserves the proportionality of individual components while adapting overall dimensions, but requires an understanding of the object's internal structure that is absent from raw geometry.
+Once completed and isolated objects and scenes are available, transforming them into a truly dynamic and editable environment adds a further requirement. Objects must also support manipulation without introducing artefacts in themselves or the surrounding scene~\cite{ardelean_gen3dsr_2025, vermandere_adaptive_2026}. Uniform scaling of a complex object distorts its structural proportions. For example, a bookcase stretched uniformly looks wrong because the shelves become too thick. Part-aware deformation preserves the proportionality of individual components while adapting overall dimensions, but requires an understanding of the object's internal structure that is absent from raw geometry.
  
 %  define evaluation challenge
 \paragraph{Evaluation.}
@@ -155,7 +155,7 @@ Taken together, these contributions establish scene dynamification as a coherent
 %  explain structure of thesis
 The remainder of this thesis follows the transformation from raw scan data to dynamic representations.
 
-Chapter \ref{ch:background} introduces the background and terminology related to scene dynamification and 3D representations. It defines key concepts such as dynamic scenes, object-level representations and completion, positions the proposed \gls{DRM} within the broader context of existing modelling paradigms.
+Chapter \ref{ch:background} introduces the background and terminology related to scene dynamification and 3D representations. It defines key concepts such as dynamic scenes, object-level representations and completion, and positions the proposed \gls{DRM} within the broader context of existing modelling paradigms.
 
 Chapter \ref{ch:3_Data_Acquisition} focuses on data acquisition, covering both real-world scanning and synthetic dataset generation. It discusses the characteristics and limitations of different sensing technologies, including occlusions, noise and coverage, and introduces the V-Scan synthetic dataset designed to enable controlled evaluation of reconstruction methods.
 
@@ -169,9 +169,9 @@ Chapter \ref{ch:7_Object_Completion} explores object completion techniques, comp
 
 Chapter \ref{ch:8_Scene_Dynamification} introduces the dynamification of completed scenes. It describes how static reconstructions are transformed into structured, interactive representations, enabling object-level manipulation and interaction within the environment.
 
-Chapter \ref{ch:conclusion} concludes the thesis by summarizing the main contributions and discussing the limitations of the proposed methodology, as well as directions for future research.
+Chapter \ref{ch:conclusion} concludes the thesis by summarising the main contributions and discussing the limitations of the proposed methodology, as well as directions for future research.
 
-Chapter \ref{ch:Valorisation} explores the valorization potential of the research, highlighting applications in areas such as renovation, facility management and interactive environments, and discussing opportunities for real-world deployment.
+Chapter \ref{ch:Valorisation} explores the valorisation potential of the research, highlighting applications in areas such as renovation, facility management and interactive environments, and discussing opportunities for real-world deployment.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
