@@ -1,14 +1,30 @@
 % !TeX root = ../../thesis.tex
-\chapter{Beknopte samenvatting}
 
-\ldots
+\chapter*{Samenvatting}
 
 
-\instructionsabstract
+Gebouwen kunnen ingescand worden met lasers of camera's, maar het resultaat heeft altijd twee problemen. Ten eerste is een scan onvolledig: alles wat de scanner niet kan zien, zoals de muur achter een kast, ontbreekt gewoon. Ten tweede begrijpt een scan niet wat hij toont, want hij weet niet dat een stoel een stoel is, waardoor niets erin verplaatst, verschaald of weggehaald kan worden zoals je dat in het echt zou doen bij het herinrichten van een kamer. Hierdoor vraagt het gebruik van scans voor renovatieplanning, virtuele rondleidingen of facilitair beheer nog steeds veel manueel en duur modelleerwerk.
+
+Dit proefschrift bouwt een automatische pijplijn die een onvolledige scan van een gemeubileerde kamer omzet in een volledige, bewerkbare 3D-omgeving, die we een \textit{Dynamic Reality Model} noemen. De pijplijn werkt stap voor stap. Eerst worden scans die op verschillende momenten of met verschillende toestellen gemaakt zijn samengevoegd tot één actuele scan, waarna bepaald wordt welke delen meubels zijn en welke delen de kamer zelf vormen, en wordt nagegaan wat écht ontbreekt versus wat er gewoon nooit was. Met die informatie worden de ontbrekende muren, vloer en plafond aangevuld met realistische geometrie en textuur, en wordt elk meubelstuk apart aangevuld, ook de delen die de scanner nooit gezien heeft. Ten slotte worden de aangevulde kamer en meubels interactief gemaakt: meubels kunnen verplaatst worden, en deuren of ramen kunnen vergroot, verkleind of geopend worden, terwijl hun vorm realistisch blijft.
+
+Er is geen eenvoudige manier om vanuit een echte scan na te gaan hoe een verborgen muur of stoel er écht zou moeten uitzien, dus hoorde bij dit onderzoek ook het opbouwen van een synthetische dataset van realistische virtuele kamers, V-Scan genaamd, waarin de volledige, werkelijke geometrie altijd gekend is. Dit maakte het mogelijk om de nauwkeurigheid van de methode correct te meten. De ontwikkelde pijplijn werkt betrouwbaar voor afzonderlijke, gemeubileerde kamers, en opent de deur naar snellere en goedkopere digitalisering van bestaande gebouwen voor toepassingen zoals renovatieontwerp, virtueel herinrichten, facilitair beheer, en training of gaming. De opschaling naar volledige gebouwen en rommeligere, reële omgevingen blijft toekomstig werk.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Keep the following \cleardoublepage at the end of this file, 
 % otherwise \includeonly includes empty pages.
+\cleardoublepage
+
+\chapter*{Wetenschappelijke Samenvatting}
+
+Digitale representaties van gebouwde binnenomgevingen vallen momenteel uiteen in twee paradigma's. Reality capture modellen, verkregen via laserscanning of fotogrammetrie, behouden geometrische en visuele nauwkeurigheid, maar blijven statische verzamelingen van punten of driehoeken zonder expliciete opsplitsing in objecten. Parametrische modellen zoals Building Information Models (BIM) zijn wel bewerkbaar en semantisch gestructureerd, maar worden doorgaans op ontwerpniveau geabstraheerd en weerspiegelen de effectief gebouwde toestand niet. Geen enkele bestaande representatie combineert realisme, volledigheid en bewerkbaarheid, en er bestaat geen gevestigde pijplijn die een partiële scan rechtstreeks omzet naar zo'n representatie zonder omvangrijk manueel modelleerwerk of een terugval naar een BIM-model met beperkte visuele detaillering.
+
+Dit proefschrift pakt die leemte aan door het Dynamic Reality Model (DRM) te introduceren: een representatie van een binnenscène als een verzameling individueel bewerkbare, deelbewuste objecten, ingebed in een volledige, getextureerde omgeving, met behoud van de geometrische en visuele nauwkeurigheid van de originele opname. De centrale bijdrage is een modulaire pijplijn die een partiële, heterogene binnenscan omzet in een DRM via vijf gekoppelde stappen: uitlijning en actualisering van de scène, object- en occlusiedetectie, omgevingscompletering, objectcompletering en scènedynamificatie. In plaats van scène- en objectcompletering als afzonderlijke problemen te behandelen, koppelt de pijplijn beide via expliciete occlusieredenering: de occlusieroosters die tijdens de detectiefase worden berekend, laten toe dat omgevingscompletering geen ruimte reconstrueert die wél bezet maar niet waargenomen is, terwijl objectcompletering gebruikmaakt van de omliggende muren, vloer en naburige objecten als context.
+
+Elke stap wordt kwantitatief geëvalueerd. Het uitlijnings- en actualiseringskader haalt een gemiddelde nauwkeurigheid van 0,058 m en herstelt 97,5\% van een lege scène op basis van twee partiële scans. Objectdetectie en occlusieschatting behalen een precisie van 0,495 en een recall van 0,551 bij IoU 0,5, met primaire symmetrieassen die voor zes van de zeven objectcategorieën met een fout kleiner dan 4° worden teruggevonden. Omgevingscompletering behaalt een Chamfer-afstand van 1,5 tot 1,9 cm, een F-score boven 0,975 bij 5 cm, en een PSNR tot 59 dB op de ingevulde texturen. Objectcompletering behaalt, afhankelijk van de categorie, een IoU van 61,8 tot 72,2\%, waarbij een voxelgebaseerde en een beeldgebaseerde methode worden vergeleken. Omdat net de oppervlakken die het meest relevant zijn voor completering ontbreken in echte scans, biedt geen bestaande dataset directe grondwaarheid voor deze evaluatie; dit proefschrift introduceert daarom V-Scan, een procedureel gegenereerde synthetische dataset die realistische partiële scans koppelt aan volledige grondwaarheid op scène- en objectniveau.
+
+De resultaten tonen aan dat structuur beter te herstellen is dan verschijning: vlakke en geometrisch regelmatige oppervlakken worden betrouwbaar gereconstrueerd doorheen uitlijning, completering en dynamificatie, terwijl textuursynthese onder sterke occlusie en onregelmatige geometrie de belangrijkste bronnen van resterende fouten blijven. De gevalideerde scope is beperkt tot eenkamerige, grotendeels vlakke, gemeubileerde binnenomgevingen; fouten door de matige detectieprecisie planten zich voort naar latere stappen, en de opsplitsing in delen voor dynamificatie blijft louter geometrisch. Binnen deze scope draagt dit proefschrift bij met een hybride, multi-bron uitlijnings- en actualiseringskader, een unificerende en modulaire scènedynamificatiepijplijn die scène- en objectcompletering koppelt via gedeelde occlusieredenering, de V-Scan-benchmark voor gecontroleerde evaluatie van scancompletering, en een deelbewuste dynamificatiemethodologie die voltooide statische reconstructies omzet in interactieve DRM's.
+
 \cleardoublepage
 
 % vim: tw=70 nocindent expandtab foldmethod=marker foldmarker={{{}{,}{}}}

@@ -1,9 +1,29 @@
 % !TeX root = ../../thesis.tex
-\chapter{Abstract}                                 \label{ch:abstract}
 
-\ldots
+\chapter*{Abstract}                                 \label{ch:pop_abstract}
 
-\instructionsabstract
+Buildings can be scanned with lasers or cameras, but the result always has two problems. First, it is incomplete: whatever the scanner cannot see, like the wall behind a cabinet, is simply missing. Second, a scan does not understand what it shows, since it has no idea that a chair is a chair, so nothing in it can be moved, resized or removed the way you would rearrange a room in real life. Because of this, using scans for renovation planning, virtual walkthroughs or facility management still means a lot of manual, expensive modelling work.
+
+This thesis builds an automatic pipeline that turns an incomplete scan of a furnished room into a complete, editable 3D environment, which we call a Dynamic Reality Model. The pipeline works step by step. It first combines scans taken at different times or with different devices into one up-to-date scan, then figures out which parts are furniture and which parts are the room itself, and works out what is genuinely missing versus what was simply never there. With that information, it fills in the missing walls, floor and ceiling with realistic geometry and texture, and completes each piece of furniture separately, even the parts the scanner never saw. Finally, the completed room and furniture are made interactive: furniture can be moved, and doors or windows can be resized or opened, while keeping a realistic shape.
+
+There is no easy way to check what a hidden wall or chair should really look like from a real scan, so part of this research involved building a synthetic dataset of realistic virtual rooms, called V-Scan, where the true, complete geometry is always known. This made it possible to properly measure how accurate the method is. The resulting pipeline works reliably for single, furnished rooms, and opens the door to faster, cheaper digitisation of existing buildings for uses like renovation design, virtual reorganising, facility management, and training or gaming applications. Scaling it up to full buildings and messier, real-world environments remains future work.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Keep the following \cleardoublepage at the end of this file, 
+% otherwise \includeonly includes empty pages.
+\cleardoublepage
+
+\chapter*{Scientific Abstract}                                 \label{ch:abstract}
+
+Digital representations of indoor built environments currently fall into two distinct paradigms. Reality capture based models, produced through laser scanning or photogrammetry, preserve geometric and visual fidelity but remain static collections of points or triangles with no explicit object decomposition. Parametric models such as Building Information Models (BIM) are editable and semantically structured, but are typically abstracted at design time and do not reflect as-built conditions. No single representation currently combines realism, completeness and editability, and no established pipeline transforms a partial scan directly into such a representation without extensive manual reconstruction or a fallback to low-fidelity BIM.
+
+This thesis addresses that gap by introducing the Dynamic Reality Model (DRM): a representation of an indoor scene as a set of individually editable, part-aware objects embedded in a complete, textured environment, while preserving the geometric and visual fidelity of the original capture. The central contribution is a modular pipeline that transforms a partial, heterogeneous indoor scan into a DRM through five coupled stages: scene alignment and updating, object and occlusion detection, environment completion, object completion, and scene dynamification. Rather than treating scene level and object level completion as independent problems, the pipeline couples them through explicit occlusion reasoning: the occlusion grids computed at the detection stage let environment completion avoid reconstructing space that is occupied but unobserved, while object completion draws on the surrounding walls, floor and neighbouring objects as context.
+
+Each stage is evaluated quantitatively. The alignment and updating framework reaches 0.058 m average accuracy and recovers 97.5\% of an empty scene from two partial scans. Object detection and occlusion estimation achieve a precision of 0.495 and recall of 0.551 at IoU 0.5, with primary symmetry axes recovered to below 4° error for six of seven object categories. Environment completion achieves a Chamfer distance of 1.5 to 1.9 cm, an F-score above 0.975 at 5 cm, and a PSNR of up to 59 dB on inpainted textures. Object completion reaches an IoU of 61.8 to 72.2\% depending on category, comparing a voxel based and an image based completion method. Because the surfaces most relevant to completion are precisely those absent from real scans, no existing dataset provides direct ground truth for this evaluation; this thesis therefore introduces V-Scan, a procedurally generated synthetic dataset pairing realistic partial scans with complete scene and object level ground truth.
+
+The results show that structure is more recoverable than appearance: planar and geometrically regular surfaces are reconstructed reliably across alignment, completion and dynamification, while texture synthesis under large occlusion and irregular geometry remain the dominant sources of residual error. The validated scope is restricted to single-room, largely planar, furnished indoor environments; errors introduced by moderate detection precision propagate to later stages, and part decomposition for dynamification remains geometry only. Within this scope, the thesis contributes a hybrid multi-source alignment and updating framework, a unified and modular scene dynamification pipeline coupling scene and object completion through shared occlusion reasoning, the V-Scan benchmark for controlled evaluation of scan completion, and a part-aware dynamification methodology that turns completed static reconstructions into interactive DRMs.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
