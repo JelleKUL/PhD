@@ -74,16 +74,17 @@ The objects of Chapter~\ref{ch:7_Object_Completion} are completed as \glspl{SDF}
 \section{Methodology}
 \label{sec:8_methodology}
 
-The dynamification is organised into a scene-level stage and an object-level stage. The scene-level stage (Section~\ref{sec:8_scene}, Figure~\ref{fig:8_method_scene_overview}) reopens the closed structural shell by detecting windows and doors, separating them as dynamic elements and reconstructing the surface behind them. The object-level stage (Section~\ref{sec:8_object}, Figure~\ref{fig:8_method_object_overview}) converts each completed object into a \gls{CSDF}, decomposes it into convex parts, and scales user-defined regions of the field. The recombination of both into a single interactive scene is described in Section~\ref{sec:8_recombination}, and the interface through which it is edited in Section~\ref{sec:8_ui}.
-
 \begin{figure}[hbht]
  \centering
  \vspace{-10pt}
  \includegraphics[width=1\textwidth]{Scene_dynamification_scene_method}
  \caption[Scene dynamification pipeline]{Overview of the scene-level dynamification. Each opening is detected in the flattened wall texture, cut out as a separate surface, constructed into a dynamic framed element, and the wall behind it is reconstructed and re-inpainted.}
-\vspace{-30pt}
  \label{fig:8_method_scene_overview}
 \end{figure}
+
+The dynamification is organised into a scene-level stage and an object-level stage. The scene-level stage (Section~\ref{sec:8_scene}, Figure~\ref{fig:8_method_scene_overview}) reopens the closed structural shell by detecting windows and doors, separating them as dynamic elements and reconstructing the surface behind them. The object-level stage (Section~\ref{sec:8_object}, Figure~\ref{fig:8_method_object_overview}) converts each completed object into a \gls{CSDF}, decomposes it into convex parts, and scales user-defined regions of the field. The recombination of both into a single interactive scene is described in Section~\ref{sec:8_recombination}, and the interface through which it is edited in Section~\ref{sec:8_ui}.
+
+
 
 % ─────────────────────────────────────────────────────────────────────────────
 \subsection{Scene Dynamification}
@@ -101,7 +102,7 @@ The scene completion of Chapter~\ref{ch:6_Scene_Completion} reconstructs each ro
  \centering
  \vspace{-10pt}
  \includegraphics[width=0.3\textwidth]{Scene_dynamification_opening_detection}
- \caption[Window and door detection on wall textures]{The final detection polygon traced on a flattened wall texture, annotated with its class label and confidence score.}
+ \caption[Window and door detection on wall textures]{The final detection polygon traced on a flattened wall texture.}
  \label{fig:8_opening_detection}
 \end{wrapfigure}
 
@@ -253,7 +254,7 @@ where $\delta x$ is a small sampling offset used to detect the label change.
 \subsubsection{Repetition-Based Scaling}
 \label{sec:8_repetition}
 
-\begin{wrapfigure}{r}{0.4\textwidth}
+\begin{wrapfigure}[24]{r}{0.4\textwidth}
  \centering
  \vspace{-30pt}
  \includegraphics[width=0.4\textwidth]{Scene_dynamification_repetition}
